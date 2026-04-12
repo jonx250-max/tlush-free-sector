@@ -12,6 +12,8 @@ const UploadPage = lazy(() => import('./pages/UploadPage').then(m => ({ default:
 const HistoryPage = lazy(() => import('./pages/HistoryPage').then(m => ({ default: m.HistoryPage })))
 const ProfilePage = lazy(() => import('./pages/ProfilePage').then(m => ({ default: m.ProfilePage })))
 const ToolsPage = lazy(() => import('./pages/ToolsPage').then(m => ({ default: m.ToolsPage })))
+const OnboardingWizard = lazy(() => import('./pages/OnboardingWizard').then(m => ({ default: m.OnboardingWizard })))
+const ResultsPage = lazy(() => import('./pages/ResultsPage').then(m => ({ default: m.ResultsPage })))
 
 function LoadingSpinner() {
   return (
@@ -34,9 +36,14 @@ export default function App() {
               <Route path="/login" element={<LoginPage />} />
 
               {/* Protected routes with Layout */}
+              {/* Onboarding (protected, no layout) */}
+              <Route path="/onboarding" element={<ProtectedRoute><OnboardingWizard /></ProtectedRoute>} />
+
+              {/* Protected routes with Layout */}
               <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/upload" element={<UploadPage />} />
+                <Route path="/results" element={<ResultsPage result={null} />} />
                 <Route path="/history" element={<HistoryPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/tools" element={<ToolsPage />} />

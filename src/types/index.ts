@@ -174,35 +174,28 @@ export interface AnalysisFinding {
 }
 
 export interface DiffSummary {
-  totalGaps: number
+  totalFindings: number
+  critical: number
+  warning: number
+  info: number
   totalGapAmount: number
-  criticalCount: number
-  warningCount: number
-  infoCount: number
-  amendment24Compliant: boolean
-  commissionHandledCorrectly: boolean
 }
 
 export interface OvertimeAnalysis {
+  model: 'standard' | 'global' | 'none'
+  expectedPay: number
+  actualPay: number
+  gap: number
   effectiveHourlyRate: number
-  actualOvertimeRate: number | null
-  hoursWorked: number | null
-  regularHours: number
-  overtimeHours125: number
-  overtimeHours150: number
-  expectedOvertimePay: number
-  actualOvertimePay: number | null
-  isGlobalModel: boolean
-  globalOvertimeCompliant: boolean
 }
 
 export interface TaxAnalysis {
   expectedTax: number
-  actualTax: number | null
+  actualTax: number
+  overcharge: number
   creditPoints: number
   creditPointsValue: number
-  regionalBenefit: number
-  taxGap: number
+  regionalBenefitValue: number
 }
 
 export interface DiffResult {
