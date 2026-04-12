@@ -1,34 +1,58 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Stepper } from '../components/ui/Stepper'
 import { FileDropzone } from '../components/ui/FileDropzone'
 import { Card, CardTitle } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
-import { FileText, ArrowLeft } from 'lucide-react'
+import { FileText, ArrowLeft, AlertCircle, Loader2 } from 'lucide-react'
 import { he } from '../i18n/he'
+import { useAnalysis, useAnalysisStore } from '../hooks/useAnalysis'
+import { initPdfWorker } from '../lib/pdfWorkerSetup'
+import type { ProfileData } from '../services/diffEngine'
 
 const STEPS = ['העלאת חוזה', 'העלאת תלוש', 'סקירה', 'ניתוח']
 
 export function UploadPage() {
+  const navigate = useNavigate()
   const [step, setStep] = useState(0)
   const [contractFile, setContractFile] = useState<File | null>(null)
   const [payslipFile, setPayslipFile] = useState<File | null>(null)
-  const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const { parseContract, parsePayslip, runAnalysis, isParsingContract, isParsingPayslip, isAnalyzing, error } = useAnalysis()
+  const store = useAnalysisStore()
 
-  const handleContractSelect = useCallback((file: File) => {
+  useEffect(() => {
+    initPdfWorker()
+  }, [])
+
+  const handleContractSelect = useCallback(async (file: File) => {
     setContractFile(file)
-  }, [])
+    await parseContract(file)
+  }, [parseContract])
 
-  const handlePayslipSelect = useCallback((file: File) => {
+  const handlePayslipSelect = useCallback(async (file: File) => {
     setPayslipFile(file)
-  }, [])
+    await parsePayslip(file)
+  }, [parsePayslip])
 
-  const handleAnalyze = useCallback(async () => {
-    setIsAnalyzing(true)
-    // Future: parse PDFs → run diff engine → navigate to results
-    await new Promise(r => setTimeout(r, 2000))
-    setIsAnalyzing(false)
-    setStep(3)
-  }, [])
+  const handleAnalyze = useCallback(() => {
+    // Build profile from defaults — in full flow, this comes from user profile
+    const profile: ProfileData = {
+      gender: 'male',
+      childrenBirthYears: [],
+      academicDegree: 'none',
+      militaryService: { served: true, dischargeYear: 2020 },
+      isNewImmigrant: false,
+      reservistDays: 0,
+      settlement: null,
+      workDaysPerWeek: store.contractTerms?.workDaysPerWeek.value ?? 5,
+      pensionEmployeePct: store.contractTerms?.pensionEmployeePct.value ?? 6,
+      pensionEmployerPct: store.contractTerms?.pensionEmployerPct.value ?? 6.5,
+      hasKerenHishtalmut: (store.contractTerms?.kerenHishtalmutEmployeePct.value ?? null) !== null,
+      kerenEmployeePct: store.contractTerms?.kerenHishtalmutEmployeePct.value ?? undefined,
+      kerenEmployerPct: store.contractTerms?.kerenHishtalmutEmployerPct.value ?? undefined,
+    }
+    runAnalysis(profile)
+  }, [runAnalysis, store.contractTerms])
 
   const next = () => setStep(s => Math.min(s + 1, STEPS.length - 1))
   const prev = () => setStep(s => Math.max(s - 1, 0))
@@ -40,6 +64,15 @@ export function UploadPage() {
 
       <Stepper steps={STEPS} currentStep={step} />
 
+      {error && (
+        <Card className="mb-4 border-cs-danger/30 bg-cs-danger/5">
+          <div className="flex items-center gap-2 text-cs-danger">
+            <AlertCircle size={18} />
+            <p className="text-sm">{error}</p>
+          </div>
+        </Card>
+      )}
+
       {step === 0 && (
         <Card>
           <CardTitle>שלב 1: העלאת חוזה העסקה</CardTitle>
@@ -49,8 +82,20 @@ export function UploadPage() {
             label="גרור את חוזה ההעסקה לכאן"
             description="PDF של חוזה ההעסקה שלך"
           />
+          {isParsingContract && (
+            <div className="mt-3 flex items-center gap-2 text-sm text-cs-primary">
+              <Loader2 size={16} className="animate-spin" />
+              <span>מפענח את החוזה...</span>
+            </div>
+          )}
+          {store.contractTerms && (
+            <div className="mt-3 rounded-lg border border-cs-success/30 bg-cs-success/5 p-3 text-sm">
+              <p className="font-medium text-cs-success">החוזה פוענח בהצלחה</p>
+              <p className="text-cs-muted">שכר בסיס: {store.contractTerms.baseSalary.value.toLocaleString()} ₪ | מודל: {store.contractTerms.payModel.value}</p>
+            </div>
+          )}
           <div className="mt-4 flex justify-end">
-            <Button onClick={next} disabled={!contractFile}>
+            <Button onClick={next} disabled={!store.contractTerms || isParsingContract}>
               הבא <ArrowLeft size={16} />
             </Button>
           </div>
@@ -66,9 +111,21 @@ export function UploadPage() {
             label="גרור את תלוש השכר לכאן"
             description="PDF של תלוש השכר החודשי"
           />
+          {isParsingPayslip && (
+            <div className="mt-3 flex items-center gap-2 text-sm text-cs-primary">
+              <Loader2 size={16} className="animate-spin" />
+              <span>מפענח את התלוש...</span>
+            </div>
+          )}
+          {store.payslip && (
+            <div className="mt-3 rounded-lg border border-cs-success/30 bg-cs-success/5 p-3 text-sm">
+              <p className="font-medium text-cs-success">התלוש פוענח בהצלחה</p>
+              <p className="text-cs-muted">ברוטו: {store.payslip.grossSalary.toLocaleString()} ₪ | חודש {store.payslip.month}/{store.payslip.year}</p>
+            </div>
+          )}
           <div className="mt-4 flex justify-between">
             <Button variant="ghost" onClick={prev}>הקודם</Button>
-            <Button onClick={next} disabled={!payslipFile}>
+            <Button onClick={next} disabled={!store.payslip || isParsingPayslip}>
               הבא <ArrowLeft size={16} />
             </Button>
           </div>
@@ -82,39 +139,57 @@ export function UploadPage() {
             <div className="flex items-center gap-3 rounded-lg border border-cs-border p-3">
               <FileText size={20} className="text-cs-primary" />
               <div>
-                <p className="font-medium text-cs-text">חוזה: {contractFile?.name}</p>
-                <p className="text-xs text-cs-muted">{contractFile && `${(contractFile.size / 1024).toFixed(0)} KB`}</p>
+                <p className="font-medium text-cs-text">חוזה: {store.contractFileName}</p>
+                {store.contractTerms && (
+                  <p className="text-xs text-cs-muted">
+                    שכר: {store.contractTerms.baseSalary.value.toLocaleString()} ₪ |
+                    {' '}{store.contractTerms.workDaysPerWeek.value} ימים |
+                    פנסיה: {store.contractTerms.pensionEmployeePct.value}%/{store.contractTerms.pensionEmployerPct.value}%
+                  </p>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-3 rounded-lg border border-cs-border p-3">
               <FileText size={20} className="text-cs-secondary" />
               <div>
-                <p className="font-medium text-cs-text">תלוש: {payslipFile?.name}</p>
-                <p className="text-xs text-cs-muted">{payslipFile && `${(payslipFile.size / 1024).toFixed(0)} KB`}</p>
+                <p className="font-medium text-cs-text">תלוש: {store.payslipFileName}</p>
+                {store.payslip && (
+                  <p className="text-xs text-cs-muted">
+                    ברוטו: {store.payslip.grossSalary.toLocaleString()} ₪ |
+                    נטו: {store.payslip.netSalary.toLocaleString()} ₪ |
+                    חודש {store.payslip.month}/{store.payslip.year}
+                  </p>
+                )}
               </div>
             </div>
+
+            {store.contractTerms && hasLowConfidence(store.contractTerms) && (
+              <div className="rounded-lg border border-cs-warning/30 bg-cs-warning/5 p-3 text-sm">
+                <p className="font-medium text-cs-warning">שים לב: חלק מהשדות פוענחו ברמת ביטחון נמוכה</p>
+                <p className="text-cs-muted">מומלץ לבדוק את הערכים בסקירה המפורטת</p>
+              </div>
+            )}
           </div>
           <div className="mt-4 flex justify-between">
             <Button variant="ghost" onClick={prev}>הקודם</Button>
             <Button onClick={handleAnalyze} disabled={isAnalyzing}>
-              {isAnalyzing ? 'מנתח...' : 'התחל ניתוח'}
+              {isAnalyzing ? (
+                <><Loader2 size={16} className="animate-spin" /> מנתח...</>
+              ) : 'התחל ניתוח'}
             </Button>
-          </div>
-        </Card>
-      )}
-
-      {step === 3 && (
-        <Card>
-          <div className="py-8 text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-cs-success/10">
-              <FileText size={32} className="text-cs-success" />
-            </div>
-            <h3 className="font-heading text-lg font-bold text-cs-text">הניתוח הושלם</h3>
-            <p className="mt-2 text-sm text-cs-muted">עבור לדף התוצאות לצפייה בפירוט המלא</p>
-            <Button className="mt-4">צפה בתוצאות</Button>
           </div>
         </Card>
       )}
     </div>
   )
+}
+
+function hasLowConfidence(terms: NonNullable<ReturnType<typeof useAnalysisStore>>['contractTerms']): boolean {
+  if (!terms) return false
+  return [
+    terms.baseSalary,
+    terms.payModel,
+    terms.pensionEmployeePct,
+    terms.pensionEmployerPct,
+  ].some(f => f.needsVerification)
 }
