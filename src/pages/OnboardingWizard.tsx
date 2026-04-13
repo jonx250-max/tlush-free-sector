@@ -9,7 +9,7 @@ import { Card } from '../components/ui/Card'
 import { useAuth } from '../lib/auth'
 import { he } from '../i18n/he'
 import type { Settlement } from '../data/settlements'
-import type { PayModel } from '../types'
+import type { PayModel, PersonalInfo } from '../types'
 
 const STEPS = ['פרטים אישיים', 'פרטי העסקה', 'מודל שכר', 'סיכום']
 
@@ -54,7 +54,7 @@ interface PayModelData {
 
 export function OnboardingWizard() {
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { user, updateProfile } = useAuth()
   const [step, setStep] = useState(0)
 
   const [personal, setPersonal] = useState<PersonalData>({
@@ -109,9 +109,47 @@ export function OnboardingWizard() {
   }, [])
 
   const handleComplete = useCallback(() => {
-    // Save to profile (future: Supabase)
+    updateProfile({
+      fullName: personal.fullName || user?.fullName || null,
+      personalInfo: {
+        gender: personal.gender,
+        idNumber: personal.idNumber,
+        maritalStatus: personal.maritalStatus as PersonalInfo['maritalStatus'],
+        childrenBirthYears: personal.childrenBirthYears
+          ? personal.childrenBirthYears.split(',').map(y => parseInt(y.trim())).filter(Boolean)
+          : [],
+        settlementName: personal.settlement?.name,
+        academicDegree: personal.academicDegree as PersonalInfo['academicDegree'],
+        degreeCompletionYear: personal.degreeCompletionYear ? parseInt(personal.degreeCompletionYear) : undefined,
+        militaryService: personal.militaryServed
+          ? {
+              served: true,
+              dischargeYear: personal.militaryDischargeYear ? parseInt(personal.militaryDischargeYear) : undefined,
+              monthsServed: personal.militaryMonths ? parseInt(personal.militaryMonths) : undefined,
+              isCombat: personal.militaryCombat,
+            }
+          : { served: false },
+        isNewImmigrant: personal.isNewImmigrant,
+        immigrationDate: personal.immigrationDate || undefined,
+        isSingleParent: personal.isSingleParent,
+        reservistDays2026: personal.reservistDays ? parseInt(personal.reservistDays) : 0,
+      },
+      employmentInfo: {
+        employerName: employment.employerName,
+        employerId: employment.employerId,
+        jobTitle: employment.jobTitle,
+        startDate: employment.startDate,
+        payModel: employment.payModel,
+        workDaysPerWeek: parseInt(employment.workDaysPerWeek) as 5 | 6,
+        pensionRateEmployee: parseFloat(payModelData.pensionEmployee) || 6,
+        pensionRateEmployer: parseFloat(payModelData.pensionEmployer) || 6.5,
+        hasKerenHishtalmut: payModelData.hasKeren,
+        kerenRateEmployee: payModelData.hasKeren ? parseFloat(payModelData.kerenEmployee) || 2.5 : undefined,
+        kerenRateEmployer: payModelData.hasKeren ? parseFloat(payModelData.kerenEmployer) || 7.5 : undefined,
+      },
+    })
     navigate('/dashboard')
-  }, [navigate])
+  }, [navigate, personal, employment, payModelData, updateProfile, user])
 
   const next = () => setStep(s => Math.min(s + 1, STEPS.length - 1))
   const prev = () => setStep(s => Math.max(s - 1, 0))

@@ -10,6 +10,8 @@ interface AuthContextType {
   profile: UserProfile | null
   signInWithGoogle: () => Promise<void>
   signOut: () => Promise<void>
+  enableDemoMode: () => void
+  updateProfile: (data: Partial<UserProfile>) => void
   hasCompletedProfile: boolean
   isLoading: boolean
 }
@@ -110,15 +112,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = useCallback(async () => {
     if (!supabase) return
-    const { error } = await supabase.auth.signInWithOAuth({
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      options: {
+        redirectTo: `${window.location.origin}/landing`,
+        skipBrowserRedirect: true,
+      },
     })
-    if (error) throw new Error(mapAuthErrorToHebrew(error))
+    if (error) {
+      if (error.message.includes('Unsupported provider') || error.message.includes('provider is not enabled')) {
+        throw new Error('Google provider עדיין לא הופעל ב-Supabase Auth עבור הפרויקט הזה.')
+      }
+      throw new Error(mapAuthErrorToHebrew(error))
+    }
+
+    if (!data?.url) {
+      throw new Error('Supabase לא החזיר URL תקין להתחברות עם Google.')
+    }
+
+    window.location.assign(data.url)
   }, [])
 
+  const enableDemoMode = useCallback(() => {
+    setUser(DEMO_USER)
+    setProfile(DEMO_PROFILE)
+  }, [])
+
+  const updateProfile = useCallback((data: Partial<UserProfile>) => {
+    setProfile(prev => {
+      const base: UserProfile = prev ?? {
+        id: user?.id ?? '',
+        fullName: user?.fullName ?? null,
+        avatarUrl: user?.avatarUrl ?? null,
+        phoneNumber: null,
+        personalInfo: {},
+        employmentInfo: {},
+        createdAt: new Date().toISOString(),
+        updatedAt: null,
+      }
+      return { ...base, ...data, updatedAt: new Date().toISOString() }
+    })
+  }, [user])
+
   const signOut = useCallback(async () => {
-    if (appConfig.isDemoAuthEnabled) {
+    if (appConfig.isDemoAuthEnabled || user?.id === DEMO_USER.id) {
       setUser(null)
       setProfile(null)
       return
@@ -127,16 +164,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut()
     setUser(null)
     setProfile(null)
-  }, [])
+  }, [user])
 
   const value = useMemo<AuthContextType>(() => ({
     user,
     profile,
     signInWithGoogle,
     signOut,
+    enableDemoMode,
+    updateProfile,
     hasCompletedProfile: isProfileComplete(profile),
     isLoading,
-  }), [user, profile, signInWithGoogle, signOut, isLoading])
+  }), [user, profile, signInWithGoogle, signOut, enableDemoMode, updateProfile, isLoading])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

@@ -1,19 +1,34 @@
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth, mapAuthErrorToHebrew } from '../lib/auth'
 import { he } from '../i18n/he'
 import { FileText } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
 
 export function LoginPage() {
-  const { signInWithGoogle, user, isLoading } = useAuth()
+  const { signInWithGoogle, enableDemoMode, user, isLoading } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [error, setError] = useState<string | null>(null)
   const [signingIn, setSigningIn] = useState(false)
 
-  if (user && !isLoading) {
-    navigate('/dashboard', { replace: true })
-    return null
-  }
+  const isDemo = searchParams.get('demo') === 'true'
+
+  // Auto-enable demo mode if ?demo=true
+  useEffect(() => {
+    if (isDemo && !user && !isLoading) {
+      enableDemoMode()
+    }
+  }, [isDemo, user, isLoading, enableDemoMode])
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user && !isLoading) {
+      navigate('/dashboard', { replace: true })
+    }
+  }, [user, isLoading, navigate])
+
+  if (user && !isLoading) return null
 
   const handleGoogleSignIn = async () => {
     setError(null)
@@ -26,26 +41,43 @@ export function LoginPage() {
     }
   }
 
+  const handleDemoMode = () => {
+    enableDemoMode()
+    navigate('/dashboard', { replace: true })
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-cs-bg p-4" dir="rtl">
-      <div className="w-full max-w-md">
-        <div className="rounded-3xl border border-cs-border bg-cs-surface p-10 shadow-lg">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden p-4" dir="rtl">
+      {/* Background */}
+      <div className="absolute inset-0 bg-[#000a1f]">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(147,197,253,0.08),transparent_40%)]" />
+        <div className="absolute -top-20 right-[-6rem] h-[400px] w-[400px] rounded-full bg-cyan-500/10 blur-[100px]" />
+        <div className="absolute bottom-[-5rem] left-[-4rem] h-[300px] w-[300px] rounded-full bg-amber-500/10 blur-[80px]" />
+      </div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="relative z-10 w-full max-w-md"
+      >
+        <div className="rounded-3xl border border-white/10 bg-white/5 p-10 shadow-2xl backdrop-blur-xl">
           {/* Logo */}
           <div className="mb-8 flex flex-col items-center">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-cs-primary text-white shadow-md">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#0057b8] text-white shadow-lg shadow-blue-500/20">
               <FileText size={32} />
             </div>
-            <h1 className="font-heading text-2xl font-bold text-cs-text">
+            <h1 className="text-2xl font-bold text-white" style={{ fontFamily: "'Noto Serif Hebrew', serif" }}>
               {he.auth.loginTitle}
             </h1>
-            <p className="mt-2 text-center text-sm text-cs-muted">
+            <p className="mt-2 text-center text-sm text-white/50">
               {he.auth.loginSubtitle}
             </p>
           </div>
 
           {/* Error */}
           {error && (
-            <div className="mb-6 rounded-xl bg-cs-danger-light p-4 text-sm text-cs-danger">
+            <div className="mb-6 rounded-xl bg-red-500/10 border border-red-500/20 p-4 text-sm text-red-300">
               {error}
             </div>
           )}
@@ -54,10 +86,10 @@ export function LoginPage() {
           <button
             onClick={handleGoogleSignIn}
             disabled={signingIn}
-            className="flex w-full items-center justify-center gap-3 rounded-xl border border-cs-border bg-white px-4 py-3.5 text-sm font-semibold text-cs-text shadow-sm transition hover:bg-gray-50 disabled:opacity-60"
+            className="flex w-full cursor-pointer items-center justify-center gap-3 rounded-xl border border-white/20 bg-white/10 px-4 py-3.5 text-sm font-semibold text-white shadow-sm backdrop-blur-sm transition-all hover:bg-white/15 disabled:opacity-60"
           >
             {signingIn ? (
-              <div className="h-5 w-5 animate-spin rounded-full border-2 border-cs-primary border-t-transparent" />
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-amber-400 border-t-transparent" />
             ) : (
               <svg width="20" height="20" viewBox="0 0 24 24">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
@@ -68,13 +100,28 @@ export function LoginPage() {
             )}
             {signingIn ? he.auth.signingIn : he.auth.signInWithGoogle}
           </button>
+
+          {/* Divider */}
+          <div className="my-6 flex items-center gap-3">
+            <div className="h-px flex-1 bg-white/10" />
+            <span className="text-xs text-white/30">או</span>
+            <div className="h-px flex-1 bg-white/10" />
+          </div>
+
+          {/* Demo mode */}
+          <button
+            onClick={handleDemoMode}
+            className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-amber-400/20 bg-amber-400/5 px-4 py-3.5 text-sm font-semibold text-amber-400 transition-all hover:bg-amber-400/10"
+          >
+            {he.common.tryDemo}
+          </button>
         </div>
 
         {/* Legal */}
-        <p className="mt-6 text-center text-xs text-cs-muted">
-          בלחיצה על "כניסה" אתה מסכים לתנאי השימוש ולמדיניות הפרטיות
+        <p className="mt-6 text-center text-xs text-white/30">
+          בלחיצה על &quot;כניסה&quot; אתה מסכים לתנאי השימוש ולמדיניות הפרטיות
         </p>
-      </div>
+      </motion.div>
     </div>
   )
 }

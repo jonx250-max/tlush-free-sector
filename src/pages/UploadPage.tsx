@@ -7,6 +7,7 @@ import { Button } from '../components/ui/Button'
 import { FileText, ArrowLeft, AlertCircle, Loader2 } from 'lucide-react'
 import { he } from '../i18n/he'
 import { useAnalysis, useAnalysisStore } from '../hooks/useAnalysis'
+import { useAuth } from '../lib/auth'
 import { initPdfWorker } from '../lib/pdfWorkerSetup'
 import type { ProfileData } from '../services/diffEngine'
 
@@ -19,6 +20,7 @@ export function UploadPage() {
   const [payslipFile, setPayslipFile] = useState<File | null>(null)
   const { parseContract, parsePayslip, runAnalysis, isParsingContract, isParsingPayslip, isAnalyzing, error } = useAnalysis()
   const store = useAnalysisStore()
+  const { profile } = useAuth()
 
   useEffect(() => {
     initPdfWorker()
@@ -35,24 +37,25 @@ export function UploadPage() {
   }, [parsePayslip])
 
   const handleAnalyze = useCallback(() => {
-    // Build profile from defaults — in full flow, this comes from user profile
-    const profile: ProfileData = {
-      gender: 'male',
-      childrenBirthYears: [],
-      academicDegree: 'none',
-      militaryService: { served: true, dischargeYear: 2020 },
-      isNewImmigrant: false,
-      reservistDays: 0,
-      settlement: null,
-      workDaysPerWeek: store.contractTerms?.workDaysPerWeek.value ?? 5,
-      pensionEmployeePct: store.contractTerms?.pensionEmployeePct.value ?? 6,
-      pensionEmployerPct: store.contractTerms?.pensionEmployerPct.value ?? 6.5,
-      hasKerenHishtalmut: (store.contractTerms?.kerenHishtalmutEmployeePct.value ?? null) !== null,
-      kerenEmployeePct: store.contractTerms?.kerenHishtalmutEmployeePct.value ?? undefined,
-      kerenEmployerPct: store.contractTerms?.kerenHishtalmutEmployerPct.value ?? undefined,
+    const pi = profile?.personalInfo
+    const ei = profile?.employmentInfo
+    const profileData: ProfileData = {
+      gender: pi?.gender ?? 'male',
+      childrenBirthYears: pi?.childrenBirthYears ?? [],
+      academicDegree: pi?.academicDegree ?? 'none',
+      militaryService: pi?.militaryService ?? { served: false },
+      isNewImmigrant: pi?.isNewImmigrant ?? false,
+      reservistDays: pi?.reservistDays2026 ?? 0,
+      settlement: pi?.settlementName ?? null,
+      workDaysPerWeek: ei?.workDaysPerWeek ?? store.contractTerms?.workDaysPerWeek.value ?? 5,
+      pensionEmployeePct: ei?.pensionRateEmployee ?? store.contractTerms?.pensionEmployeePct.value ?? 6,
+      pensionEmployerPct: ei?.pensionRateEmployer ?? store.contractTerms?.pensionEmployerPct.value ?? 6.5,
+      hasKerenHishtalmut: ei?.hasKerenHishtalmut ?? (store.contractTerms?.kerenHishtalmutEmployeePct.value ?? null) !== null,
+      kerenEmployeePct: ei?.kerenRateEmployee ?? store.contractTerms?.kerenHishtalmutEmployeePct.value ?? undefined,
+      kerenEmployerPct: ei?.kerenRateEmployer ?? store.contractTerms?.kerenHishtalmutEmployerPct.value ?? undefined,
     }
-    runAnalysis(profile)
-  }, [runAnalysis, store.contractTerms])
+    runAnalysis(profileData)
+  }, [runAnalysis, store.contractTerms, profile])
 
   const next = () => setStep(s => Math.min(s + 1, STEPS.length - 1))
   const prev = () => setStep(s => Math.max(s - 1, 0))
