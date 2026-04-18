@@ -153,9 +153,13 @@ export interface ParsedPayslip {
 export type FindingCategory =
   | 'base_pay' | 'overtime' | 'global_overtime' | 'commission' | 'bonus'
   | 'travel' | 'meals' | 'phone' | 'pension_employee' | 'pension_employer'
-  | 'keren_hishtalmut' | 'severance' | 'income_tax' | 'national_insurance'
-  | 'health_insurance' | 'sick_days' | 'vacation' | 'amendment24'
-  | 'minimum_wage' | 'recuperation' | 'other'
+  | 'keren_hishtalmut' | 'severance' | 'severance_form_161' | 'income_tax'
+  | 'national_insurance' | 'health_insurance' | 'sick_days' | 'vacation'
+  | 'vacation_balance' | 'amendment24' | 'minimum_wage' | 'recuperation'
+  | 'holiday_pay' | 'commute_reimbursement' | 'advance_notice' | 'holiday_gift'
+  | 'thirteenth_salary' | 'shift_differential' | 'illegal_deduction'
+  | 'wage_debt' | 'seniority_bonus' | 'military_reserve_pay'
+  | 'collective_agreement' | 'other'
 
 export type GapDirection = 'underpaid' | 'overpaid' | 'match' | 'missing_from_payslip' | 'not_in_contract'
 

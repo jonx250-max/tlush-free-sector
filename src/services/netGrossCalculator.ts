@@ -16,6 +16,7 @@ export interface NetGrossInput {
 
 export interface NetGrossBreakdown {
   gross: number
+  taxBeforeCredits: number
   incomeTax: number
   creditPointsValue: number
   nationalInsurance: number
@@ -48,6 +49,7 @@ export function grossToNet(gross: number, input: NetGrossInput): NetGrossBreakdo
 
   return {
     gross,
+    taxBeforeCredits: rawTax,
     incomeTax,
     creditPointsValue,
     nationalInsurance: deductions.nationalInsurance,

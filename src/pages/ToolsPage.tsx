@@ -12,6 +12,8 @@ const YEAR_OPTIONS = [
   { value: '2026', label: '2026' },
   { value: '2025', label: '2025' },
   { value: '2024', label: '2024' },
+  { value: '2023', label: '2023' },
+  { value: '2022', label: '2022' },
 ]
 
 const fmt = (n: number) => new Intl.NumberFormat('he-IL', { maximumFractionDigits: 0 }).format(n)
@@ -92,13 +94,16 @@ export function ToolsPage() {
               onChange={e => setAmount(e.target.value)}
             />
 
-            <div className="mt-4 grid grid-cols-2 gap-3">
+            <div className="mt-4">
               <Select
-                label="שנה"
+                label="שנת מס"
                 options={YEAR_OPTIONS}
                 value={year}
                 onChange={e => setYear(e.target.value)}
               />
+            </div>
+
+            <div className="mt-3">
               <Select
                 label="מין"
                 options={[{ value: 'male', label: 'זכר' }, { value: 'female', label: 'נקבה' }]}
@@ -130,8 +135,9 @@ export function ToolsPage() {
               <div className="space-y-2 text-sm">
                 <Row label="ברוטו" value={fmt(result.gross)} bold />
                 <div className="border-t border-cs-border pt-2" />
-                <Row label="מס הכנסה" value={`-${fmt(result.incomeTax)}`} color="danger" />
-                <Row label="נקודות זיכוי" value={fmt(result.creditPointsValue)} color="success" sub />
+                <Row label="מס הכנסה ברוטו" value={fmt(result.taxBeforeCredits)} color="muted" sub />
+                <Row label="− נקודות זיכוי" value={`-${fmt(result.creditPointsValue)}`} color="success" sub />
+                <Row label="מס הכנסה (נטו)" value={`-${fmt(result.incomeTax)}`} color="danger" />
                 <Row label="ביטוח לאומי" value={`-${fmt(result.nationalInsurance)}`} color="danger" />
                 <Row label="מס בריאות" value={`-${fmt(result.healthInsurance)}`} color="danger" />
                 <Row label="פנסיה עובד" value={`-${fmt(result.pensionEmployee)}`} color="danger" />
@@ -153,14 +159,15 @@ function Row({ label, value, bold, color, primary, sub }: {
   label: string
   value: string
   bold?: boolean
-  color?: 'danger' | 'success'
+  color?: 'danger' | 'success' | 'muted'
   primary?: boolean
   sub?: boolean
 }) {
   const textColor = primary ? 'text-cs-primary'
     : color === 'danger' ? 'text-cs-danger'
       : color === 'success' ? 'text-cs-success'
-        : 'text-cs-text'
+        : color === 'muted' ? 'text-cs-muted'
+          : 'text-cs-text'
   return (
     <div className={`flex justify-between ${sub ? 'pr-4 text-xs' : ''}`}>
       <span className={`text-cs-muted ${bold ? 'font-medium' : ''}`}>{label}</span>

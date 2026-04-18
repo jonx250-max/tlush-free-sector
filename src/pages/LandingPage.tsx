@@ -5,7 +5,74 @@ import { he } from '../i18n/he'
 import {
   Shield, FileText, TrendingUp, MapPin, ArrowLeft, CheckCircle,
   ShieldCheck, ShieldAlert, Lock, Loader2,
+  Clock, Coins, Wallet, LogOut, Banknote, Ban,
 } from 'lucide-react'
+
+const ALL_CHECKS = [
+  {
+    icon: Clock,
+    title: he.landing.catOvertime,
+    items: [
+      'שעות נוספות יומיות (125%/150%)',
+      'שעות נוספות שבת/חג (175%/200%)',
+      'שעות נוספות במשמרת',
+      'שעות נוספות גלובליות (תיקון 24)',
+    ],
+  },
+  {
+    icon: Coins,
+    title: he.landing.catSocial,
+    items: [
+      'הפרשות פנסיה מעסיק',
+      'הפרשות פנסיה עובד',
+      'קרן השתלמות עובד ומעסיק',
+      'רכיב פיצויים בפנסיה',
+    ],
+  },
+  {
+    icon: Wallet,
+    title: he.landing.catReimbursements,
+    items: [
+      'דמי הבראה',
+      'החזר נסיעות',
+      'דמי חגים',
+      'שי לחג',
+    ],
+  },
+  {
+    icon: LogOut,
+    title: he.landing.catTermination,
+    items: [
+      'פיצויי פיטורין + טופס 161',
+      'הודעה מוקדמת',
+      'פדיון חופשה שנתית',
+      'פדיון ימי מחלה (לפי חוזה)',
+    ],
+  },
+  {
+    icon: Banknote,
+    title: he.landing.catWage,
+    items: [
+      'שכר מינימום',
+      'משכורת 13',
+      'תוספת ותק',
+      'מילואים — תשלום ימי שירות',
+      'תוספת ערב/לילה',
+    ],
+  },
+  {
+    icon: Ban,
+    title: he.landing.catDeductions,
+    items: [
+      'ניכויים בלתי חוקיים',
+      'חוב שכר',
+      'נקודות זיכוי במס',
+      'הטבות אזוריות',
+      'תאימות תיקון 24 — שכר גלובלי',
+      'עמלות בבסיס לפנסיה',
+    ],
+  },
+]
 import { useAuth } from '../lib/auth'
 import {
   isAuthCallbackRequest,
@@ -247,6 +314,40 @@ export function LandingPage() {
                   <h3 className="mb-1 text-lg font-bold text-white">{title}</h3>
                   <p className="text-sm leading-relaxed text-white/60">{desc}</p>
                 </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── All 29 Checks ── */}
+      <section id="all-checks" className="relative bg-[#070d1d] py-24">
+        <div className="mx-auto max-w-6xl px-6">
+          <motion.div {...fadeInView()} className="mb-14 text-center">
+            <h2 className="text-3xl font-bold text-white md:text-4xl">{he.landing.allChecksTitle}</h2>
+            <p className="mt-3 text-white/60">{he.landing.allChecksSubtitle}</p>
+          </motion.div>
+          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+            {ALL_CHECKS.map((cat, i) => (
+              <motion.div
+                key={cat.title}
+                {...fadeInView(i * 0.08)}
+                className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm"
+              >
+                <div className="mb-4 flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-400/15 text-amber-400">
+                    <cat.icon size={20} />
+                  </div>
+                  <h3 className="text-lg font-bold text-white">{cat.title}</h3>
+                </div>
+                <ul className="space-y-2 text-sm text-white/70">
+                  {cat.items.map(item => (
+                    <li key={item} className="flex items-start gap-2">
+                      <CheckCircle size={14} className="mt-1 flex-shrink-0 text-emerald-400" />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
               </motion.div>
             ))}
           </div>

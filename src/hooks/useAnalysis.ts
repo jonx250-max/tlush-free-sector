@@ -6,7 +6,8 @@ import { useState, useCallback, useSyncExternalStore } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { parseContractPdf } from '../services/contractParser'
 import { parsePayslipPdf } from '../services/payslipParser'
-import { compare, type ProfileData } from '../services/diffEngine'
+import { type ProfileData } from '../services/diffEngine'
+import { runMasterDiagnosis } from '../services/masterDiagnosis'
 import { analysisStore } from '../lib/analysisStore'
 
 export function useAnalysisStore() {
@@ -59,7 +60,7 @@ export function useAnalysis() {
     setIsAnalyzing(true)
     setError(null)
     try {
-      const result = compare(state.contractTerms, state.payslip, profile, state.payslip.year)
+      const result = runMasterDiagnosis(state.contractTerms, state.payslip, profile, state.payslip.year)
       analysisStore.setResult(result)
       navigate('/results')
     } catch (e) {

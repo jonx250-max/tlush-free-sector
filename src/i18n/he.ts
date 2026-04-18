@@ -35,7 +35,7 @@ export const he = {
     tools: 'כלים',
   },
   landing: {
-    heroTitle: 'האם המעסיק שלך משלם לך מה שמגיע?',
+    heroTitle: 'האם המעסיק שלך משלם לך את מה ש?',
     heroSubtitle: 'העלה את חוזה ההעסקה ואת תלוש השכר שלך — והמערכת תמצא את הפערים',
     howItWorks: 'איך זה עובד?',
     step1Title: 'העלה חוזה',
@@ -56,6 +56,14 @@ export const he = {
     trustTitle: 'המידע שלך בטוח',
     trustDesc: 'הקבצים מעובדים במכשיר שלך בלבד — לא מועלים לשרתים',
     ctaButton: 'התחל בדיקה חינם',
+    allChecksTitle: '29 בדיקות שכר מקצועיות',
+    allChecksSubtitle: 'מה המערכת בודקת בכל תלוש',
+    catOvertime: 'שעות נוספות',
+    catSocial: 'הפרשות סוציאליות',
+    catReimbursements: 'החזרים והטבות',
+    catTermination: 'סיום העסקה',
+    catWage: 'שכר ובונוסים',
+    catDeductions: 'ניכויים ותקפות',
   },
   upload: {
     title: 'בדיקה חדשה',
@@ -165,6 +173,7 @@ export const he = {
     sixDays: '6 ימים',
   },
   alerts: {
+    amendment24Title: 'הפרת תיקון 24',
     amendment24Violation: 'הפרת תיקון 24 — שכר גלובלי לא מפוצל בתלוש',
     belowMinimumWage: 'שכר מתחת לשכר מינימום',
     commissionExcluded: 'עמלות לא נכללו בחישוב הבסיס',
