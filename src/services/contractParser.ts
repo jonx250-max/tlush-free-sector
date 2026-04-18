@@ -46,21 +46,49 @@ export async function parseContractPdf(file: File): Promise<ContractTerms> {
 /** Parse from raw text (for testing without actual PDF) */
 export function parseContractText(text: string): ContractTerms {
   const sections = detectSections(text)
+  return {
+    ...parseSalaryAndHours(text, sections),
+    ...parseOvertimeTerms(text),
+    ...parseVariableComp(text, sections),
+    ...parseBenefits(text),
+    ...parseContractMeta(text),
+  }
+}
 
+type SalaryTerms = Pick<ContractTerms, 'baseSalary' | 'payModel' | 'hourlyRate' | 'standardHoursPerWeek' | 'workDaysPerWeek'>
+function parseSalaryAndHours(text: string, sections: Record<string, string>): SalaryTerms {
   return {
     baseSalary: extractBaseSalary(text, sections.salary),
     payModel: detectPayModel(text),
     hourlyRate: extractHourlyRate(text),
     standardHoursPerWeek: extractWeeklyHours(text),
     workDaysPerWeek: extractWorkDays(text),
+  }
+}
+
+type OvertimeTerms = Pick<ContractTerms, 'overtimeModel' | 'globalOvertimeHours' | 'globalOvertimeAmount'>
+function parseOvertimeTerms(text: string): OvertimeTerms {
+  return {
     overtimeModel: detectOvertimeModel(text),
     globalOvertimeHours: extractGlobalOvertimeHours(text),
     globalOvertimeAmount: extractGlobalOvertimeAmount(text),
+  }
+}
+
+type VariableComp = Pick<ContractTerms, 'commissionStructure' | 'bonuses' | 'travelAllowance' | 'mealAllowance' | 'phoneAllowance'>
+function parseVariableComp(text: string, sections: Record<string, string>): VariableComp {
+  return {
     commissionStructure: extractCommission(text, sections.commission),
     bonuses: extractBonuses(text, sections.bonus),
     travelAllowance: extractAllowance(text, sections.travel, /נסיעו?ת|תחבורה/),
     mealAllowance: extractAllowance(text, sections.travel, /אר[וו]חו?ת|כלכלה/),
     phoneAllowance: extractAllowance(text, sections.travel, /טלפון|סלולר|תקשורת/),
+  }
+}
+
+type Benefits = Pick<ContractTerms, 'pensionEmployeePct' | 'pensionEmployerPct' | 'kerenHishtalmutEmployeePct' | 'kerenHishtalmutEmployerPct' | 'severanceEmployerPct' | 'sickDaysPerYear' | 'vacationDaysPerYear' | 'noticePeriodDays'>
+function parseBenefits(text: string): Benefits {
+  return {
     pensionEmployeePct: extractPensionRate(text, 'employee'),
     pensionEmployerPct: extractPensionRate(text, 'employer'),
     kerenHishtalmutEmployeePct: extractKerenRate(text, 'employee'),
@@ -69,6 +97,12 @@ export function parseContractText(text: string): ContractTerms {
     sickDaysPerYear: extractDaysPerYear(text, /מחלה/),
     vacationDaysPerYear: extractDaysPerYear(text, /חופש[הה]/),
     noticePeriodDays: extractNoticePeriod(text),
+  }
+}
+
+type ContractMeta = Pick<ContractTerms, 'effectiveDate' | 'specialClauses'>
+function parseContractMeta(text: string): ContractMeta {
+  return {
     effectiveDate: extractEffectiveDate(text),
     specialClauses: extractSpecialClauses(text),
   }
