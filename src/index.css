@@ -3,68 +3,143 @@
 @tailwind utilities;
 
 /* ===== TLUSH Free Sector — Sovereign Glass Design System ===== */
+/* OKLCH palette. Reference scales → semantic tokens → component use.
+   L steps aim uniform across hues for perceptual balance. */
 
 :root {
+  /* ---- Reference scales (raw colors, do not consume directly in components) ---- */
+  /* Blue — civic primary. H=255 */
+  --ref-blue-50:  oklch(0.975 0.012 255);
+  --ref-blue-100: oklch(0.945 0.028 255);
+  --ref-blue-200: oklch(0.89  0.055 255);
+  --ref-blue-300: oklch(0.80  0.095 252);
+  --ref-blue-400: oklch(0.70  0.135 250);
+  --ref-blue-500: oklch(0.58  0.175 250);
+  --ref-blue-600: oklch(0.48  0.180 255);
+  --ref-blue-700: oklch(0.40  0.155 258);
+  --ref-blue-800: oklch(0.32  0.125 260);
+  --ref-blue-900: oklch(0.22  0.085 262);
+
+  /* Cyan — secondary accent. H=210 */
+  --ref-cyan-100: oklch(0.95  0.025 210);
+  --ref-cyan-300: oklch(0.82  0.095 210);
+  --ref-cyan-500: oklch(0.68  0.135 210);
+  --ref-cyan-700: oklch(0.50  0.120 212);
+
+  /* Green — success. H=155 */
+  --ref-green-50:  oklch(0.97  0.025 155);
+  --ref-green-100: oklch(0.94  0.050 155);
+  --ref-green-500: oklch(0.62  0.160 155);
+  --ref-green-600: oklch(0.52  0.150 155);
+  --ref-green-700: oklch(0.46  0.135 157);
+  --ref-green-800: oklch(0.36  0.110 158);
+
+  /* Amber — warning. H=75 */
+  --ref-amber-50:  oklch(0.975 0.030 85);
+  --ref-amber-100: oklch(0.95  0.060 82);
+  --ref-amber-500: oklch(0.78  0.155 75);
+  --ref-amber-600: oklch(0.65  0.150 70);
+  --ref-amber-700: oklch(0.55  0.130 68);
+
+  /* Red — danger. H=25 */
+  --ref-red-50:  oklch(0.97 0.025 25);
+  --ref-red-100: oklch(0.94 0.055 25);
+  --ref-red-500: oklch(0.62 0.200 28);
+  --ref-red-600: oklch(0.52 0.195 27);
+  --ref-red-700: oklch(0.46 0.175 25);
+
+  /* Slate — neutrals. H=258 low chroma */
+  --ref-slate-50:  oklch(0.975 0.004 258);
+  --ref-slate-100: oklch(0.945 0.008 258);
+  --ref-slate-200: oklch(0.90  0.012 258);
+  --ref-slate-300: oklch(0.82  0.018 258);
+  --ref-slate-400: oklch(0.68  0.022 258);
+  --ref-slate-500: oklch(0.50  0.026 258);
+  --ref-slate-600: oklch(0.45  0.028 258);
+  --ref-slate-700: oklch(0.35  0.025 258);
+  --ref-slate-800: oklch(0.25  0.020 258);
+  --ref-slate-900: oklch(0.17  0.016 258);
+
+  /* ---- Semantic tokens (consume in components) ---- */
+
   /* Core surfaces */
-  --cs-bg: #edf3fb;
-  --cs-bg-deep: #dfe8f5;
-  --cs-surface: rgba(255, 255, 255, 0.72);
-  --cs-surface-strong: rgba(255, 255, 255, 0.88);
+  --cs-bg: oklch(0.965 0.012 255);
+  --cs-bg-deep: oklch(0.935 0.020 255);
+  --cs-surface: rgb(255 255 255 / 0.72);
+  --cs-surface-strong: rgb(255 255 255 / 0.88);
   --cs-surface-solid: #ffffff;
-  --cs-text: #161d28;
-  --cs-muted: #5f6d82;
-  --cs-border: rgba(114, 119, 132, 0.16);
-  --cs-border-strong: rgba(194, 198, 212, 0.48);
+  --cs-text: var(--ref-slate-900);
+  --cs-muted: var(--ref-slate-500);
+  --cs-border: rgb(114 119 132 / 0.16);
+  --cs-border-strong: rgb(194 198 212 / 0.48);
 
-  /* Primary palette — Civic Blue + Amber */
-  --cs-primary: #0057b8;
-  --cs-primary-dark: #00408b;
-  --cs-primary-light: #60a5fa;
-  --cs-secondary: #00daf3;
+  /* Primary — civic blue. L~48 for AAA on cs-bg */
+  --cs-primary: var(--ref-blue-600);
+  --cs-primary-dark: var(--ref-blue-700);
+  --cs-primary-accent: var(--ref-blue-400); /* non-text role: glows, halos, decorative */
+  --cs-primary-on: #ffffff;                 /* foreground on primary bg */
+  --cs-primary-light: var(--ref-blue-100);  /* bg-tint role */
+  --cs-secondary: var(--ref-cyan-500);
 
-  /* Semantic */
-  --cs-success: #007a4d;
-  --cs-success-light: #dff9ee;
-  --cs-warning: #a16b10;
-  --cs-warning-light: #fff2dd;
-  --cs-danger: #ba1a1a;
-  --cs-danger-light: #ffe7e4;
+  /* Info — distinct from primary */
+  --cs-info: var(--ref-cyan-700);
+  --cs-info-light: var(--ref-cyan-100);
 
-  /* Shadows */
-  --cs-shadow: 0 18px 45px rgba(13, 91, 188, 0.08);
-  --cs-shadow-strong: 0 26px 70px rgba(13, 91, 188, 0.12);
+  /* Success / Warning / Danger — foreground L locked ~46-55 for AA on white */
+  --cs-success: var(--ref-green-700);
+  --cs-success-light: var(--ref-green-100);
+  --cs-warning: var(--ref-amber-700);
+  --cs-warning-light: var(--ref-amber-100);
+  --cs-danger: var(--ref-red-700);
+  --cs-danger-light: var(--ref-red-100);
+
+  /* Shadows — use primary hue at low alpha for cohesion */
+  --cs-shadow: 0 18px 45px rgb(13 91 188 / 0.08);
+  --cs-shadow-strong: 0 26px 70px rgb(13 91 188 / 0.12);
 
   /* Typography */
   --font-sans: 'Heebo', 'Assistant', 'Segoe UI Variable', system-ui, sans-serif;
   --font-heading: 'Heebo', 'Assistant', sans-serif;
   --font-serif: 'Noto Serif Hebrew', serif;
 
-  /* Grid */
-  --cs-grid: rgba(13, 91, 188, 0.06);
+  /* Grid pattern */
+  --cs-grid: rgb(13 91 188 / 0.06);
 }
 
-/* Dark mode */
+/* Dark mode — invert lightness, lift chroma, preserve hue identity */
 .dark {
-  --cs-bg: #0c1222;
-  --cs-bg-deep: #060d1a;
-  --cs-surface: rgba(20, 30, 50, 0.72);
-  --cs-surface-strong: rgba(18, 28, 48, 0.88);
-  --cs-surface-solid: #111827;
-  --cs-text: #e8edf5;
-  --cs-muted: #94a3b8;
-  --cs-border: rgba(148, 163, 184, 0.16);
-  --cs-border-strong: rgba(148, 163, 184, 0.24);
-  --cs-primary: #60a5fa;
-  --cs-primary-dark: #93bbfd;
-  --cs-secondary: #22d3ee;
-  --cs-success: #34d399;
-  --cs-success-light: rgba(16, 185, 129, 0.12);
-  --cs-warning: #fbbf24;
-  --cs-warning-light: rgba(245, 158, 11, 0.12);
-  --cs-danger: #f87171;
-  --cs-danger-light: rgba(239, 68, 68, 0.12);
-  --cs-shadow: 0 18px 45px rgba(0, 0, 0, 0.3);
-  --cs-shadow-strong: 0 26px 70px rgba(0, 0, 0, 0.4);
+  --cs-bg: var(--ref-slate-900);
+  --cs-bg-deep: oklch(0.12 0.018 258);
+  --cs-surface: rgb(20 30 50 / 0.72);
+  --cs-surface-strong: rgb(18 28 48 / 0.88);
+  --cs-surface-solid: var(--ref-slate-800);
+  --cs-text: var(--ref-slate-50);
+  --cs-muted: var(--ref-slate-400);
+  --cs-border: rgb(148 163 184 / 0.16);
+  --cs-border-strong: rgb(148 163 184 / 0.24);
+
+  /* Dark mode primary flips lighter for contrast on dark bg.
+     name preserved; primary-dark is the STILL-LIGHTER hover state. */
+  --cs-primary: var(--ref-blue-400);
+  --cs-primary-dark: var(--ref-blue-300);
+  --cs-primary-accent: var(--ref-blue-500);
+  --cs-primary-on: var(--ref-slate-900);
+  --cs-primary-light: oklch(0.30 0.080 258);
+  --cs-secondary: var(--ref-cyan-300);
+
+  --cs-info: var(--ref-cyan-300);
+  --cs-info-light: oklch(0.30 0.060 210);
+
+  --cs-success: var(--ref-green-500);
+  --cs-success-light: oklch(0.30 0.060 155);
+  --cs-warning: var(--ref-amber-500);
+  --cs-warning-light: oklch(0.30 0.060 75);
+  --cs-danger: var(--ref-red-500);
+  --cs-danger-light: oklch(0.30 0.060 25);
+
+  --cs-shadow: 0 18px 45px rgb(0 0 0 / 0.3);
+  --cs-shadow-strong: 0 26px 70px rgb(0 0 0 / 0.4);
+  --cs-grid: rgb(148 163 184 / 0.04);
   color-scheme: dark;
 }
 
@@ -148,10 +223,10 @@ h1, h2, h3, h4, h5, h6 {
 /* ===== Component Classes ===== */
 
 @layer components {
-  /* Glass shell — for cards and panels */
+  /* Glass shell — for cards and panels. oklab mixing avoids mid-darkening. */
   .cs-shell {
     @apply rounded-2xl border;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.68)), var(--cs-surface);
+    background: linear-gradient(in oklab 180deg, rgb(255 255 255 / 0.82), rgb(255 255 255 / 0.68)), var(--cs-surface);
     border-color: var(--cs-border);
     box-shadow: var(--cs-shadow);
     backdrop-filter: blur(16px);

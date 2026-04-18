@@ -192,7 +192,7 @@ export function LandingPage() {
       <header className="relative flex items-center overflow-hidden pt-32 pb-24 md:pt-40 md:pb-32">
         {/* Background effects */}
         <div className="absolute inset-0 z-0">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(147,197,253,0.12),transparent_28%),radial-gradient(circle_at_18%_18%,rgba(191,219,254,0.06),transparent_22%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right_in_oklab,rgba(147,197,253,0.12),rgba(147,197,253,0)_28%),radial-gradient(circle_at_18%_18%_in_oklab,rgba(191,219,254,0.06),rgba(191,219,254,0)_22%)]" />
           <div className="absolute inset-0 opacity-40" style={{
             backgroundImage: 'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)',
             backgroundSize: '60px 60px',

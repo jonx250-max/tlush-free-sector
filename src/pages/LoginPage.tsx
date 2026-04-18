@@ -50,7 +50,7 @@ export function LoginPage() {
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden p-4" dir="rtl">
       {/* Background */}
       <div className="absolute inset-0 bg-[#000a1f]">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(147,197,253,0.08),transparent_40%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right_in_oklab,rgba(147,197,253,0.08),rgba(147,197,253,0)_40%)]" />
         <div className="absolute -top-20 right-[-6rem] h-[400px] w-[400px] rounded-full bg-cyan-500/10 blur-[100px]" />
         <div className="absolute bottom-[-5rem] left-[-4rem] h-[300px] w-[300px] rounded-full bg-amber-500/10 blur-[80px]" />
       </div>
