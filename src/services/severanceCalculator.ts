@@ -1,6 +1,8 @@
 // SOURCE: חוק פיצויי פיטורים תשכ"ג-1963, סעיפים 1, 12
 // פיצויים = שכר חודש אחרון × שנות עבודה. קצובת פטור עד תקרה (טופס 161).
 
+import { round2 } from '../lib/numbers'
+
 export interface SeveranceInput {
   lastMonthlyGross: number
   startDate: string | null
@@ -56,10 +58,6 @@ export function calculateSeverance(input: SeveranceInput): SeveranceResult {
 
 function monthsBetween(a: Date, b: Date): number {
   return (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth())
-}
-
-function round2(n: number): number {
-  return Math.round(n * 100) / 100
 }
 
 function zero(): SeveranceResult {

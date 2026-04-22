@@ -2,6 +2,8 @@
 // חודש 1-6: 1 יום לחודש. חודש 7-12 (שנה ראשונה): 6 ימים + 2.5 ימים לחודש מעבר ל-6.
 // אחרי שנה: חודש מלא.
 
+import { round2 } from '../lib/numbers'
+
 export interface AdvanceNoticeInput {
   monthsEmployed: number
   contractNoticeDays: number | null
@@ -46,5 +48,3 @@ function legalMinimum(monthsEmployed: number, isMonthly: boolean): number {
   if (monthsEmployed < 24) return 14 + Math.floor((monthsEmployed - 12))
   return 30
 }
-
-function round2(n: number): number { return Math.round(n * 100) / 100 }

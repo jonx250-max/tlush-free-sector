@@ -1,6 +1,8 @@
 // SOURCE: לרוב לפי הסכם קיבוצי ענפי (בנקאות, היי-טק, חברות מסוימות)
 // אם בחוזה מצוין — בודקים שהבונוס שולם בחודש המתאים (לרוב דצמבר/יוני).
 
+import { round2 } from '../lib/numbers'
+
 export interface ThirteenthSalaryInput {
   contractMentions13thSalary: boolean
   expectedAmount: number | null
@@ -39,5 +41,3 @@ export function calculateThirteenthSalary(input: ThirteenthSalaryInput): Thirtee
     shortfall, isPaymentMonth: true,
   }
 }
-
-function round2(n: number): number { return Math.round(n * 100) / 100 }

@@ -1,6 +1,8 @@
 // SOURCE: צו הרחבה הסכם תחבורה — החזר נסיעות ציבוריות
 // תקרה יומית 22.6 ₪ (2026), חישוב לפי כרטיס חופשי-חודשי באזור.
 
+import { round2 } from '../lib/numbers'
+
 export interface CommuteInput {
   workDaysInMonth: number
   monthlyTravelCardCost: number | null
@@ -27,5 +29,3 @@ export function calculateCommute(input: CommuteInput): CommuteResult {
   const shortfall = Math.max(0, round2(expected - actual))
   return { expectedReimbursement: expected, actualReimbursement: actual, shortfall, hasData: true }
 }
-
-function round2(n: number): number { return Math.round(n * 100) / 100 }

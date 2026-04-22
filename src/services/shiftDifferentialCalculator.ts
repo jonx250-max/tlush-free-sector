@@ -1,6 +1,8 @@
 // SOURCE: חוק שעות עבודה ומנוחה — תוספת ערב/לילה
 // משמרת לילה (22:00–06:00): 7 שעות ספירה כ-8. תוספת ערב נפוצה 25%, לילה 50%.
 
+import { round2 } from '../lib/numbers'
+
 export interface ShiftDifferentialInput {
   eveningShiftHours: number
   nightShiftHours: number
@@ -29,5 +31,3 @@ export function calculateShiftDifferential(input: ShiftDifferentialInput): Shift
   const shortfall = Math.max(0, round2(expected - actual))
   return { expectedDifferential: expected, actualDifferential: actual, shortfall, hasShifts: true }
 }
-
-function round2(n: number): number { return Math.round(n * 100) / 100 }

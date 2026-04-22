@@ -3,6 +3,7 @@
 // אסור: קנסות, נזק לרכוש (ללא הסכמה בכתב + ביטוח), חיוב על ציוד.
 
 import type { PayslipEntry } from '../types'
+import { round2 } from '../lib/numbers'
 
 const ALLOWED_KEYWORDS = [
   'מס הכנסה', 'מס', 'ביטוח לאומי', 'בריאות', 'פנסיה', 'גמל',
@@ -52,5 +53,3 @@ export function detectIllegalDeductions(entries: PayslipEntry[]): IllegalDeducti
   const totalSuspicious = round2(suspicious.reduce((s, d) => s + d.amount, 0))
   return { suspiciousDeductions: suspicious, totalSuspicious }
 }
-
-function round2(n: number): number { return Math.round(n * 100) / 100 }

@@ -1,6 +1,8 @@
 // SOURCE: צו הרחבה כללי 1972 — דמי חגים
 // עובד שעתי/יומי זכאי ל-9 ימי חג בשנה אחרי 3 חודשי עבודה. שכר חודשי כבר כולל.
 
+import { round2 } from '../lib/numbers'
+
 export interface HolidayPayInput {
   payModel: 'monthly' | 'hourly' | 'shift' | 'commission' | 'global'
   monthsEmployed: number
@@ -47,5 +49,3 @@ export function calculateHolidayPay(input: HolidayPayInput): HolidayPayResult {
     shortfall, reason: shortfall > 0 ? 'דמי חגים בחסר' : 'תקין',
   }
 }
-
-function round2(n: number): number { return Math.round(n * 100) / 100 }
