@@ -9,6 +9,7 @@ import { parsePayslipPdf } from '../services/payslipParser'
 import { type ProfileData } from '../services/diffEngine'
 import { runMasterDiagnosis } from '../services/masterDiagnosis'
 import { analysisStore } from '../lib/analysisStore'
+import { validateReadyForAnalysis, extractErrorMessage } from './analysisReadiness'
 
 export function useAnalysisStore() {
   return useSyncExternalStore(
@@ -31,7 +32,7 @@ export function useAnalysis() {
       const terms = await parseContractPdf(file)
       analysisStore.setContract(terms, file.name)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'שגיאה בפענוח החוזה')
+      setError(extractErrorMessage(e, 'שגיאה בפענוח החוזה'))
     } finally {
       setIsParsingContract(false)
     }
@@ -44,7 +45,7 @@ export function useAnalysis() {
       const payslip = await parsePayslipPdf(file)
       analysisStore.setPayslip(payslip, file.name)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'שגיאה בפענוח התלוש')
+      setError(extractErrorMessage(e, 'שגיאה בפענוח התלוש'))
     } finally {
       setIsParsingPayslip(false)
     }
@@ -52,19 +53,20 @@ export function useAnalysis() {
 
   const runAnalysis = useCallback((profile: ProfileData) => {
     const state = analysisStore.getState()
-    if (!state.contractTerms || !state.payslip) {
-      setError('חסרים נתוני חוזה או תלוש')
+    const readinessError = validateReadyForAnalysis(state)
+    if (readinessError) {
+      setError(readinessError)
       return
     }
 
     setIsAnalyzing(true)
     setError(null)
     try {
-      const result = runMasterDiagnosis(state.contractTerms, state.payslip, profile, state.payslip.year)
+      const result = runMasterDiagnosis(state.contractTerms!, state.payslip!, profile, state.payslip!.year)
       analysisStore.setResult(result)
       navigate('/results')
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'שגיאה בניתוח')
+      setError(extractErrorMessage(e, 'שגיאה בניתוח'))
     } finally {
       setIsAnalyzing(false)
     }
