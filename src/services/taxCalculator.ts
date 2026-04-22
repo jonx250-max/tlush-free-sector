@@ -209,5 +209,3 @@ export function calculateFullTax(
     effectiveTaxRate,
   }
 }
-
-export { CREDIT_POINT_VALUES, TAX_BRACKETS }

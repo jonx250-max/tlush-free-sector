@@ -145,5 +145,3 @@ export function calculateAllDeductions(
 function round(n: number): number {
   return Math.round(n * 100) / 100
 }
-
-export { NI_RATES }

@@ -27,7 +27,7 @@ export function getRecuperationDays(yearsOfService: number): number {
   return RECUPERATION_DAYS[year] ?? RECUPERATION_DAYS[20]
 }
 
-export function getRecuperationDayValue(year: number): number {
+function getRecuperationDayValue(year: number): number {
   return RECUPERATION_DAY_VALUE[year] ?? RECUPERATION_DAY_VALUE[2026]
 }
 
@@ -46,5 +46,3 @@ export function calculateMonthlyRecuperation(
 ): number {
   return Math.round(calculateAnnualRecuperation(yearsOfService, year) / 12 * 100) / 100
 }
-
-export { RECUPERATION_DAY_VALUE, RECUPERATION_DAYS }

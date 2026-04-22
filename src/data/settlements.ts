@@ -26,7 +26,7 @@ export interface Settlement {
 
 // Comprehensive Israeli settlement registry with tax benefit zones
 // Source: Israeli Tax Authority (רשות המיסים) — updated for 2026
-export const SETTLEMENTS: Settlement[] = [
+const SETTLEMENTS: Settlement[] = [
   // === עוטף עזה / קו עימות — Frontline ===
   { name: 'שדרות', nameEn: 'Sderot', type: 'city', zone: 'frontline', creditPoints: 3.0, taxDiscountPct: 20, maxDiscountAnnual: 52_440 },
   { name: 'כיסופים', nameEn: 'Kissufim', type: 'kibbutz', zone: 'frontline', creditPoints: 3.5, taxDiscountPct: 20, maxDiscountAnnual: 52_440 },
@@ -155,11 +155,6 @@ export function searchSettlements(query: string): Settlement[] {
     s.name.includes(normalized) ||
     (s.nameEn && s.nameEn.toLowerCase().includes(normalized.toLowerCase()))
   ).slice(0, 20)
-}
-
-/** Get settlement by exact Hebrew name */
-export function getSettlement(name: string): Settlement | undefined {
-  return SETTLEMENTS.find(s => s.name === name)
 }
 
 /** Zone display names in Hebrew */

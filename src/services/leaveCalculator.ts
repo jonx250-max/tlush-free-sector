@@ -55,11 +55,3 @@ export function calculateSickPay(
   return Math.round(total * 100) / 100
 }
 
-export function calculateVacationPayValue(
-  dailyWage: number,
-  vacationDaysUsed: number,
-): number {
-  return Math.round(dailyWage * vacationDaysUsed * 100) / 100
-}
-
-export { SICK_DAYS_PER_MONTH, SICK_DAYS_MAX, SICK_PAY_RATES }

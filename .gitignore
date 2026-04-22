@@ -32,3 +32,10 @@ test-results/
 npm-debug.log*
 
 .vercel
+
+# Graph/dogfood/screenshot artifacts (local-only)
+graphify-out/
+src/graphify-out/
+dogfood-output/
+.playwright-mcp/
+*.png
