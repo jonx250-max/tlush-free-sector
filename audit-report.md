@@ -77,10 +77,10 @@ After that, three high-value refactors on god nodes (`compare`, `calculateCredit
 | 5 | 🟠 HIGH | Consolidate `round` / `round2` duplication across calculators | God node (28 edges) indicates duplication pain | Single source of truth |
 | 6 | 🟡 MED | Split `LandingPage.tsx` 335L component into sub-components | Readability, perf | Smaller bundle per page |
 | 7 | 🟡 MED | Split `UploadPage.tsx` 173L + `OnboardingWizard` 151L funcs | Readability | Easier testing |
-| 8 | 🟡 MED | Refactor `demandLetterGenerator.generateDemandLetter` 128L | Maintainability | Template-safe |
-| 9 | 🟡 MED | Measure Web Vitals post-Supabase-resume | No baseline | Perf targets |
-| 10 | 🟡 MED | Add `useAnalysis` hook test coverage | Graph shows isolation | Regression safety |
-| 11 | 🟢 LOW | Investigate 33 weakly-connected graph nodes | Dead code or missing tests | Cleanup |
+| 8 | ✅ DONE | Refactor `demandLetterGenerator.generateDemandLetter` 128L | `d047a4a` — template + findingsTable + amendment24Section + escapeHtml |
+| 9 | ✅ DONE | Measure Web Vitals post-Supabase-resume | `src/lib/webVitals.ts` wired in `main.tsx` — set `VITE_WEB_VITALS_ENDPOINT` to POST; falls back to console |
+| 10 | ✅ DONE | Add `useAnalysis` hook test coverage | `25f70c8` — analysisReadiness guard extracted + store tests |
+| 11 | ✅ DONE | Investigate weakly-connected graph nodes | `92a4dc4` — knip scan: 3 dead files removed, recharts dropped, 4 helpers + 8 exports pruned |
 | 12 | 🟢 LOW | PDF worker lazy-init audit (405KB chunk) | Already code-split | Marginal |
 | 13 | 🟢 LOW | Add error tracking (Sentry or equivalent) | Prod monitoring | Observability |
 
