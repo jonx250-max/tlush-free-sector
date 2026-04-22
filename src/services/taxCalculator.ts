@@ -1,4 +1,6 @@
 import type { Settlement } from '../data/settlements'
+import { CREDIT_POINT_VALUES } from './tax/values'
+import { calculateCreditPoints } from './tax/creditPoints'
 
 // ============================================================
 // Israeli Income Tax Calculator — Multi-Year (2022-2026)
@@ -100,26 +102,6 @@ const TAX_BRACKETS: Record<number, TaxBracket[]> = {
   ],
 }
 
-// --- Credit point monetary value per year ---
-const CREDIT_POINT_VALUES: Record<number, number> = {
-  2022: 223,
-  2023: 235,
-  2024: 242,
-  2025: 242,
-  2026: 242,
-}
-
-// Combat reservist tiers (2026+)
-const RESERVIST_TIERS_2026 = [
-  { minDays: 30, maxDays: 39, points: 0.5 },
-  { minDays: 40, maxDays: 49, points: 0.75 },
-  { minDays: 50, maxDays: 54, points: 1.0 },
-  { minDays: 55, maxDays: 69, points: 1.5 },
-  { minDays: 70, maxDays: 84, points: 2.0 },
-  { minDays: 85, maxDays: 109, points: 3.0 },
-  { minDays: 110, maxDays: Infinity, points: 4.0 },
-]
-
 // Eilat income exemption ceiling (annual)
 const EILAT_EXEMPTION_CEILING = 262_320
 
@@ -144,100 +126,7 @@ export function calculateIncomeTax(monthlyGross: number, year: number): number {
   return Math.round(tax * 100) / 100
 }
 
-// --- Credit points calculation ---
-export function calculateCreditPoints(
-  input: CreditPointsInput,
-  year: number,
-): CreditPointsResult {
-  const breakdown: { reason: string; points: number }[] = []
-
-  // Base: every resident gets 2.25 (male) or 2.75 (female)
-  const base = input.gender === 'female' ? 2.75 : 2.25
-  breakdown.push({ reason: 'תושב/ת', points: base })
-
-  // Children credit points
-  for (const birthYear of input.childrenBirthYears) {
-    const age = year - birthYear
-    if (age >= 0 && age <= 5) {
-      breakdown.push({ reason: `ילד/ה גיל ${age}`, points: 2.5 })
-    } else if (age >= 6 && age <= 17) {
-      breakdown.push({ reason: `ילד/ה גיל ${age}`, points: 1.0 })
-    } else if (age === 18) {
-      breakdown.push({ reason: `ילד/ה גיל 18`, points: 0.5 })
-    }
-  }
-
-  // Single parent
-  if (input.isSingleParent) {
-    breakdown.push({ reason: 'הורה יחיד/נית', points: 1.0 })
-  }
-
-  // Academic degree
-  if (input.academicDegree === 'ba' && input.degreeCompletionYear) {
-    const yearsSince = year - input.degreeCompletionYear
-    if (yearsSince >= 0 && yearsSince <= 2) {
-      breakdown.push({ reason: 'תואר ראשון', points: 1.0 })
-    }
-  } else if (input.academicDegree === 'ma' && input.degreeCompletionYear) {
-    const yearsSince = year - input.degreeCompletionYear
-    if (yearsSince >= 0 && yearsSince <= 2) {
-      breakdown.push({ reason: 'תואר שני', points: 0.5 })
-    }
-  } else if (input.academicDegree === 'phd' && input.degreeCompletionYear) {
-    const yearsSince = year - input.degreeCompletionYear
-    if (yearsSince >= 0 && yearsSince <= 2) {
-      breakdown.push({ reason: 'דוקטורט', points: 1.0 })
-    }
-  }
-
-  // Military service — 2 years after discharge
-  if (input.militaryService.served && input.militaryService.dischargeYear) {
-    const yearsSince = year - input.militaryService.dischargeYear
-    if (yearsSince >= 0 && yearsSince <= 2) {
-      if (input.militaryService.monthsServed >= 23 || input.militaryService.isCombat) {
-        breakdown.push({ reason: 'שירות צבאי', points: 2.0 })
-      } else if (input.militaryService.monthsServed >= 12) {
-        breakdown.push({ reason: 'שירות צבאי', points: 1.0 })
-      }
-    }
-  }
-
-  // Combat reservist (2026 rule)
-  if (year >= 2026 && input.reservistDays2026 >= 30) {
-    const tier = RESERVIST_TIERS_2026.find(
-      t => input.reservistDays2026 >= t.minDays && input.reservistDays2026 <= t.maxDays,
-    )
-    if (tier) {
-      breakdown.push({ reason: `מילואימניק לוחם (${input.reservistDays2026} ימים)`, points: tier.points })
-    }
-  }
-
-  // Disability
-  if (input.disabilityPercentage >= 100) {
-    breakdown.push({ reason: 'נכות 100%', points: 2.0 })
-  } else if (input.disabilityPercentage >= 90) {
-    breakdown.push({ reason: `נכות ${input.disabilityPercentage}%`, points: 1.5 })
-  }
-
-  // New immigrant — full exemption for 18 months, then partial
-  if (input.isNewImmigrant && input.immigrationDate) {
-    const immigrationYear = new Date(input.immigrationDate).getFullYear()
-    const yearsSince = year - immigrationYear
-    if (yearsSince <= 1) {
-      breakdown.push({ reason: 'עולה חדש/ה — שנה ראשונה', points: 4.5 })
-    } else if (yearsSince === 2) {
-      breakdown.push({ reason: 'עולה חדש/ה — שנה שנייה', points: 3.0 })
-    } else if (yearsSince === 3) {
-      breakdown.push({ reason: 'עולה חדש/ה — שנה שלישית', points: 2.0 })
-    }
-  }
-
-  const totalPoints = breakdown.reduce((sum, b) => sum + b.points, 0)
-  const pointValue = CREDIT_POINT_VALUES[year] ?? CREDIT_POINT_VALUES[2026]
-  const monthlyValue = Math.round(totalPoints * pointValue * 100) / 100
-
-  return { totalPoints, breakdown, monthlyValue }
-}
+export { calculateCreditPoints }
 
 // --- Regional tax benefits ---
 export function calculateRegionalBenefit(
