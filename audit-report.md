@@ -1,14 +1,14 @@
 # TLUSH Free Sector — Phase 1 Audit Report
 
-Generated: 2026-04-21 · Branch: main · HEAD: 1a88a0f
+Generated: 2026-04-21 · Last updated: 2026-04-25 · Branch: main
 
 ---
 
 ## Executive summary
 
-Codebase healthy. Tests green. File caps respected. Zero npm vulns.
-**One critical blocker: Supabase project is paused.** Fix first.
-After that, three high-value refactors on god nodes (`compare`, `calculateCreditPoints`, `parseContractText`) unlock clean Phase 2 SPARC work.
+**Phase 1 closed.** All 13 ranked backlog items resolved (12 ✅ DONE in code, 1 dashboard-only manual toggle remaining). Tests 237/237 green. tsc clean. Lint 0 errors. Supabase RLS perf + security advisors clean. Web Vitals reporter live. Supabase-native error tracking live.
+
+Three god-node refactors completed: `diffEngine.compare`, `taxCalculator.calculateCreditPoints`, `demandLetterGenerator.generateDemandLetter`. Page splits done. Codebase ready for Phase 2 SPARC.
 
 ---
 
@@ -33,24 +33,24 @@ After that, three high-value refactors on god nodes (`compare`, `calculateCredit
   - `contractParser.parseContractText()` — partially refactored already (1a88a0f)
   - React pages (LandingPage 335L, UploadPage 173L, OnboardingWizard 151L, ToolsPage 136L) — split into sub-components
 
-### 4. Security — npm audit: 0 vulns; RLS good, perf needs tuning
+### 4. Security — npm audit: 0 vulns; RLS hardened; perf clean
 - Auth path has a catch handler on `getSession` (de6b277) — good
-- **DB resumed ACTIVE_HEALTHY.** 7 tables, all RLS enabled: `profiles`, `salary_rules`, `salary_rule_releases`, `salary_rule_release_items`, `salary_rule_runtime_state`, `analysis_runs`, `analysis_findings`. Zero rows currently.
-- **Security WARNs (2):**
-  - `public.set_updated_at` function has mutable `search_path` — fixable by setting `SET search_path = ''` in function def
-  - Leaked-password-protection disabled — enable in Supabase Auth settings
-- **Performance WARNs:**
-  - 14+ RLS policies use bare `auth.uid()` instead of `(select auth.uid())` — per-row re-evaluation at scale
-  - 4 tables have overlapping permissive SELECT policies for `authenticated` role (Admin + Authenticated read)
-  - 2 unindexed FKs: `salary_rule_releases.created_by`, `salary_rule_runtime_state.current_release_id`
-  - 3 unused indexes (expected for empty tables — defer)
-- **Fix path:** single migration consolidates all policy/index fixes
+- **DB ACTIVE_HEALTHY.** 8 tables, all RLS enabled: `profiles`, `salary_rules`, `salary_rule_releases`, `salary_rule_release_items`, `salary_rule_runtime_state`, `analysis_runs`, `analysis_findings`, `error_logs`. Zero rows currently.
+- **Security WARNs (1 remaining, dashboard-only):**
+  - ~~`public.set_updated_at` mutable `search_path`~~ — **fixed** in migration `20260421105222 rls_perf_hardening`
+  - Leaked-password-protection disabled — enable in Supabase Auth settings (manual dashboard toggle, see "Manual user actions" section)
+- **Performance WARNs:** **all cleared** in migration `20260421105222`
+  - ~~14+ bare `auth.uid()`~~ → wrapped in `(select auth.uid())`
+  - ~~4 overlapping permissive SELECT policies~~ → consolidated
+  - ~~2 unindexed FKs~~ → indexed
+  - 7 INFO unused indexes (expected for empty tables — defer)
+- **error_logs RLS:** insert-only for `anon`/`authenticated` with `(user_id is null or user_id = (select auth.uid()))` — write-only client pattern, zero exfiltration risk
 
 ### 5. Bundle / perf baseline
 - Total JS ≈ 1.1MB raw, ≈ 330KB gz
 - PDF parser 37% of bundle — acceptable since lazy-loaded on upload
 - No obvious low-hanging tree-shake wins
-- Web Vitals: **not yet measured on production** (Supabase paused — cannot reach app)
+- Web Vitals: **reporter wired** in `src/lib/webVitals.ts` (CLS/INP/LCP/FCP/TTFB). Set `VITE_WEB_VITALS_ENDPOINT` to POST; falls back to console.
 
 ### 6. Knowledge graph (graphify)
 - 343 nodes, 436 edges, 78 communities (AST-only weekly update — 0 LLM tokens)
@@ -105,11 +105,5 @@ Phase 4 slices: A (diffEngine refactor) → B (tax refactor) → C (round consol
   3. Re-run `get_advisors` → WARN should clear
 - **Impact:** Closes the second security WARN from Phase 1.5.
 
-### Supabase: fix `public.set_updated_at` mutable search_path
-- **What:** Function search_path hardening
-- **Why manual:** Requires migration PR approval (low priority, DB empty)
-- **Fix:**
-  ```sql
-  ALTER FUNCTION public.set_updated_at() SET search_path = '';
-  ```
-  Apply via `mcp__supabase__apply_migration` when ready.
+### ✅ Supabase: `public.set_updated_at` search_path — DONE
+Applied in migration `20260421105222 rls_perf_hardening`.
