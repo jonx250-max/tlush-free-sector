@@ -19,6 +19,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { calculatePrice, isValidMonths, isValidTier } from '../../src/lib/pricing'
 import { isGeoAllowed } from '../_lib/geoCheck'
+import { rateLimit, extractClientIp } from '../_lib/rateLimit'
 
 interface VercelRequest {
   method: string
@@ -49,6 +50,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const geo = isGeoAllowed(req.headers, req.query)
   if (!geo.allowed) {
     return res.status(403).json({ error: 'Service available in Israel only', code: 'GEO_BLOCKED' })
+  }
+
+  const ip = extractClientIp(req.headers)
+  const rl = rateLimit({ key: `analyses-create:${ip}`, limit: 10, windowMs: 60_000 })
+  if (!rl.allowed) {
+    return res.status(429).json({ error: 'יותר מדי בקשות, נסה שוב בעוד דקה', code: 'RATE_LIMITED', resetAt: rl.resetAt })
   }
 
   const url = process.env.SUPABASE_URL

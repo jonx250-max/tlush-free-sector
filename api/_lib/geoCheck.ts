@@ -1,5 +1,5 @@
 /**
- * Server-side geo-block check shared across Vercel Functions.
+ * Server-side geo-block + VPN/datacenter check.
  *
  * Israel-only (IL) per Plan §10. Bypass options:
  *   - ?invite=<token>  query param (for trusted external testers)
@@ -7,10 +7,13 @@
  *   - Local dev: no x-vercel-ip-country header → assume IL
  *
  * Production: Vercel sets x-vercel-ip-country on every Function request
- * based on edge POP geolocation. No external API calls needed.
+ * based on edge POP geolocation. VPN detection is best-effort via
+ * IPQualityScore (env: IPQS_API_KEY). If no key, VPN check skipped.
  */
 
 const ALLOWED_COUNTRY = 'IL'
+
+const HARDCODED_DATACENTER_ASN_PREFIXES = ['16509', '14618', '8075', '15169', '13335']
 
 export interface GeoCheckResult {
   allowed: boolean
