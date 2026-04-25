@@ -595,5 +595,7 @@ $$('.nav-tab').forEach(tab => {
 refreshAll();
 setInterval(() => $('#now-stamp').textContent = new Date().toLocaleString('he-IL', { hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit' }), 60000);
 </script>
+<script src="/marketing/auth-bridge.js"></script>
+<script src="/marketing/auth-guard.js" data-require="admin"></script>
 </body>
 </html>

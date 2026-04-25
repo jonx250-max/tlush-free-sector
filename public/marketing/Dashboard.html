@@ -273,11 +273,11 @@ tailwind.config = {
       <div class="flex items-center gap-3 mb-4">
         <div class="w-10 h-10 rounded-full bg-gold/20 border border-gold/40 flex items-center justify-center font-serif font-bold text-gold">י</div>
         <div class="flex-1 min-w-0">
-          <div class="text-sm font-semibold truncate">ישראל ישראלי</div>
-          <div class="text-[11px] text-white/40 truncate">הייטק · שעתי</div>
+          <div class="text-sm font-semibold truncate" data-tlush="user-name">ישראל ישראלי</div>
+          <div class="text-[11px] text-white/40 truncate" data-tlush="plan-badge">הייטק · שעתי</div>
         </div>
       </div>
-      <a href="/" class="text-[10px] tracking-widest uppercase text-white/40 hover:text-gold transition-colors flex items-center gap-2">
+      <a href="#" data-tlush="logout-btn" class="text-[10px] tracking-widest uppercase text-white/40 hover:text-gold transition-colors flex items-center gap-2">
         <i data-lucide="log-out" class="w-3 h-3"></i> התנתק
       </a>
     </div>
@@ -1557,5 +1557,10 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 </script>
+
+<!-- P6.4: real auth + data wiring -->
+<script src="/marketing/auth-bridge.js"></script>
+<script src="/marketing/auth-guard.js" data-require="auth"></script>
+<script src="/marketing/dashboard-data.js" defer></script>
 </body>
 </html>
