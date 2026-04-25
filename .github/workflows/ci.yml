@@ -17,7 +17,9 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          # Node 22+ required: package.json scripts use `--configLoader native`
+          # which depends on Node's native TS type-stripping (≥22.6).
+          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
