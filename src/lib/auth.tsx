@@ -8,7 +8,11 @@ import { supabase } from './supabase'
 interface AuthContextType {
   user: User | null
   profile: UserProfile | null
+  isAdmin: boolean
   signInWithGoogle: () => Promise<void>
+  signInWithEmail: (email: string, password: string) => Promise<void>
+  signUp: (email: string, password: string, fullName: string) => Promise<void>
+  resetPasswordForEmail: (email: string) => Promise<void>
   signOut: () => Promise<void>
   enableDemoMode: () => void
   updateProfile: (data: Partial<UserProfile>) => void
@@ -80,6 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(() =>
     appConfig.isDemoAuthEnabled ? DEMO_PROFILE : null
   )
+  const [isAdmin, setIsAdmin] = useState(false)
   const [isLoading, setIsLoading] = useState(() =>
     !appConfig.isDemoAuthEnabled && !!supabase
   )
@@ -87,9 +92,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (appConfig.isDemoAuthEnabled || !supabase) return
 
+    const loadAdminFlag = async (userId: string) => {
+      if (!supabase) return
+      const { data } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', userId)
+        .maybeSingle()
+      setIsAdmin(!!data?.is_admin)
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         setUser(mapSupabaseUser(session.user))
+        loadAdminFlag(session.user.id)
       }
       setIsLoading(false)
     }).catch(() => {
@@ -99,9 +115,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         setUser(mapSupabaseUser(session.user))
+        loadAdminFlag(session.user.id)
       } else {
         setUser(null)
         setProfile(null)
+        setIsAdmin(false)
       }
     })
 
@@ -129,6 +147,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     window.location.assign(data.url)
+  }, [])
+
+  const signInWithEmail = useCallback(async (email: string, password: string) => {
+    if (!supabase) throw new Error('Supabase לא מוגדר')
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) throw new Error(mapAuthErrorToHebrew(error))
+  }, [])
+
+  const signUp = useCallback(async (email: string, password: string, fullName: string) => {
+    if (!supabase) throw new Error('Supabase לא מוגדר')
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { full_name: fullName } },
+    })
+    if (error) throw new Error(mapAuthErrorToHebrew(error))
+  }, [])
+
+  const resetPasswordForEmail = useCallback(async (email: string) => {
+    if (!supabase) throw new Error('Supabase לא מוגדר')
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/login`,
+    })
+    if (error) throw new Error(mapAuthErrorToHebrew(error))
   }, [])
 
   const enableDemoMode = useCallback(() => {
@@ -167,13 +209,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AuthContextType>(() => ({
     user,
     profile,
+    isAdmin,
     signInWithGoogle,
+    signInWithEmail,
+    signUp,
+    resetPasswordForEmail,
     signOut,
     enableDemoMode,
     updateProfile,
     hasCompletedProfile: isProfileComplete(profile),
     isLoading,
-  }), [user, profile, signInWithGoogle, signOut, enableDemoMode, updateProfile, isLoading])
+  }), [user, profile, isAdmin, signInWithGoogle, signInWithEmail, signUp, resetPasswordForEmail, signOut, enableDemoMode, updateProfile, isLoading])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@fontsource/heebo": "^5.2.8",
+    "@hookform/resolvers": "^5.2.2",
     "@supabase/supabase-js": "^2.101.0",
     "clsx": "^2.1.0",
     "framer-motion": "^12.38.0",
@@ -21,9 +22,11 @@
     "pdfjs-dist": "^5.6.205",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-hook-form": "^7.73.1",
     "react-router-dom": "^7.13.2",
     "tailwind-merge": "^2.2.1",
-    "web-vitals": "^5.2.0"
+    "web-vitals": "^5.2.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",

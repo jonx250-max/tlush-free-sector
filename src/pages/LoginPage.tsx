@@ -1,16 +1,30 @@
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { useAuth, mapAuthErrorToHebrew } from '../lib/auth'
 import { he } from '../i18n/he'
 import { FileText } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+
+const loginSchema = z.object({
+  email: z.string().email('דוא"ל לא תקין'),
+  password: z.string().min(1, 'סיסמה חובה'),
+})
+
+type LoginForm = z.infer<typeof loginSchema>
 
 export function LoginPage() {
-  const { signInWithGoogle, enableDemoMode, user, isLoading } = useAuth()
+  const { signInWithGoogle, signInWithEmail, enableDemoMode, user, isLoading } = useAuth()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [error, setError] = useState<string | null>(null)
   const [signingIn, setSigningIn] = useState(false)
+
+  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginForm>({
+    resolver: zodResolver(loginSchema),
+  })
 
   const isDemo = searchParams.get('demo') === 'true'
 
@@ -44,6 +58,15 @@ export function LoginPage() {
   const handleDemoMode = () => {
     enableDemoMode()
     navigate('/dashboard', { replace: true })
+  }
+
+  const onEmailSignIn = async (data: LoginForm) => {
+    setError(null)
+    try {
+      await signInWithEmail(data.email, data.password)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'שגיאה לא ידועה')
+    }
   }
 
   return (
@@ -82,6 +105,53 @@ export function LoginPage() {
             </div>
           )}
 
+          {/* Email + password form */}
+          <form onSubmit={handleSubmit(onEmailSignIn)} className="mb-4 space-y-3">
+            <div>
+              <input
+                type="email"
+                placeholder={he.signup.email}
+                {...register('email')}
+                className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-white placeholder-white/30 focus:border-cs-gold focus:outline-none"
+                autoComplete="email"
+              />
+              {errors.email && <p className="mt-1 text-xs text-red-400">{errors.email.message}</p>}
+            </div>
+            <div>
+              <input
+                type="password"
+                placeholder={he.signup.password}
+                {...register('password')}
+                className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-white placeholder-white/30 focus:border-cs-gold focus:outline-none"
+                autoComplete="current-password"
+              />
+              {errors.password && <p className="mt-1 text-xs text-red-400">{errors.password.message}</p>}
+            </div>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full rounded-xl bg-cs-primary px-4 py-3 text-sm font-semibold text-white hover:bg-cs-primary-dark disabled:opacity-60"
+            >
+              {isSubmitting ? he.common.loading : he.auth.loginTitle}
+            </button>
+          </form>
+
+          <div className="mb-4 flex items-center justify-between text-xs">
+            <Link to="/forgot-password" className="text-cs-gold underline">
+              {he.forgotPassword.title}?
+            </Link>
+            <Link to="/signup" className="text-cs-gold underline">
+              {he.signup.title}
+            </Link>
+          </div>
+
+          {/* Divider */}
+          <div className="my-4 flex items-center gap-3">
+            <div className="h-px flex-1 bg-white/10" />
+            <span className="text-xs text-white/30">או</span>
+            <div className="h-px flex-1 bg-white/10" />
+          </div>
+
           {/* Google sign in */}
           <button
             onClick={handleGoogleSignIn}
@@ -100,13 +170,6 @@ export function LoginPage() {
             )}
             {signingIn ? he.auth.signingIn : he.auth.signInWithGoogle}
           </button>
-
-          {/* Divider */}
-          <div className="my-6 flex items-center gap-3">
-            <div className="h-px flex-1 bg-white/10" />
-            <span className="text-xs text-white/30">או</span>
-            <div className="h-px flex-1 bg-white/10" />
-          </div>
 
           {/* Demo mode */}
           <button

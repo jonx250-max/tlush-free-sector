@@ -7,6 +7,8 @@ import { Layout } from './components/Layout'
 
 const LandingPage = lazy(() => import('./pages/LandingPage').then(m => ({ default: m.LandingPage })))
 const LoginPage = lazy(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })))
+const SignupPage = lazy(() => import('./pages/SignupPage').then(m => ({ default: m.SignupPage })))
+const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage').then(m => ({ default: m.ForgotPasswordPage })))
 const Dashboard = lazy(() => import('./pages/Dashboard').then(m => ({ default: m.Dashboard })))
 const UploadPage = lazy(() => import('./pages/UploadPage').then(m => ({ default: m.UploadPage })))
 const HistoryPage = lazy(() => import('./pages/HistoryPage').then(m => ({ default: m.HistoryPage })))
@@ -34,6 +36,8 @@ export default function App() {
               <Route path="/" element={<Navigate to="/landing" replace />} />
               <Route path="/landing" element={<LandingPage />} />
               <Route path="/login" element={<LoginPage />} />
+              <Route path="/signup" element={<SignupPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
               {/* Protected routes with Layout */}
               {/* Onboarding (protected, no layout) */}
