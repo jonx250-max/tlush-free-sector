@@ -314,15 +314,29 @@ lucide.createIcons();
   }, 2800);
 })();
 
-// === Login form with loading ===
+// === Login form wired to Supabase auth via /marketing/auth-bridge.js ===
 document.getElementById('loginForm').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const btn = e.target.querySelector('button[type="submit"]');
-  await Talush.withLoading(btn, 'מתחבר...', async () => {
-    await new Promise(r => setTimeout(r, 1100));
-  });
-  window.location.href = 'Dashboard.html';
+  const form = e.target;
+  const btn = form.querySelector('button[type="submit"]');
+  const email = form.querySelector('input[type="email"]')?.value?.trim();
+  const password = form.querySelector('input[type="password"]')?.value;
+  if (!email || !password) return;
+
+  try {
+    await window.Talush.withLoading(btn, 'מתחבר...', async () => {
+      const result = await window.TalushAuth.signIn(email, password);
+      if (!result.ok) throw new Error(result.error || 'שגיאה לא ידועה');
+    });
+  } catch (err) {
+    window.Talush.toast(err.message, 'error');
+    return;
+  }
+
+  const user = await window.TalushAuth.getUser();
+  if (user) window.location.href = '/dashboard';
 });
 </script>
+<script src="/marketing/auth-bridge.js"></script>
 </body>
 </html>

@@ -323,15 +323,30 @@ function updateStrength(v){
   label.textContent = txt;
 }
 
-// === Signup form with loading ===
+// === Signup form wired to Supabase auth via /marketing/auth-bridge.js ===
 document.getElementById('signupForm').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const btn = e.target.querySelector('button[type="submit"]');
-  await Talush.withLoading(btn, 'יוצר חשבון...', async () => {
-    await new Promise(r => setTimeout(r, 1500));
-  }, 'החשבון נוצר! מעבר להגדרת פרופיל מס...');
-  setTimeout(() => { window.location.href = 'TaxProfile.html'; }, 1000);
+  const form = e.target;
+  const btn = form.querySelector('button[type="submit"]');
+  const email = form.querySelector('input[type="email"]')?.value?.trim();
+  const password = form.querySelector('input[type="password"]')?.value;
+  const fullNameInput = form.querySelector('input[name="fullName"]') || form.querySelector('input[type="text"]');
+  const fullName = fullNameInput?.value?.trim() || '';
+  if (!email || !password) return;
+
+  try {
+    await window.Talush.withLoading(btn, 'יוצר חשבון...', async () => {
+      const result = await window.TalushAuth.signUp(email, password, fullName);
+      if (!result.ok) throw new Error(result.error || 'שגיאה לא ידועה');
+    }, 'החשבון נוצר! מעבר להגדרת פרופיל מס...');
+  } catch (err) {
+    window.Talush.toast(err.message, 'error');
+    return;
+  }
+
+  setTimeout(() => { window.location.href = '/tax-profile'; }, 1000);
 });
 </script>
+<script src="/marketing/auth-bridge.js"></script>
 </body>
 </html>

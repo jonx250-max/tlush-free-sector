@@ -10,7 +10,7 @@ const securityHeaders = {
   'Content-Security-Policy': [
     "default-src 'self'",
     // CDNs needed by marketing landing page (GSAP, Tailwind, Lucide, Lenis)
-    "script-src 'self' 'unsafe-inline' https://vercel.live https://cdn.tailwindcss.com https://unpkg.com https://cdnjs.cloudflare.com",
+    "script-src 'self' 'unsafe-inline' https://vercel.live https://cdn.tailwindcss.com https://unpkg.com https://cdnjs.cloudflare.com https://esm.sh",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "img-src 'self' data: https:",
     "font-src 'self' data: https://fonts.gstatic.com",
