@@ -32,6 +32,8 @@ export default {
           'danger-light': 'var(--cs-danger-light)',
           info: 'var(--cs-info)',
           'info-light': 'var(--cs-info-light)',
+          gold: 'var(--cs-gold)',
+          'gold-deep': 'var(--cs-gold-deep)',
         },
       },
       fontFamily: {
