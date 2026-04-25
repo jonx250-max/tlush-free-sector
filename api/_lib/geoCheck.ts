@@ -1,0 +1,60 @@
+/**
+ * Server-side geo-block check shared across Vercel Functions.
+ *
+ * Israel-only (IL) per Plan §10. Bypass options:
+ *   - ?invite=<token>  query param (for trusted external testers)
+ *   - GEO_BYPASS_TOKENS env var (comma-separated valid tokens)
+ *   - Local dev: no x-vercel-ip-country header → assume IL
+ *
+ * Production: Vercel sets x-vercel-ip-country on every Function request
+ * based on edge POP geolocation. No external API calls needed.
+ */
+
+const ALLOWED_COUNTRY = 'IL'
+
+export interface GeoCheckResult {
+  allowed: boolean
+  country: string
+  reason?: string
+}
+
+export function isGeoAllowed(
+  headers: Record<string, string | string[] | undefined>,
+  query?: Record<string, string | string[] | undefined>
+): GeoCheckResult {
+  const country = pickHeader(headers, 'x-vercel-ip-country') || 'XX'
+
+  // Local dev / non-Vercel host → no geo header → permissive
+  if (country === 'XX') return { allowed: true, country: 'local-dev', reason: 'no-header' }
+
+  if (country === ALLOWED_COUNTRY) return { allowed: true, country }
+
+  // Invite token bypass
+  const invite = pickQuery(query, 'invite')
+  if (invite && validInviteToken(invite)) {
+    return { allowed: true, country, reason: 'invite-bypass' }
+  }
+
+  return { allowed: false, country }
+}
+
+function pickHeader(headers: Record<string, string | string[] | undefined>, name: string): string {
+  const value = headers[name] ?? headers[name.toLowerCase()]
+  if (Array.isArray(value)) return value[0] || ''
+  return typeof value === 'string' ? value : ''
+}
+
+function pickQuery(
+  query: Record<string, string | string[] | undefined> | undefined,
+  name: string
+): string {
+  if (!query) return ''
+  const value = query[name]
+  if (Array.isArray(value)) return value[0] || ''
+  return typeof value === 'string' ? value : ''
+}
+
+function validInviteToken(token: string): boolean {
+  const allowed = (process.env.GEO_BYPASS_TOKENS || '').split(',').map(t => t.trim()).filter(Boolean)
+  return allowed.includes(token)
+}

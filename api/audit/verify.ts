@@ -7,6 +7,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { verifyChain, type AuditEntry } from '../../src/lib/auditLog'
+import { isGeoAllowed } from '../_lib/geoCheck'
 
 interface VercelRequest {
   method: string
@@ -22,6 +23,11 @@ interface VercelResponse {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' })
+  }
+
+  const geo = isGeoAllowed(req.headers, req.query)
+  if (!geo.allowed) {
+    return res.status(403).json({ error: 'Service available in Israel only', code: 'GEO_BLOCKED' })
   }
 
   const url = process.env.SUPABASE_URL

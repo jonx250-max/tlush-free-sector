@@ -18,10 +18,12 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { calculatePrice, isValidMonths, isValidTier } from '../../src/lib/pricing'
+import { isGeoAllowed } from '../_lib/geoCheck'
 
 interface VercelRequest {
   method: string
   headers: Record<string, string | string[] | undefined>
+  query?: Record<string, string | string[] | undefined>
   body: {
     depth_tier?: string
     months_count?: number
@@ -43,6 +45,11 @@ const FREE_TIER_BLOCKED_CODES = {
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
+
+  const geo = isGeoAllowed(req.headers, req.query)
+  if (!geo.allowed) {
+    return res.status(403).json({ error: 'Service available in Israel only', code: 'GEO_BLOCKED' })
+  }
 
   const url = process.env.SUPABASE_URL
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY

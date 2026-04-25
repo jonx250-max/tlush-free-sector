@@ -11,11 +11,13 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { computeHash, HASH_CHAIN_GENESIS } from '../../src/lib/auditLog'
+import { isGeoAllowed } from '../_lib/geoCheck'
 
 interface VercelRequest {
   method: string
   headers: Record<string, string | string[] | undefined>
   body: { action?: string; payload?: Record<string, unknown> | null; case_id?: string | null }
+  query?: Record<string, string | string[] | undefined>
 }
 
 interface VercelResponse {
@@ -26,6 +28,11 @@ interface VercelResponse {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
+  }
+
+  const geo = isGeoAllowed(req.headers, req.query)
+  if (!geo.allowed) {
+    return res.status(403).json({ error: 'Service available in Israel only', code: 'GEO_BLOCKED' })
   }
 
   const url = process.env.SUPABASE_URL

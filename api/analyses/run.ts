@@ -21,10 +21,12 @@
 import { createClient } from '@supabase/supabase-js'
 import { checksForTier, type DepthTier } from '../../src/services/checkRegistry'
 import { computeHash, HASH_CHAIN_GENESIS } from '../../src/lib/auditLog'
+import { isGeoAllowed } from '../_lib/geoCheck'
 
 interface VercelRequest {
   method: string
   headers: Record<string, string | string[] | undefined>
+  query?: Record<string, string | string[] | undefined>
   body: { purchase_id?: string; payslip_ids?: string[] }
 }
 
@@ -35,6 +37,11 @@ interface VercelResponse {
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
+
+  const geo = isGeoAllowed(req.headers, req.query)
+  if (!geo.allowed) {
+    return res.status(403).json({ error: 'Service available in Israel only', code: 'GEO_BLOCKED' })
+  }
 
   const url = process.env.SUPABASE_URL
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
