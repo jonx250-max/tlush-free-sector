@@ -2,7 +2,10 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App'
 import { initWebVitals } from './lib/webVitals'
+import { installGlobalHandlers } from './lib/errorTracking'
 import './index.css'
+
+installGlobalHandlers()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

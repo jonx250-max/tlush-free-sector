@@ -82,7 +82,7 @@ After that, three high-value refactors on god nodes (`compare`, `calculateCredit
 | 10 | ✅ DONE | Add `useAnalysis` hook test coverage | `25f70c8` — analysisReadiness guard extracted + store tests |
 | 11 | ✅ DONE | Investigate weakly-connected graph nodes | `92a4dc4` — knip scan: 3 dead files removed, recharts dropped, 4 helpers + 8 exports pruned |
 | 12 | ✅ DONE | PDF worker lazy-init audit (405KB chunk) | `/upload` is `lazy()` in `App.tsx` → pdf chunk downloads only on upload route. Pre-loading there is desirable. No action. |
-| 13 | 🟢 LOW | Add error tracking (Sentry or equivalent) | Needs external account + DSN decision | Deferred — awaiting user choice of provider |
+| 13 | ✅ DONE | Supabase-native error tracking | `error_logs` table + RLS (insert-only) + `reportError()` lib + ErrorBoundary + window/unhandledrejection handlers wired in `main.tsx` |
 
 ---
 
