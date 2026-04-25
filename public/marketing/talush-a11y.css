@@ -1,0 +1,99 @@
+/* === Talush Accessibility — global a11y improvements === */
+
+/* === Skip-link (for all pages) === */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  right: 0;
+  background: #B89B5E;
+  color: #0a0a0a;
+  padding: 10px 20px;
+  z-index: 99999;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  transition: top .2s;
+}
+.skip-link:focus { top: 0 !important; outline: 2px solid #FDFBF7; outline-offset: 2px; }
+
+/* === Focus-visible: clear, high-contrast outline === */
+*:focus { outline: none; }
+
+/* Bright gold for elements on dark backgrounds */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[role="button"]:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid #B89B5E !important;
+  outline-offset: 2px !important;
+  border-radius: 2px;
+  box-shadow: 0 0 0 4px rgba(184, 155, 94, 0.2) !important;
+}
+
+/* On dark backgrounds, gold is enough; on light, add subtle dark ring */
+.bg-charcoal button:focus-visible,
+.head-bar button:focus-visible,
+[class*="text-cream"] button:focus-visible {
+  outline-color: #FDFBF7 !important;
+  box-shadow: 0 0 0 4px rgba(253, 251, 247, 0.25) !important;
+}
+
+/* === Reduced motion === */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* === Screen reader only utility === */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* === High contrast mode support === */
+@media (prefers-contrast: more) {
+  body { filter: contrast(1.15); }
+}
+
+/* === Better link underline for accessibility === */
+a:focus-visible {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+
+/* === Form labels: ensure they're never invisible === */
+label { user-select: none; }
+
+/* === Disabled states clear === */
+:disabled, [aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* === Touch targets min 44px on mobile === */
+@media (max-width: 767px) {
+  button, a, input[type="checkbox"], input[type="radio"] {
+    min-height: 44px;
+  }
+  /* Exclude tiny inline buttons */
+  button.no-min, a.no-min, .nav-item, .step, .toc-link {
+    min-height: auto;
+  }
+}

@@ -1,0 +1,1592 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>בדיקת תלוש שכר במגזר הפרטי - האמת שמאחורי התלוש שלך</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- GSAP & Plugins for ULTRAPLAN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://unpkg.com/@studio-freight/lenis@1.0.33/dist/lenis.min.js"></script>
+
+    <!-- React + Babel for Tweaks Panel -->
+    <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600&family=Frank+Ruhl+Libre:wght@300;400;700;900&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Assistant', 'sans-serif'],
+                        serif: ['"Frank Ruhl Libre"', 'serif'],
+                    },
+                    colors: {
+                        cream: '#FDFBF7',
+                        sand: '#F4F1EB',
+                        charcoal: '#0a0a0a', /* Slightly darker for ultra contrast */
+                        gold: '#B89B5E'
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        /* Base Resets & Transitions */
+        html {
+           /* smooth transition of body backgrounds */
+           transition: background-color 0.8s ease; 
+        }
+        body {
+            /* We start dark in HERO, then go light, etc. 
+               Controlled by GSAP dynamic environment */
+            background-color: #0a0a0a;
+            color: #FDFBF7;
+            overflow-x: hidden;
+            cursor: none; 
+            transition: background-color 0.8s ease, color 0.8s ease;
+        }
+        
+
+
+        /* ULTRAPLAN 1: Dynamic Noise Environment */
+        .noise-overlay {
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            right: -50%;
+            bottom: -50%;
+            width: 200%;
+            height: 200vh;
+            pointer-events: none;
+            z-index: 99999;
+            opacity: 0.05;
+            background-image: url('data:image/svg+xml,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)"/%3E%3C/svg%3E');
+            animation: noise-move 0.2s steps(2) infinite;
+        }
+
+        @keyframes noise-move {
+            0% { transform: translate(0,0) }
+            10% { transform: translate(-5%,-5%) }
+            20% { transform: translate(-10%,5%) }
+            30% { transform: translate(5%,-10%) }
+            40% { transform: translate(-5%,15%) }
+            50% { transform: translate(-10%,5%) }
+            60% { transform: translate(15%,0) }
+            70% { transform: translate(0,15%) }
+            80% { transform: translate(3%,35%) }
+            90% { transform: translate(-10%,10%) }
+            100% { transform: translate(0,0) }
+        }
+
+        /* Default cursor on - custom cursor disabled by default for usability */
+        html.cursor-none, body { cursor: auto; }
+        a, button, input { cursor: pointer; }
+
+        /* ULTRAPLAN 2: Advanced Cursor (Velocity Skew + Difference) */
+        .custom-cursor {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 8px;
+            height: 8px;
+            background-color: #B89B5E;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 100000;
+            transform-origin: center;
+            opacity: 0;
+            transition: width 0.3s cubic-bezier(0.25, 1, 0.5, 1), 
+                        height 0.3s cubic-bezier(0.25, 1, 0.5, 1),
+                        opacity 0.3s;
+        }
+
+        .cursor-follower { display: none; }
+
+        /* ULTRAPLAN 4: Touch Device Disable Custom Cursor */
+        @media (pointer: coarse) {
+            .custom-cursor, .cursor-follower {
+                display: none !important;
+            }
+        }
+
+        /* Preloader */
+        #preloader {
+            position: fixed;
+            inset: 0;
+            z-index: 999999;
+            background-color: #0a0a0a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            clip-path: inset(0% 0% 0% 0%);
+        }
+        .preloader-brand {
+            font-family: 'Frank Ruhl Libre', serif;
+            color: #FDFBF7;
+            font-weight: 900;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+        .preloader-text {
+            display: inline-block;
+            transform: translateY(100%);
+            opacity: 0;
+        }
+        .preloader-bar {
+            width: 200px;
+            height: 1px;
+            background: rgba(253, 251, 247, 0.15);
+            position: relative;
+            overflow: hidden;
+        }
+        .preloader-bar::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; height: 100%;
+            width: 0%;
+            background: #B89B5E;
+            animation: preBar 1.6s ease-out forwards;
+        }
+        @keyframes preBar { to { width: 100%; } }
+
+        /* Utilities */
+        .video-overlay {
+            background:
+              linear-gradient(to bottom, rgba(10,10,10,0.15) 0%, rgba(10,10,10,0.25) 50%, rgba(10,10,10,0.55) 100%);
+        }
+        #hero-section video { filter: brightness(0.92) contrast(1.02) saturate(1.0); }
+        #hero-title .split-line { text-shadow: 0 2px 24px rgba(0,0,0,0.85), 0 0 50px rgba(0,0,0,0.55); }
+        #hero-title .text-transparent { text-shadow: none !important; }
+        #hero-section .hero-copy { text-shadow: 0 2px 14px rgba(0,0,0,0.75); }
+        #hero-section::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse 70% 60% at 30% 70%, rgba(0,0,0,0.45) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 1;
+        }
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* GSAP Initial States */
+        .split-char {
+            display: inline-block;
+        }
+        .fade-up-element {
+            opacity: 0;
+            transform: translateY(40px);
+        }
+
+        /* ULTRAPLAN 3: Button Roll Stagger */
+        .btn-roll {
+            position: relative;
+            overflow: hidden;
+            display: inline-flex;
+            justify-content: center;
+        }
+        .btn-roll .char-wrap {
+            display: inline-flex;
+            flex-direction: column;
+            transition: transform 0.6s cubic-bezier(0.76, 0, 0.24, 1);
+        }
+        .btn-roll .char-up, .btn-roll .char-down {
+            display: block;
+        }
+        .btn-roll .char-down {
+            position: absolute;
+            top: 100%;
+        }
+        .hover-magnet:hover .char-wrap {
+            transform: translateY(-100%);
+        }
+        /* Stagger inline transition delays via JS */
+
+        /* AUTO-CAROUSEL Section */
+        .carousel-section {
+            position: relative;
+            height: 100vh;
+            overflow: hidden;
+            background-color: #0a0a0a;
+        }
+        .carousel-track {
+            display: flex;
+            width: 300%;
+            height: 100%;
+            transition: transform 1.2s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+        .carousel-slide {
+            width: 100vw;
+            height: 100%;
+            position: relative;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+        .carousel-slide .slide-bg {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 8s ease-out;
+        }
+        .carousel-slide.active .slide-bg {
+            transform: scale(1.08);
+        }
+
+        /* ULTRAPLAN 3.0: Sticky CTA */
+        .sticky-cta-wrapper {
+            position: fixed;
+            bottom: 40px;
+            left: 40px;
+            z-index: 50;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(20px);
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .sticky-cta-wrapper.visible {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
+        }
+        .sticky-cta-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: #FDFBF7;
+            color: #1A1A1A;
+            padding: 16px 36px;
+            border-radius: 50px;
+            font-size: 1.125rem;
+            font-weight: 600;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: background 0.3s, transform 0.3s;
+        }
+        .sticky-cta-btn:hover {
+            background: #EBE6DF;
+        }
+
+        /* Context Colors for Body Switcher */
+        body.theme-light { background-color: #FDFBF7; color: #1A1A1A; }
+        body.theme-light nav { border-color: rgba(0,0,0,0.1); }
+        body.theme-sand { background-color: #F4F1EB; color: #1A1A1A; }
+        body.theme-dark { background-color: #0a0a0a; color: #FDFBF7; }
+
+        /* Carousel Dots */
+        .carousel-dot {
+            width: 48px;
+            height: 4px;
+            background: rgba(255,255,255,0.15);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            padding: 0;
+        }
+        .carousel-dot .dot-fill {
+            position: absolute;
+            top: 0; left: 0;
+            height: 100%;
+            width: 0%;
+            background: #B89B5E;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        .carousel-dot.active .dot-fill {
+            animation: dotProgress 5s linear forwards;
+        }
+        @keyframes dotProgress {
+            from { width: 0%; }
+            to { width: 100%; }
+        }
+
+        /* Carousel Layout */
+        .carousel-section {
+            height: 100vh;
+            overflow: hidden;
+            background: #0a0a0a;
+            position: relative;
+        }
+        .carousel-track {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+        .carousel-slide {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 0.8s cubic-bezier(0.65, 0, 0.35, 1);
+            pointer-events: none;
+        }
+        .carousel-slide.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        .slide-bg {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* =================================================
+           TWEAK OVERRIDES — driven by body[data-mood], 
+           body[data-accent], body[data-atmos]
+           ================================================= */
+
+        /* ACCENT palette */
+        body[data-accent="gold"]   { --tw-accent: #B89B5E; --tw-accent-soft: rgba(184,155,94,0.1); --tw-accent-line: rgba(184,155,94,0.4); }
+        body[data-accent="copper"] { --tw-accent: #C97B4B; --tw-accent-soft: rgba(201,123,75,0.1);  --tw-accent-line: rgba(201,123,75,0.4); }
+        body[data-accent="olive"]  { --tw-accent: #8A8A4E; --tw-accent-soft: rgba(138,138,78,0.1);  --tw-accent-line: rgba(138,138,78,0.4); }
+        body[data-accent="ink"]    { --tw-accent: #2D4A5E; --tw-accent-soft: rgba(45,74,94,0.1);    --tw-accent-line: rgba(45,74,94,0.4); }
+        body[data-accent="rose"]   { --tw-accent: #B25A6A; --tw-accent-soft: rgba(178,90,106,0.1);  --tw-accent-line: rgba(178,90,106,0.4); }
+
+        /* Accent overrides everywhere gold is used */
+        body[data-accent]:not([data-accent="gold"]) .text-gold,
+        body[data-accent]:not([data-accent="gold"]) [class*="text-gold"] { color: var(--tw-accent) !important; }
+        body[data-accent]:not([data-accent="gold"]) .bg-gold { background-color: var(--tw-accent) !important; }
+        body[data-accent]:not([data-accent="gold"]) .border-gold { border-color: var(--tw-accent) !important; }
+        body[data-accent]:not([data-accent="gold"]) .border-gold\/40 { border-color: var(--tw-accent-line) !important; }
+        body[data-accent]:not([data-accent="gold"]) .border-gold\/30 { border-color: var(--tw-accent-line) !important; }
+        body[data-accent]:not([data-accent="gold"]) .bg-gold\/10 { background-color: var(--tw-accent-soft) !important; }
+        body[data-accent]:not([data-accent="gold"]) .bg-gold\/5  { background-color: var(--tw-accent-soft) !important; }
+        body[data-accent]:not([data-accent="gold"]) .selection\:bg-gold *::selection { background-color: var(--tw-accent); }
+        body[data-accent]:not([data-accent="gold"]) .carousel-dot .dot-fill { background: var(--tw-accent) !important; }
+        body[data-accent]:not([data-accent="gold"]) .hover\:text-gold:hover { color: var(--tw-accent) !important; }
+        body[data-accent]:not([data-accent="gold"]) .hover\:border-gold:hover { border-color: var(--tw-accent) !important; }
+
+        /* MOOD — dark (default) / editorial (light cream hero) / sand (warm) */
+        body[data-mood="editorial"] #hero-section .video-overlay {
+            background: linear-gradient(to bottom, rgba(253,251,247,0.3) 0%, rgba(253,251,247,0.85) 100%) !important;
+        }
+        body[data-mood="editorial"] #hero-section video { filter: brightness(1.15) contrast(0.9) saturate(0.85); }
+        body[data-mood="editorial"] #hero-section #hero-title { color: #0a0a0a !important; mix-blend-mode: normal !important; }
+        body[data-mood="editorial"] #hero-section #hero-title .split-line:not(.text-transparent) { color: #0a0a0a !important; }
+        body[data-mood="editorial"] #hero-section #hero-title .text-transparent { -webkit-text-stroke: 1px rgba(10,10,10,0.8) !important; }
+        body[data-mood="editorial"] #hero-section .fade-up-element p { color: rgba(10,10,10,0.85) !important; }
+        body[data-mood="editorial"] #hero-section .fade-up-element a { color: #0a0a0a !important; border-color: #0a0a0a !important; }
+        body[data-mood="editorial"] #hero-section .relative.z-10 { mix-blend-mode: normal !important; }
+        body[data-mood="editorial"] #navbar { mix-blend-mode: normal !important; }
+        body[data-mood="editorial"] #navbar .text-white,
+        body[data-mood="editorial"] #navbar span,
+        body[data-mood="editorial"] #navbar a:not(.bg-white) { color: #0a0a0a !important; }
+        body[data-mood="editorial"] #navbar .border-b { border-color: rgba(10,10,10,0.15) !important; }
+        body[data-mood="editorial"] #preloader { background-color: #FDFBF7 !important; }
+        body[data-mood="editorial"] .preloader-brand { color: #0a0a0a !important; }
+
+        body[data-mood="sand"] #hero-section .video-overlay {
+            background: linear-gradient(to bottom, rgba(244,241,235,0.25) 0%, rgba(184,155,94,0.35) 50%, rgba(60,40,25,0.75) 100%) !important;
+        }
+        body[data-mood="sand"] #hero-section video { filter: sepia(0.3) saturate(1.2) brightness(0.95); }
+        body[data-mood="sand"] #money-counter { background-color: #2a1d12 !important; }
+        body[data-mood="sand"] #features { background-color: #1a1208 !important; }
+        body[data-mood="sand"] footer { background-color: #1a1208 !important; }
+        body[data-mood="sand"] { background-color: #F4F1EB !important; }
+
+        /* ATMOSPHERE — controls noise + cursor + vignette weight */
+        body[data-atmos="minimal"] .noise-overlay { opacity: 0 !important; }
+        body[data-atmos="minimal"] .custom-cursor,
+        body[data-atmos="minimal"] .cursor-follower { display: none !important; }
+        body[data-atmos="minimal"] { cursor: auto !important; }
+        body[data-atmos="minimal"] a, body[data-atmos="minimal"] button, body[data-atmos="minimal"] input { cursor: auto !important; }
+        body[data-atmos="minimal"] #hero-section .video-overlay { background: linear-gradient(to bottom, rgba(10,10,10,0.1) 0%, rgba(10,10,10,0.45) 100%) !important; }
+        body[data-atmos="minimal"] #services .absolute.bg-gradient-to-t { opacity: 0.5; }
+
+        body[data-atmos="cinematic"] .noise-overlay { opacity: 0.12 !important; }
+        body[data-atmos="cinematic"] #hero-section .video-overlay {
+            background: radial-gradient(ellipse at center, rgba(10,10,10,0.2) 0%, rgba(10,10,10,0.95) 100%) !important;
+        }
+        body[data-atmos="cinematic"] #hero-section::after {
+            content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 2;
+            background: linear-gradient(to bottom, rgba(10,10,10,0.4) 0%, transparent 15%, transparent 85%, rgba(10,10,10,0.4) 100%);
+        }
+        body[data-atmos="cinematic"] .custom-cursor { background-color: var(--tw-accent, #B89B5E); }
+        body[data-atmos="cinematic"] video { filter: contrast(1.1) saturate(1.1); }
+
+        /* Tweaks mount */
+        #tweaks-root { position: fixed; inset: 0; pointer-events: none; z-index: 100001; }
+        #tweaks-root > * { pointer-events: auto; }
+    </style>
+<!-- Meta -->
+<meta name="theme-color" content="#0a0a0a">
+<meta name="description" content="29 בדיקות אוטומטיות לתלוש השכר שלכם במגזר הפרטי — חישוב נטו רב-שנתי, השוואה לחוזה, מרכז זכאויות. מקומי, פרטי, מאובטח.">
+<meta name="format-detection" content="telephone=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+
+<!-- Open Graph / Social -->
+<meta property="og:type" content="website">
+<meta property="og:locale" content="he_IL">
+<meta property="og:site_name" content="תלוש">
+<meta property="og:title" content="תלוש · בדיקת תלוש שכר במגזר הפרטי">
+<meta property="og:description" content="29 בדיקות אוטומטיות לתלוש השכר שלכם — מקומי, פרטי, ללא שמירת נתונים בשרת.">
+<meta property="og:image" content="icon-512.svg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="תלוש · בדיקת תלוש שכר במגזר הפרטי">
+<meta name="twitter:description" content="29 בדיקות אוטומטיות לתלוש השכר שלכם.">
+<meta name="twitter:image" content="icon-512.svg">
+
+<!-- Icons -->
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="apple-touch-icon.svg">
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="talush-a11y.css">
+<script src="talush-ui.js" defer></script>
+<script src="talush-error-boundary.js?v=1777126914727"></script>
+<script src="security-guard.js" defer></script>
+<script src="audit-logger.js" defer></script>
+</head>
+<body class="antialiased selection:bg-gold selection:text-white" data-theme="dark">
+<a href="#main-content" class="skip-link" style="position:absolute;top:-40px;right:0;background:#B89B5E;color:#0a0a0a;padding:10px 20px;z-index:99999;text-decoration:none;font-weight:600;font-size:13px;letter-spacing:0.15em;text-transform:uppercase;transition:top .2s;" onfocus="this.style.top='0'" onblur="this.style.top='-40px'">דלג לתוכן הראשי</a>
+<!-- NOISE OVERLAY -->
+    <div class="noise-overlay"></div>
+
+    <!-- PRELOADER -->
+    <div id="preloader">
+        <div class="preloader-brand">
+            <span class="preloader-text text-2xl md:text-4xl">בדיקת תלוש שכר במגזר הפרטי</span>
+            <div class="preloader-bar"></div>
+        </div>
+    </div>
+
+    <!-- CUSTOM CURSOR -->
+    <div class="custom-cursor" id="cursor"></div>
+    <div class="cursor-follower" id="cursor-follower"></div>
+
+    <!-- HEADER / NAVIGATION -->
+    <!-- pointer events auto + mix-blend-difference maintains visibility over light/dark -->
+    <nav class="fixed top-0 w-full z-50 transition-colors duration-500 pointer-events-none mix-blend-difference" id="navbar">
+        <div class="max-w-7xl mx-auto px-6 lg:px-12 h-24 flex items-center justify-between border-b border-white/20 pointer-events-auto">
+            <div class="flex items-center gap-3">
+                <span class="text-xl md:text-2xl font-serif font-bold tracking-tight text-white drop-shadow-md cursor-hover-target">בדיקת תלוש שכר במגזר הפרטי</span>
+            </div>
+            <div class="hidden md:flex gap-10 text-sm font-medium text-white/90">
+                <a href="#how" class="cursor-hover-target uppercase tracking-widest text-xs relative overflow-hidden group">
+                    <span class="inline-block transition-transform duration-500 group-hover:-translate-y-full">איך זה עובד</span>
+                    <span class="inline-block absolute top-full left-0 transition-transform duration-500 group-hover:-translate-y-full text-gold">איך זה עובד</span>
+                </a>
+                <a href="#features" class="cursor-hover-target uppercase tracking-widest text-xs relative overflow-hidden group">
+                    <span class="inline-block transition-transform duration-500 group-hover:-translate-y-full">29 בדיקות שכר</span>
+                    <span class="inline-block absolute top-full left-0 transition-transform duration-500 group-hover:-translate-y-full text-gold">29 בדיקות שכר</span>
+                </a>
+                <a href="#reviews" class="cursor-hover-target uppercase tracking-widest text-xs relative overflow-hidden group">
+                    <span class="inline-block transition-transform duration-500 group-hover:-translate-y-full">מעטפת אבטחה</span>
+                    <span class="inline-block absolute top-full left-0 transition-transform duration-500 group-hover:-translate-y-full text-gold">מעטפת אבטחה</span>
+                </a>
+            </div>
+            <div class="flex items-center gap-4">
+                <a href="/login" class="cursor-hover-target text-white/80 hover:text-gold text-xs tracking-widest uppercase hidden md:inline-block transition-colors">כניסה</a>
+                <a href="/signup" class="cursor-hover-target hover-magnet bg-white text-black hover:bg-gold transition-colors duration-300 px-8 py-3 text-sm tracking-widest uppercase inline-flex items-center justify-center font-medium">
+                    <span>התחל סריקה</span>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <main id="smooth-wrapper">
+        <div id="smooth-content">
+
+            <!-- HERO SECTION -->
+            <!-- We flag themes using data-color attribute for the ScrollTrigger environment listener -->
+            <section class="relative h-screen flex items-end pb-24 lg:pb-32 overflow-hidden theme-section" data-color="dark" id="hero-section">
+                <!-- Video wrap gets parallax translation -->
+                <div class="absolute inset-0 w-full h-[120vh] -top-[10vh] parallax-bg" data-speed="0.5">
+                    <video autoplay loop muted playsinline class="w-full h-full object-cover">
+                        <source src="jean/hero-bg.mp4" type="video/mp4">
+                    </video>
+                </div>
+                <div class="absolute inset-0 video-overlay"></div>
+
+                <div class="max-w-7xl mx-auto px-6 lg:px-12 relative z-10 w-full">
+                    <h1 class="text-5xl md:text-8xl lg:text-[9rem] font-serif font-black text-white leading-[1.02] tracking-tight mb-8" id="hero-title">
+                        <div class="overflow-hidden"><span class="block split-line">הפער בין החוזה</span></div>
+                        <div class="overflow-hidden"><span class="block split-line">לתלוש השכר</span></div>
+                    </h1>
+                    <div class="flex flex-col md:flex-row md:items-end justify-between gap-8 md:gap-12 fade-up-element hero-copy">
+                        <p class="text-xl md:text-2xl lg:text-3xl font-light max-w-2xl leading-relaxed text-white">
+                            המערכת היחידה למגזר הפרטי שמשווה אוטומטית בין <span class="font-bold text-white">חוזה ההעסקה</span> לבין <span class="font-bold text-white">התלוש</span> ומוצאת בדיוק היכן חסר לך כסף.
+                        </p>
+                        <a href="#services" class="cursor-hover-target inline-flex items-center gap-3 text-white border-b border-white pb-2 hover:text-gold hover:border-gold transition-colors font-medium text-sm tracking-widest uppercase whitespace-nowrap">
+                            גלה כיצד המערכת פועלת <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                        </a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- IDENTITY SECTION (Ultra-Premium Typography Scrub) -->
+            <section class="min-h-screen relative z-10 flex flex-col justify-between py-24 theme-section overflow-hidden bg-charcoal" data-color="dark" id="identity-section">
+                <!-- Dynamic Image Background (Cinematic) -->
+                <div class="absolute inset-0 w-[106vw] h-[106vh] -top-[3vh] -left-[3vw] overflow-hidden pointer-events-none" id="identity-bg-scroll-wrapper">
+                    <div class="w-full h-full" id="identity-bg-mouse-wrapper">
+                        <!-- We use GEMINI BLANK.png as fallback, ready to be replaced with video -->
+                        <img src="jean/GEMINI_BLANK.png" alt="Background" class="w-full h-full object-cover object-center opacity-[0.85]" id="identity-dynamic-bg" />
+                    </div>
+                </div>
+                <!-- Gradient Overlays to preserve text readability without hiding the image -->
+                <div class="absolute inset-0 bg-gradient-to-b from-charcoal via-transparent to-charcoal z-0 pointer-events-none"></div>
+
+                <div class="max-w-7xl mx-auto px-6 text-center z-10 relative pt-12">
+                    <h2 class="text-gold text-sm md:text-base font-bold tracking-[0.2em] uppercase mb-8 fade-up-element inline-block border-b border-gold/40 pb-4 drop-shadow-md">
+                        חופש מחישובים ויותר פנאי לעיסוקים
+                    </h2>
+                    
+                    <h3 class="text-6xl md:text-8xl lg:text-[7rem] font-serif leading-[1.05] font-black text-white fade-up-element drop-shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
+                        פענוח מדויק.<br/>
+                        <span class="text-gold">מנגנון חכם.</span>
+                    </h3>
+                </div>
+
+                <div class="max-w-6xl mx-auto px-6 text-center z-10 relative pb-12 mt-auto pt-[20vh]">
+                    <div class="bg-charcoal/30 backdrop-blur-md border border-white/10 p-8 md:p-12 fade-up-element" style="box-shadow: 0 30px 80px -30px rgba(0,0,0,0.6);">
+                        <p class="text-2xl md:text-3xl font-light leading-[1.5] max-w-4xl mx-auto text-white mb-8">
+                            המערכת מפצחת את החוזה מול התלוש מבוססת על מנוע אנליטי שמבצע <span class="text-gold font-bold">29 בדיקות שכר</span> מקצועיות ברקע.
+                        </p>
+                        
+                        <div class="max-w-4xl mx-auto relative pt-6 border-t border-white/15">
+                            <p class="text-2xl md:text-3xl font-serif leading-[1.4] text-center text-white/95">
+                                אם חסר נתון — <span class="text-white font-bold">אנחנו עוצרים</span> ולא מנחשים.<br/>
+                                <span class="italic text-gold block mt-4 text-3xl md:text-4xl">האמת נמצאת בשורות.</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================================================== -->
+            <!-- NEW: MONEY COUNTER (כסף שהושב לעובדים) -->
+            <!-- ================================================== -->
+            <section id="money-counter" class="py-40 bg-charcoal theme-section relative overflow-hidden" data-color="dark">
+                <div class="absolute inset-0 opacity-[0.03] pointer-events-none" style="background-image: radial-gradient(circle at 50% 50%, #B89B5E 0%, transparent 60%);"></div>
+                <div class="max-w-6xl mx-auto px-6 lg:px-12 text-center relative z-10">
+                    <span class="text-gold text-xs font-bold tracking-[0.4em] uppercase mb-8 inline-block border-b border-gold/30 pb-4 fade-up-element">
+                        כסף שהשבנו לעובדים
+                    </span>
+                    <div class="fade-up-element mb-12">
+                        <div class="font-serif font-black leading-none text-white tracking-tight" style="font-size: clamp(4rem, 14vw, 14rem);">
+                            <span dir="ltr" style="display:inline-block;">₪<span id="money-count" data-final="2847293">0</span></span>
+                        </div>
+                        <div class="text-white/40 text-sm md:text-base tracking-[0.3em] uppercase mt-6 font-mono">
+                            הוחזרו לעובדים במגזר הפרטי ב-2026
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-10 mt-24 max-w-5xl mx-auto">
+                        <div class="text-right fade-up-element border-t border-white/15 pt-6">
+                            <div class="font-serif text-4xl md:text-5xl font-black text-gold leading-none" id="stat-1" data-final="29">0</div>
+                            <div class="text-white/50 text-xs tracking-widest uppercase mt-3">בדיקות עומק לכל תלוש</div>
+                        </div>
+                        <div class="text-right fade-up-element border-t border-white/15 pt-6">
+                            <div class="font-serif text-4xl md:text-5xl font-black text-gold leading-none" dir="ltr" style="text-align:right;">₪<span id="stat-2" data-final="1847">0</span></div>
+                            <div class="text-white/50 text-xs tracking-widest uppercase mt-3">פער חודשי ממוצע</div>
+                        </div>
+                        <div class="text-right fade-up-element border-t border-white/15 pt-6">
+                            <div class="font-serif text-4xl md:text-5xl font-black text-gold leading-none"><span id="stat-3" data-final="73">0</span>%</div>
+                            <div class="text-white/50 text-xs tracking-widest uppercase mt-3">מהעובדים מוצאים פער</div>
+                        </div>
+                        <div class="text-right fade-up-element border-t border-white/15 pt-6">
+                            <div class="font-serif text-4xl md:text-5xl font-black text-gold leading-none"><span id="stat-4" data-final="0">0</span></div>
+                            <div class="text-white/50 text-xs tracking-widest uppercase mt-3">קבצים עוזבים את המכשיר</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- HOW IT WORKS SECTION -->
+            <section id="how" class="py-32 bg-cream theme-section relative" data-color="light">
+                <div class="max-w-7xl mx-auto px-6 lg:px-12">
+                    <div class="text-center mb-24 fade-up-element">
+                        <h2 class="text-gold text-xs font-bold tracking-[0.4em] uppercase mb-6 inline-block border-b border-gold/30 pb-4">
+                            פשוט. חכם. מדויק.
+                        </h2>
+                        <h3 class="text-5xl md:text-7xl font-serif font-black text-charcoal">
+                            איך התהליך עובד?
+                        </h3>
+                    </div>
+                    
+                    <div class="grid md:grid-cols-3 gap-12 relative">
+                        <!-- Connecting Line (Desktop) -->
+                        <div class="hidden md:block absolute top-12 left-[16%] right-[16%] h-[1px] bg-charcoal/10"></div>
+                        
+                        <!-- Step 1 -->
+                        <div class="relative text-center fade-up-element">
+                            <div class="w-24 h-24 mx-auto bg-white border border-charcoal/10 rounded-full flex items-center justify-center mb-8 relative z-10 shadow-xl transition-transform hover:scale-105 duration-300">
+                                <i data-lucide="file-signature" class="w-10 h-10 text-gold"></i>
+                                <div class="absolute -top-3 -right-3 w-8 h-8 bg-charcoal text-white rounded-full flex items-center justify-center font-bold font-serif text-sm">1</div>
+                            </div>
+                            <h4 class="text-2xl font-serif font-bold text-charcoal mb-4">הזנת נתוני חוזה</h4>
+                            <p class="text-charcoal/70 leading-relaxed font-light text-lg">
+                                בשלב הראשון נלמד את התנאים האישיים שלך: שכר בסיס, תעריפי שעות, אחוזי פנסיה וכל ההטבות שסוכמו בינך לבין המעסיק.
+                            </p>
+                        </div>
+                        
+                        <!-- Step 2 -->
+                        <div class="relative text-center fade-up-element" style="transition-delay: 0.1s">
+                            <div class="w-24 h-24 mx-auto bg-white border border-charcoal/10 rounded-full flex items-center justify-center mb-8 relative z-10 shadow-xl transition-transform hover:scale-105 duration-300">
+                                <i data-lucide="scan-line" class="w-10 h-10 text-gold"></i>
+                                <div class="absolute -top-3 -right-3 w-8 h-8 bg-charcoal text-white rounded-full flex items-center justify-center font-bold font-serif text-sm">2</div>
+                            </div>
+                            <h4 class="text-2xl font-serif font-bold text-charcoal mb-4">סריקת תלושים</h4>
+                            <p class="text-charcoal/70 leading-relaxed font-light text-lg">
+                                העלאה מאובטחת של תלושי השכר. המערכת קוראת את השורות ומפרקת את הנתונים באופן לוקאלי ואנונימי בדפדפן שלך.
+                            </p>
+                        </div>
+                        
+                        <!-- Step 3 -->
+                        <div class="relative text-center fade-up-element" style="transition-delay: 0.2s">
+                            <div class="w-24 h-24 mx-auto bg-white border border-charcoal/10 rounded-full flex items-center justify-center mb-8 relative z-10 shadow-xl transition-transform hover:scale-105 duration-300">
+                                <i data-lucide="bar-chart-big" class="w-10 h-10 text-gold"></i>
+                                <div class="absolute -top-3 -right-3 w-8 h-8 bg-charcoal text-white rounded-full flex items-center justify-center font-bold font-serif text-sm">3</div>
+                            </div>
+                            <h4 class="text-2xl font-serif font-bold text-charcoal mb-4">דוח פערים חכם</h4>
+                            <p class="text-charcoal/70 leading-relaxed font-light text-lg">
+                                האלגוריתם מציב את התלוש מול החוזה. כל שעה חסרה, כל אחוז פנסיה שלא הופרש וכל פער מתגלים ומוצגים בדוח מדויק.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- AUTO-PLAYING CAROUSEL SECTION (Services) -->
+            <section id="services" class="carousel-section relative w-full z-10 theme-section" data-color="dark">
+                <div class="carousel-track" id="carousel-track">
+                    
+                    <!-- Slide 1 -->
+                    <div class="carousel-slide active" data-slide="0">
+                        <img src="jean/panel_one.png" alt="Contracts" class="slide-bg opacity-50">
+                        <div class="absolute inset-0 bg-gradient-to-t from-charcoal via-charcoal/60 to-transparent"></div>
+                        
+                        <div class="relative z-10 h-full flex items-center">
+                            <div class="max-w-6xl mx-auto px-12 w-full text-right">
+                                <span class="text-gold tracking-[0.4em] uppercase text-xs mb-8 block font-bold border-r-2 border-gold pr-4 pb-1">פונקציות המערכת — יכולת א'</span>
+                                <h3 class="text-6xl md:text-8xl font-serif mb-10 text-white font-black" style="line-height:0.95">שכר גלובלי<br/>וציות לחוזה</h3>
+                                <p class="text-xl md:text-2xl font-light leading-relaxed max-w-3xl mb-8 text-white/80">
+                                    המערכת מנתחת את שכר הבסיס והתגמול הגלובלי כפי שהוגדרו בחוזה, ומוודאת כי התשלום בתלוש מכסה כחוק את מלוא השעות הנוספות שבוצעו בפועל. מניעת שחיקת שכר בטעות או במכוון.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Slide 2 -->
+                    <div class="carousel-slide" data-slide="1">
+                        <img src="jean/panel_two.png" alt="Pricing" class="slide-bg opacity-50">
+                        <div class="absolute inset-0 bg-gradient-to-t from-charcoal via-charcoal/60 to-transparent"></div>
+                        
+                        <div class="relative z-10 h-full flex items-center">
+                            <div class="max-w-6xl mx-auto px-12 w-full text-right">
+                                <span class="text-gold tracking-[0.4em] uppercase text-xs mb-8 block font-bold border-r-2 border-gold pr-4 pb-1">פונקציות המערכת — יכולת ב'</span>
+                                <h3 class="text-6xl md:text-8xl font-serif mb-10 text-white font-black" style="line-height:0.95">תמחור שעות<br/>ועמלות מול הסכם</h3>
+                                <p class="text-xl md:text-2xl font-light leading-relaxed max-w-3xl mb-8 text-white/80">
+                                    בחינה מדוקדקת של תעריפי 125% ו-150%, עבודת לילה ועמלות שסוכמו אישית. המערכת מזהה מיידית פערים בין התעריף השעתי המובטח לבין זה שיושם בחישוב הסופי בתלוש.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Slide 3 -->
+                    <div class="carousel-slide" data-slide="2">
+                        <img src="jean/panel_three.png" alt="Entitlements" class="slide-bg opacity-50">
+                        <div class="absolute inset-0 bg-gradient-to-t from-charcoal via-charcoal/60 to-transparent"></div>
+                        
+                        <div class="relative z-10 h-full flex items-center">
+                            <div class="max-w-6xl mx-auto px-12 w-full text-right">
+                                <span class="text-gold tracking-[0.4em] uppercase text-xs mb-8 block font-bold border-r-2 border-gold pr-4 pb-1">פונקציות המערכת — יכולת ג'</span>
+                                <h3 class="text-6xl md:text-8xl font-serif mb-10 text-white font-black" style="line-height:0.95">פנסיה, קופ"ג<br/>וסיום העסקה</h3>
+                                <p class="text-xl md:text-2xl font-light leading-relaxed max-w-3xl mb-8 text-white/80">
+                                    סריקה יסודית של פדיון ימי חופשה, דמי מחלה, הודעה מוקדמת והפרשות סוציאליות. המערכת דואגת שכל אחוז פנסיה שהובטח בחוזה יגיע במלואו לקופת הגמל שלך.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Progress Indicators -->
+                <div class="absolute bottom-12 left-1/2 transform -translate-x-1/2 flex gap-4 z-20" dir="ltr">
+                    <button class="carousel-dot active" data-dot="0"><div class="dot-fill"></div></button>
+                    <button class="carousel-dot" data-dot="1"><div class="dot-fill"></div></button>
+                    <button class="carousel-dot" data-dot="2"><div class="dot-fill"></div></button>
+                </div>
+
+                <!-- Step Counter -->
+                <div class="absolute top-8 left-8 z-20 text-white/40 text-sm tracking-widest font-mono" id="step-counter" dir="ltr">01 / 03</div>
+            </section>
+
+            <!-- FEATURES SECTION -->
+            <section id="features" class="py-32 bg-charcoal theme-section relative" data-color="dark">
+                <div class="max-w-7xl mx-auto px-6 lg:px-12">
+                    <div class="mb-20 fade-up-element">
+                        <h2 class="text-gold text-xs font-bold tracking-[0.4em] uppercase mb-6 inline-block border-b border-gold/30 pb-4">
+                            29 בדיקות עומק
+                        </h2>
+                        <h3 class="text-4xl md:text-6xl font-serif font-black text-white">
+                            מה המערכת מחפשת בשבילך?
+                        </h3>
+                    </div>
+                    
+                    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-16">
+                        <!-- Feature 1 -->
+                        <div class="border-t border-white/20 pt-8 fade-up-element">
+                            <h4 class="text-2xl font-serif font-bold text-white mb-4">תעריף שעתי וחריגות</h4>
+                            <p class="text-white/60 leading-relaxed font-light">
+                                בדיקה שהתעריף השעתי המופיע בתלוש תואם בדיוק לחוזה ההעסקה, כולל בדיקת תעריף שעות נוספות (125%, 150%) ועבודת לילה.
+                            </p>
+                        </div>
+                        <!-- Feature 2 -->
+                        <div class="border-t border-white/20 pt-8 fade-up-element">
+                            <h4 class="text-2xl font-serif font-bold text-white mb-4">עמלות ובונוסים</h4>
+                            <p class="text-white/60 leading-relaxed font-light">
+                                וידוא כי אחוזי העמלות או הבונוסים שסוכמו אישית בחוזה אכן הופרשו במלואם, ללא ניכויים חבויים שמקטינים את הנטו שלך.
+                            </p>
+                        </div>
+                        <!-- Feature 3 -->
+                        <div class="border-t border-white/20 pt-8 fade-up-element">
+                            <h4 class="text-2xl font-serif font-bold text-white mb-4">פנסיה וקרן השתלמות</h4>
+                            <p class="text-white/60 leading-relaxed font-light">
+                                איתור חוסרים בהפרשות לקופות. השוואה בין האחוזים שהובטחו בחוזה לבין אלו שנוכו והופרשו בפועל, תוך מניעת אובדן כספים.
+                            </p>
+                        </div>
+                        <!-- Feature 4 -->
+                        <div class="border-t border-white/20 pt-8 fade-up-element">
+                            <h4 class="text-2xl font-serif font-bold text-white mb-4">דמי חופשה ומחלה</h4>
+                            <p class="text-white/60 leading-relaxed font-light">
+                                מעקב אחר יתרות צבורות, בדיקת ערך יום חופשה או מחלה לפי החוק ועל בסיס הממוצעים שלך כעובד שעתי או חודשי.
+                            </p>
+                        </div>
+                        <!-- Feature 5 -->
+                        <div class="border-t border-white/20 pt-8 fade-up-element">
+                            <h4 class="text-2xl font-serif font-bold text-white mb-4">ניכויים וקנסות</h4>
+                            <p class="text-white/60 leading-relaxed font-light">
+                                סריקת סעיפי הניכויים בתלוש כדי לזהות "קנסות" או הורדות שכר שלא מעוגנות בחוזה שלך ומהוות פגיעה ישירה בשכר הנטו.
+                            </p>
+                        </div>
+                        <!-- Feature 6 -->
+                        <div class="border-t border-white/20 pt-8 fade-up-element">
+                            <h4 class="text-2xl font-serif font-bold text-white mb-4">זכויות סיום העסקה</h4>
+                            <p class="text-white/60 leading-relaxed font-light">
+                                בתלוש האחרון, המערכת מחשבת השלמות פיצויים, פדיון חופשה, דמי הבראה יחסיים ותשלום חלף הודעה מוקדמת כפי שהוסכם בחוזה.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================================================== -->
+            <!-- NEW: DASHBOARD PREVIEW (תצוגת המערכת) -->
+            <!-- ================================================== -->
+            <section id="dashboard-preview" class="py-32 bg-sand theme-section relative overflow-hidden" data-color="sand">
+                <div class="max-w-7xl mx-auto px-6 lg:px-12">
+                    <div class="flex flex-col md:flex-row justify-between items-end mb-16 gap-8">
+                        <div class="fade-up-element">
+                            <h2 class="text-gold text-xs font-bold tracking-[0.4em] uppercase mb-6 inline-block border-b border-gold/30 pb-4">עובד בשבילך</h2>
+                            <h3 class="text-5xl md:text-7xl font-serif font-black text-charcoal leading-[1.05]">לוח הבקרה האישית.<br/><span class="text-gold">הכסף שלך על השולחן.</span></h3>
+                        </div>
+                        <a href="/signup" class="cursor-hover-target inline-flex items-center gap-3 text-charcoal border-b border-charcoal pb-2 hover:text-gold hover:border-gold transition-colors font-medium text-sm tracking-widest uppercase whitespace-nowrap fade-up-element">
+                            פתח את הסריקה שלי <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                        </a>
+                    </div>
+                    <!-- Dashboard mockup -->
+                    <div class="fade-up-element bg-cream border border-charcoal/10 rounded-sm shadow-2xl p-6 md:p-10 relative" style="box-shadow: 0 40px 80px -20px rgba(10,10,10,0.25);">
+                        <!-- Mockup top bar -->
+                        <div class="flex items-center justify-between pb-6 mb-6 border-b border-charcoal/10">
+                            <div class="flex items-center gap-3">
+                                <div class="w-3 h-3 rounded-full bg-gold"></div>
+                                <div class="text-xs tracking-[0.3em] uppercase text-charcoal/50 font-mono">Session #4827 · דצמבר 2026</div>
+                            </div>
+                            <div class="text-xs tracking-[0.2em] uppercase text-charcoal/40">ליאור גולדברג · עובד בחברת אלפא</div>
+                        </div>
+                        <!-- Top metric row -->
+                        <div class="grid md:grid-cols-3 gap-6 mb-8">
+                            <div class="p-6 bg-white border border-charcoal/10 text-right">
+                                <div class="text-xs tracking-widest uppercase text-charcoal/50 mb-3">פער חודשי מזוהה</div>
+                                <div class="font-serif text-4xl md:text-5xl font-black text-charcoal" dir="ltr" style="text-align:right;">₪1,847</div>
+                                <div class="text-xs text-charcoal/60 mt-2">12 שעות נוספות שלא שולמו</div>
+                            </div>
+                            <div class="p-6 bg-white border border-charcoal/10 text-right">
+                                <div class="text-xs tracking-widest uppercase text-charcoal/50 mb-3">הפרשה לפנסיה</div>
+                                <div class="font-serif text-4xl md:text-5xl font-black text-charcoal">6.0%</div>
+                                <div class="text-xs text-gold mt-2">הסכם: 6.5% · פער 0.5%</div>
+                            </div>
+                            <div class="p-6 bg-charcoal text-cream text-right">
+                                <div class="text-xs tracking-widest uppercase text-cream/60 mb-3">סך פערים</div>
+                                <div class="font-serif text-4xl md:text-5xl font-black text-gold" dir="ltr" style="text-align:right;">₪2,394</div>
+                                <div class="text-xs text-cream/60 mt-2">3 תלושים אחרונים</div>
+                            </div>
+                        </div>
+                        <!-- Issues list -->
+                        <div class="bg-white border border-charcoal/10">
+                            <div class="px-6 py-4 border-b border-charcoal/10 flex items-center justify-between">
+                                <div class="text-sm font-bold text-charcoal tracking-wide">פערים שזוהו בתלוש שלך</div>
+                                <div class="text-xs text-charcoal/50 tracking-widest uppercase">3 פערים פעילים</div>
+                            </div>
+                            <div class="divide-y divide-charcoal/10">
+                                <div class="px-6 py-5 flex items-center justify-between hover:bg-sand/50 transition-colors">
+                                    <div class="text-right flex-1">
+                                        <div class="font-bold text-charcoal">שעות נוספות בתעריף 125%</div>
+                                        <div class="text-xs text-charcoal/60 mt-1">שולם עבור 12 שעות · על פי חוזה: 16 שעות</div>
+                                    </div>
+                                    <div class="font-serif text-2xl font-bold text-gold px-8" dir="ltr" style="text-align:left;">₪437</div>
+                                    <div class="text-xs tracking-widest uppercase text-gold border border-gold/40 px-3 py-1.5">נא לטעון</div>
+                                </div>
+                                <div class="px-6 py-5 flex items-center justify-between hover:bg-sand/50 transition-colors">
+                                    <div class="text-right flex-1">
+                                        <div class="font-bold text-charcoal">הפרשה לפנסיה - חלק מעסיק</div>
+                                        <div class="text-xs text-charcoal/60 mt-1">הפרש 6.0% מהברוטו · בחוזה מופיע: 6.5%</div>
+                                    </div>
+                                    <div class="font-serif text-2xl font-bold text-gold px-8" dir="ltr" style="text-align:left;">₪62 / חודש</div>
+                                    <div class="text-xs tracking-widest uppercase text-gold border border-gold/40 px-3 py-1.5">המשך</div>
+                                </div>
+                                <div class="px-6 py-5 flex items-center justify-between hover:bg-sand/50 transition-colors">
+                                    <div class="text-right flex-1">
+                                        <div class="font-bold text-charcoal">דמי הבראה - שנה 2025</div>
+                                        <div class="text-xs text-charcoal/60 mt-1">זכאי ל-7 ימים · שולמו 5 בלבד</div>
+                                    </div>
+                                    <div class="font-serif text-2xl font-bold text-gold px-8" dir="ltr" style="text-align:left;">₪568</div>
+                                    <div class="text-xs tracking-widest uppercase text-charcoal/50 border border-charcoal/20 px-3 py-1.5">אוסף מסמכים</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PRIVACY / SECURITY SECTION -->
+            <section id="reviews" class="py-32 overflow-hidden theme-section relative" data-color="light">
+                <!-- Subtle accent -->
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-gold/30 to-transparent"></div>
+                
+                <div class="max-w-7xl mx-auto px-6 lg:px-12 mb-16 fade-up-element w-full">
+                    <div class="flex flex-col md:flex-row justify-between items-start pb-12 w-full gap-8">
+                        <div>
+                            <h2 class="text-5xl md:text-7xl font-serif text-charcoal text-right gs-reveal-text">אבטחת מידע<br/> <span class="text-gold">ללא פשרות.</span></h2>
+                        </div>
+                        <div class="max-w-md text-right md:text-left mt-6 md:mt-0">
+                            <p class="text-lg text-charcoal/80 leading-relaxed font-bold mb-4">בשוק הפרטי, בניגוד לציבורי, כל חוזה הוא עולם ומלואו.</p>
+                            <p class="text-lg text-charcoal/60 leading-relaxed">המערכת קוראת את החוזה האישי שלך ומשווה לתלוש. עיבוד לוקאלי אצלך בדפדפן, אפס סכנת דליפה וללא שרתים חיצוניים.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Security Features Grid -->
+                <div class="max-w-7xl mx-auto px-6 lg:px-12 grid md:grid-cols-3 gap-8 mb-16">
+                    <div class="p-8 bg-charcoal/[0.03] border border-charcoal/10 rounded-sm fade-up-element text-right">
+                        <div class="w-12 h-12 bg-gold/10 rounded-full flex items-center justify-center mb-6">
+                            <i data-lucide="shield-check" class="w-6 h-6 text-gold"></i>
+                        </div>
+                        <h4 class="text-xl font-serif font-bold text-charcoal mb-3">עיבוד מקומי</h4>
+                        <p class="text-charcoal/60 leading-relaxed">קבצי ה-PDF שלך לא עוזבים את המכשיר. שום מידע אינו נשלח לשרתים חיצוניים. פענוח ודיוק קורים רק אצלך ברקע.</p>
+                    </div>
+                    <div class="p-8 bg-charcoal/[0.03] border border-charcoal/10 rounded-sm fade-up-element text-right">
+                        <div class="w-12 h-12 bg-gold/10 rounded-full flex items-center justify-center mb-6">
+                            <i data-lucide="trash-2" class="w-6 h-6 text-gold"></i>
+                        </div>
+                        <h4 class="text-xl font-serif font-bold text-charcoal mb-3">השמדה אוטומטית</h4>
+                        <p class="text-charcoal/60 leading-relaxed">ברגע שסגרת את חלון הדפדפן, כל זכר לתלושי השכר נמחק כליל. ביטחון של 100% שאין עקבות.</p>
+                    </div>
+                    <div class="p-8 bg-charcoal/[0.03] border border-charcoal/10 rounded-sm fade-up-element text-right">
+                        <div class="w-12 h-12 bg-gold/10 rounded-full flex items-center justify-center mb-6">
+                            <i data-lucide="cpu" class="w-6 h-6 text-gold"></i>
+                        </div>
+                        <h4 class="text-xl font-serif font-bold text-charcoal mb-3">אפס מעורבות אדם</h4>
+                        <p class="text-charcoal/60 leading-relaxed">בלי עיניים אנושיות שמנחשות אחוזים. האלגוריתם נצמד מתמטית לנתוני משרד הכלכלה, שחור על גבי לבן.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- FOOTER SYSTEM SECTION -->
+            <footer class="pt-24 pb-12 overflow-hidden relative theme-section bg-charcoal text-white" data-color="dark">
+                <div class="max-w-7xl mx-auto px-6 lg:px-12">
+                    <h2 class="text-[6vw] md:text-[4vw] font-serif text-center mb-16 leading-none gs-reveal-text opacity-40" style="color:white !important;">
+                        בדיקת תלוש שכר במגזר הפרטי<span class="text-gold">.</span>
+                    </h2>
+                    
+                    <div class="flex justify-center mb-20 fade-up-element w-full">
+                        <a href="/signup" class="cursor-hover-target hover-magnet bg-gold text-black hover:bg-white font-serif tracking-[0.3em] px-12 md:px-16 py-6 md:py-7 uppercase text-base md:text-xl transition-colors duration-500 inline-flex items-center gap-4">
+                            <span>סרוק עכשיו אנונימית</span>
+                            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                        </a>
+                    </div>
+
+                    <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-12 text-sm opacity-60 mt-12 border-t border-white/20 pt-16 text-white">
+                        <div>
+                            <h4 class="font-bold mb-6 tracking-widest uppercase">לפרטיים ומעסיקים</h4>
+                            <p class="mb-2">בדיקת תלושים היסטוריים</p>
+                            <p class="mb-2">איתור פערים פנסיוניים</p>
+                            <p class="mb-4">פענוח שעות ועמלות</p>
+                        </div>
+                        
+                        <div>
+                            <h4 class="font-bold mb-6 tracking-widest uppercase">אודות המערכת</h4>
+                            <p class="mb-2">מנוע אנליטי מהדור הבא</p>
+                            <p class="mb-4">מעבד אנונימית מהדפדפן</p>
+                            <a href="mailto:jonx250@gmail.com" class="hover:text-gold transition-colors block mb-1 cursor-hover-target">jonx250@gmail.com</a>
+                        </div>
+                        
+                        <div>
+                            <h4 class="font-bold mb-6 tracking-widest uppercase">ניווט</h4>
+                            <ul class="flex flex-col gap-4">
+                                <li><a href="#features" class="cursor-hover-target hover:text-gold transition-colors">בדיקת חוזים</a></li>
+                                <li><a href="#features" class="cursor-hover-target hover:text-gold transition-colors">אבטחת מידע</a></li>
+                                <li><a href="/legal#privacy" class="cursor-hover-target hover:text-gold transition-colors">הצהרת פרטיות</a></li>
+                                <li><a href="/legal#terms" class="cursor-hover-target hover:text-gold transition-colors">תנאי שימוש</a></li>
+                                <li><a href="/legal#disclaimer" class="cursor-hover-target hover:text-gold transition-colors">כתב ויתור משפטי</a></li>
+                            </ul>
+                        </div>
+                        
+                        <div>
+                            <div class="flex items-center gap-2 mb-8">
+                                <span class="text-xl md:text-2xl font-serif font-black text-white">בדיקת תלוש שכר במגזר הפרטי</span>
+                            </div>
+                            <p class="mb-8 font-light leading-relaxed">Copyright © 2026. המערכת מיועדת לבדיקות שכר למגזר הפרטי באמצעות אלגוריתמיקה ממוחשבת.</p>
+                            <div class="flex gap-6">
+                                <a href="mailto:jonx250@gmail.com" aria-label="צור קשר במייל" class="cursor-hover-target hover:text-gold transition-colors"><i data-lucide="mail" class="w-6 h-6 pointer-events-none" aria-hidden="true"></i></a>
+                                <a href="/legal" aria-label="מסמכים משפטיים" class="cursor-hover-target hover:text-gold transition-colors"><i data-lucide="file-text" class="w-6 h-6 pointer-events-none" aria-hidden="true"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </footer>
+
+        </div> <!-- close smooth content -->
+    </main> <!-- close smooth wrapper -->
+
+    <!-- STICKY PREMIUM CTA -->
+    <div class="sticky-cta-wrapper" id="sticky-cta">
+        <a href="/signup" class="sticky-cta-btn hover-magnet">
+            <span class="btn-roll">
+                <span class="char-wrap">
+                    <span class="char-up">התחל חינם עכשיו</span>
+                    <span class="char-down text-gold">שמור על הכסף שלך</span>
+                </span>
+            </span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="transform origin-center translate-y-[-1px]" aria-hidden="true">
+                <path d="M5 12h14m-7-7l7 7-7 7"/>
+            </svg>
+        </a>
+    </div>
+
+    <!-- Tweaks Panel mount -->
+    <div id="tweaks-root"></div>
+    <script type="text/babel" src="tweaks-panel.jsx"></script>
+    <script type="text/babel" src="landing-tweaks.jsx"></script>
+
+    <script>
+        // Init Lucide
+        lucide.createIcons();
+        gsap.registerPlugin(ScrollTrigger);
+
+        /* --------------------------------------------------
+           1. SMOOTH SCROLL (LENIS)
+        --------------------------------------------------- */
+        const lenis = new Lenis({
+            duration: 1.5, // Even buttery-er
+            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), 
+            direction: 'vertical',
+            gestureDirection: 'vertical',
+            smooth: true,
+            mouseMultiplier: 0.8,
+            smoothTouch: false,
+            touchMultiplier: 2,
+            infinite: false,
+        });
+        function raf(time) {
+            lenis.raf(time);
+            requestAnimationFrame(raf);
+        }
+        requestAnimationFrame(raf);
+        lenis.on('scroll', ScrollTrigger.update);
+        gsap.ticker.add((time)=>{ lenis.raf(time * 1000) });
+        gsap.ticker.lagSmoothing(0);
+
+
+        /* --------------------------------------------------
+           2. DYNAMIC ENVIRONMENT (Background Colors)
+        --------------------------------------------------- */
+        const themeSections = document.querySelectorAll('.theme-section');
+        themeSections.forEach(section => {
+            ScrollTrigger.create({
+                trigger: section,
+                start: "top 50%", // When the section hits middle of screen
+                end: "bottom 50%",
+                onEnter: () => changeTheme(section.dataset.color),
+                onEnterBack: () => changeTheme(section.dataset.color)
+            });
+        });
+
+        function changeTheme(colorMode) {
+            document.body.classList.remove('theme-light', 'theme-sand', 'theme-dark');
+            if(colorMode) document.body.classList.add(`theme-${colorMode}`);
+        }
+
+
+        /* --------------------------------------------------
+           3. ADVANCED CURSOR (Velocity Skew & Mix-blend)
+        --------------------------------------------------- */
+        const cursor = document.getElementById('cursor');
+        const follower = document.getElementById('cursor-follower');
+        
+        let mouseX = window.innerWidth / 2;
+        let mouseY = window.innerHeight / 2;
+        let followerX = mouseX;
+        let followerY = mouseY;
+        let velX = 0; let velY = 0;
+        
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            cursor.style.transform = `translate(${mouseX - 6}px, ${mouseY - 6}px)`;
+        });
+        
+        function updateFollower() {
+            // Velocity calculation for skewing
+            let dx = mouseX - followerX;
+            let dy = mouseY - followerY;
+            
+            followerX += dx * 0.15;
+            followerY += dy * 0.15;
+            
+            // Calculate speed and angle to skew cursor
+            let dist = Math.sqrt(dx*dx + dy*dy);
+            let angle = Math.atan2(dy, dx) * 180 / Math.PI;
+            
+            // Clamp skew amount so it doesn't break limits
+            let scaleX = 1 + Math.min(dist * 0.003, 0.4);
+            let scaleY = 1 - Math.min(dist * 0.003, 0.2);
+            
+            follower.style.transform = `translate(${followerX - 20}px, ${followerY - 20}px) rotate(${angle}deg) scale(${scaleX}, ${scaleY})`;
+            
+            requestAnimationFrame(updateFollower);
+        }
+        updateFollower();
+        
+        const hoverTargets = []; // disabled
+        
+        // ULTRA PLAN 3.0: Magnetic Effect
+        document.querySelectorAll('.hover-magnet').forEach(btn => {
+            btn.addEventListener('mousemove', (e) => {
+                const rect = btn.getBoundingClientRect();
+                const hx = e.clientX - rect.left - rect.width / 2;
+                const hy = e.clientY - rect.top - rect.height / 2;
+                gsap.to(btn, {
+                    x: hx * 0.3, 
+                    y: hy * 0.3, 
+                    duration: 0.4, 
+                    ease: "power2.out"
+                });
+            });
+            btn.addEventListener('mouseleave', () => {
+                gsap.to(btn, {x: 0, y: 0, duration: 0.7, ease: "elastic.out(1, 0.3)"});
+            });
+        });
+        hoverTargets.forEach(el => {});
+
+
+        /* --------------------------------------------------
+           4. BUTTON ROLL STAGGER
+        --------------------------------------------------- */
+        // Transform elements with .js-btn-text into rollover animations
+        document.querySelectorAll('a.js-btn-text').forEach(btn => {
+            const text = btn.innerText.trim();
+            // Hebrew is RTL and breaks per-character; we use a 2-line vertical roll on the whole label
+            btn.innerHTML = '';
+            btn.classList.add('btn-roll');
+            const wrap = document.createElement('span');
+            wrap.className = 'char-wrap';
+            wrap.style.transitionDelay = '0s';
+            const up = document.createElement('span');
+            up.className = 'char-up';
+            up.textContent = text;
+            const down = document.createElement('span');
+            down.className = 'char-down text-gold';
+            down.textContent = text;
+            wrap.appendChild(up);
+            wrap.appendChild(down);
+            btn.appendChild(wrap);
+        });
+
+
+        /* --------------------------------------------------
+           5. SPLIT TEXT REVEAL UTILITIES & PRELOADER
+        --------------------------------------------------- */
+        function splitTextByLine(selector) {
+            document.querySelectorAll(selector).forEach(el => {
+                // Actually we already have split-line setup manually in HTML for hero for precise wrapping
+            });
+        }
+        
+        const tlPreloader = gsap.timeline();
+        tlPreloader.fromTo('.preloader-text', { y: "100%", opacity: 0 }, { y: "0%", opacity: 1, duration: 1.0, ease: "power4.out", delay: 0.2 })
+        .to('.preloader-text', { y: "-100%", duration: 0.7, ease: "power4.in", delay: 1.0 })
+        .to('#preloader', {
+            clipPath: "inset(0% 0% 100% 0%)",
+            duration: 1.2,
+            ease: "expo.inOut"
+        }, "-=0.2")
+        .fromTo('.split-line', { y: "110%", rotate: 2 }, {
+            y: "0%",
+            rotate: 0,
+            duration: 1.4,
+            stagger: 0.15,
+            ease: "expo.out"
+        }, "-=0.7");
+
+        // Failsafe: ensure preloader is gone after 6s no matter what
+        setTimeout(() => {
+            const p = document.getElementById('preloader');
+            if (p) p.remove();
+            document.querySelectorAll('.split-line').forEach(s => { s.style.transform = 'none'; s.style.opacity = '1'; });
+        }, 6000);
+
+        // Use ScrollTrigger for all fade-up elements so they appear dynamically and don't disappear
+        gsap.utils.toArray('.fade-up-element').forEach(el => {
+            gsap.fromTo(el, 
+                { opacity: 0, y: 40 },
+                {
+                    opacity: 1, 
+                    y: 0, 
+                    duration: 1.2, 
+                    ease: "power3.out",
+                    scrollTrigger: {
+                        trigger: el,
+                        start: "top 90%",
+                        toggleActions: "play none none reverse"
+                    }
+                }
+            );
+        });
+
+        // preloader cleanup handled in section 5 below
+
+
+        /* --------------------------------------------------
+           6. AUTO-PLAYING CAROUSEL
+        --------------------------------------------------- */
+        const carouselTrack = document.getElementById('carousel-track');
+        const slides = document.querySelectorAll('.carousel-slide');
+        const dots = document.querySelectorAll('.carousel-dot');
+        const stepCounter = document.getElementById('step-counter');
+        let currentSlide = 0;
+        let carouselInterval;
+
+        function goToSlide(index) {
+            // Remove active from all
+            slides.forEach(s => s.classList.remove('active'));
+            dots.forEach(d => {
+                d.classList.remove('active');
+                d.querySelector('.dot-fill').style.animation = 'none';
+            });
+
+            currentSlide = index;
+            
+            // Activate current
+            slides[currentSlide].classList.add('active');
+            dots[currentSlide].classList.add('active');
+            // Restart animation
+            void dots[currentSlide].querySelector('.dot-fill').offsetWidth;
+            dots[currentSlide].querySelector('.dot-fill').style.animation = 'dotProgress 5s linear forwards';
+            
+            // Update counter
+            if (stepCounter) {
+                stepCounter.textContent = `0${currentSlide + 1} / 03`;
+            }
+        }
+
+        function nextSlide() {
+            goToSlide((currentSlide + 1) % slides.length);
+        }
+
+        function startCarousel() {
+            carouselInterval = setInterval(nextSlide, 5000);
+        }
+
+        // Dot click handlers
+        dots.forEach((dot, i) => {
+            dot.addEventListener('click', () => {
+                clearInterval(carouselInterval);
+                goToSlide(i);
+                startCarousel();
+            });
+        });
+
+        // Init carousel
+        goToSlide(0);
+        startCarousel();
+        
+        // Final preloader reveal
+        tlPreloader.eventCallback("onComplete", () => {
+            document.getElementById('preloader').remove();
+            ScrollTrigger.refresh();
+        });
+
+
+        /* --------------------------------------------------
+           6.B STICKY CTA (ULTRA PLAN 3.0)
+        --------------------------------------------------- */
+        const stickyCta = document.getElementById('sticky-cta');
+        ScrollTrigger.create({
+            trigger: "#reviews",
+            start: "top center",
+            toggleClass: {targets: stickyCta, className: "visible"}
+        });
+
+
+        /* --------------------------------------------------
+           7. NATIVE PARALLAX VIDEO
+        --------------------------------------------------- */
+        gsap.utils.toArray('.parallax-bg').forEach(bg => {
+            const speed = bg.getAttribute('data-speed');
+            gsap.to(bg, {
+                yPercent: speed * 30, // subtle
+                ease: "none",
+                scrollTrigger: {
+                    trigger: bg.parentElement,
+                    start: "top bottom",
+                    end: "bottom top",
+                    scrub: true
+                }
+            });
+        });
+
+        /* --------------------------------------------------
+           7.B DYNAMIC ENVIRONMENT (IDENTITY BACKGROUND)
+        --------------------------------------------------- */
+        const identityBg = document.getElementById('identity-dynamic-bg');
+        const identityBgScrollWrapper = document.getElementById('identity-bg-scroll-wrapper');
+        const identityBgMouseWrapper = document.getElementById('identity-bg-mouse-wrapper');
+        
+        if (identityBg && identityBgScrollWrapper && identityBgMouseWrapper) {
+            // 1. Cinematic slow pan and zoom (mimicking a moving video tracking shot)
+            // We apply this continuous animation strictly to the IMG tag
+            gsap.fromTo(identityBg, 
+                { scale: 1, xPercent: -3, yPercent: 0 },
+                {
+                    scale: 1.1,
+                    xPercent: 3,
+                    yPercent: -2,
+                    duration: 40,
+                    repeat: -1,
+                    yoyo: true,
+                    ease: "sine.inOut"
+                }
+            );
+
+            // 2. Mouse-move parallax effect
+            // We apply mouse movement to the inner mouse wrapper
+            const identitySection = document.getElementById('identity-section');
+            if (identitySection && !window.matchMedia("(pointer: coarse)").matches) {
+                identitySection.addEventListener('mousemove', (e) => {
+                    const xCenter = window.innerWidth / 2;
+                    const yCenter = window.innerHeight / 2;
+                    
+                    const xPos = (e.clientX - xCenter) / xCenter;
+                    const yPos = (e.clientY - yCenter) / yCenter;
+                    
+                    gsap.to(identityBgMouseWrapper, {
+                        x: -xPos * 30,
+                        y: -yPos * 15,
+                        duration: 2.5,
+                        ease: "power2.out",
+                        overwrite: "auto"
+                    });
+                });
+                
+                identitySection.addEventListener('mouseleave', () => {
+                    gsap.to(identityBgMouseWrapper, {
+                        x: 0,
+                        y: 0,
+                        duration: 3,
+                        ease: "power2.out",
+                        overwrite: "auto"
+                    });
+                });
+            }
+            
+            // 3. Scroll parallax (subtle depth)
+            // We apply scroll parallax to the outer wrapper to prevent GSAP conflicts
+            gsap.to(identityBgScrollWrapper, {
+                yPercent: 12,
+                ease: "none",
+                scrollTrigger: {
+                    trigger: identitySection,
+                    start: "top bottom",
+                    end: "bottom top",
+                    scrub: true
+                }
+            });
+        }
+
+
+        /* --------------------------------------------------
+           8. GENERAL REVEALS ON SCROLL
+        --------------------------------------------------- */
+        gsap.utils.toArray('.gs-reveal-text').forEach(el => {
+            // Animating the whole element gracefully to preserve inner HTML (like bold tags and colors)
+            gsap.fromTo(el, 
+                { y: 40, opacity: 0 },
+                {
+                    y: 0,
+                    opacity: 1,
+                    duration: 1.2,
+                    ease: "expo.out",
+                    scrollTrigger: {
+                        trigger: el,
+                        start: "top 85%",
+                        toggleActions: "play none none reverse"
+                    }
+                }
+            );
+        });
+
+        /* --------------------------------------------------
+           MONEY COUNTER ANIMATION (NEW)
+        --------------------------------------------------- */
+        function animateCounter(el) {
+            const final = parseInt(el.getAttribute('data-final'), 10);
+            const duration = 2200;
+            const start = performance.now();
+            const ease = (t) => 1 - Math.pow(1 - t, 4);
+            function tick(now) {
+                const t = Math.min((now - start) / duration, 1);
+                const val = Math.floor(ease(t) * final);
+                el.textContent = val.toLocaleString('he-IL');
+                if (t < 1) requestAnimationFrame(tick);
+                else el.textContent = final.toLocaleString('he-IL');
+            }
+            requestAnimationFrame(tick);
+        }
+        document.querySelectorAll('#money-count, #stat-1, #stat-2, #stat-3, #stat-4').forEach(el => {
+            ScrollTrigger.create({
+                trigger: el,
+                start: 'top 85%',
+                once: true,
+                onEnter: () => animateCounter(el)
+            });
+        });
+
+        /* --------------------------------------------------
+           END OF ANIMATIONS & CUSTOM EFFECTS
+        --------------------------------------------------- */
+
+
+
+        /* --------------------------------------------------
+           9. DRAGGABLE INERTIA SLIDER (Friction Physics without Plugins)
+        --------------------------------------------------- */
+        const slider = document.getElementById('draggable-slider');
+        if (slider) {
+            let isDown = false;
+            let startX, scrollLeft;
+            let vel = 0;
+            let isAnimating = false;
+            let timestamp = 0;
+
+            slider.addEventListener('mousedown', (e) => {
+                isDown = true;
+                isAnimating = false;
+                startX = e.pageX;
+                scrollLeft = slider.scrollLeft;
+                timestamp = performance.now();
+            });
+            
+            slider.addEventListener('mouseleave', () => { if(isDown){ isDown = false; throwSlider(); } });
+            slider.addEventListener('mouseup', () => { isDown = false; throwSlider(); });
+            
+            slider.addEventListener('mousemove', (e) => {
+                if (!isDown) return;
+                e.preventDefault();
+                const x = e.pageX;
+                const walk = (x - startX); // direction RTL
+                slider.scrollLeft = scrollLeft - walk;
+                
+                // Calculate velocity
+                const now = performance.now();
+                const dt = now - timestamp;
+                if (dt > 0) {
+                    vel = walk / dt * 10; // multiplier to scale velocity
+                    timestamp = now;
+                    startX = x;
+                    scrollLeft = slider.scrollLeft;
+                }
+            });
+
+            function throwSlider() {
+                isAnimating = true;
+                requestAnimationFrame(decayVelocity);
+            }
+
+            function decayVelocity() {
+                if (!isAnimating) return;
+                // friction decay
+                vel *= 0.92;
+                slider.scrollLeft -= vel; // apply velocity
+                
+                if (Math.abs(vel) > 0.5) {
+                    requestAnimationFrame(decayVelocity);
+                } else {
+                    isAnimating = false;
+                }
+            }
+        }
+
+    </script>
+
+<!-- ============ FLOATING ASSISTANT BOT ============ -->
+<div id="lpBotContainer">
+  <button id="lpBotToggle" class="fixed bottom-6 left-6 z-50 w-14 h-14 bg-charcoal text-gold flex items-center justify-center shadow-2xl hover:bg-gold hover:text-charcoal transition-all" aria-label="עוזר חכם" style="border:1px solid rgba(184,155,94,0.4)">
+    <i data-lucide="message-circle" class="w-6 h-6"></i>
+    <span class="absolute -top-1 -right-1 w-3 h-3 rounded-full" style="background:#B89B5E;animation:pulse 2s infinite"></span>
+  </button>
+
+  <div id="lpBotPanel" class="fixed bottom-6 left-6 z-50 hidden flex-col" style="width:380px;max-width:calc(100vw - 3rem);height:560px;max-height:calc(100vh - 3rem);background:#FDFBF7;border:1px solid rgba(10,10,10,0.15);box-shadow:0 25px 50px -12px rgba(0,0,0,0.25)">
+    <div style="background:#0a0a0a;color:#FDFBF7;padding:1rem;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(184,155,94,0.3)">
+      <div style="display:flex;align-items:center;gap:0.75rem">
+        <div style="width:36px;height:36px;background:rgba(184,155,94,0.2);border:1px solid rgba(184,155,94,0.4);display:flex;align-items:center;justify-content:center"><i data-lucide="sparkles" class="w-4 h-4" style="color:#B89B5E"></i></div>
+        <div>
+          <div style="font-family:'Cormorant Garamond',serif;font-weight:900;font-size:1rem;line-height:1.1">עוזר חכם</div>
+          <div style="font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(184,155,94,0.8);font-family:monospace">תלוש · AI</div>
+        </div>
+      </div>
+      <button id="lpBotClose" style="color:rgba(255,255,255,0.6);background:none;border:none;cursor:pointer" aria-label="סגור"><i data-lucide="x" class="w-4 h-4"></i></button>
+    </div>
+    <div id="lpBotMessages" style="flex:1;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:12px;background:#FDFBF7"></div>
+    <div style="padding:0.75rem 1rem;border-top:1px solid rgba(10,10,10,0.1);background:rgba(247,243,234,0.4)">
+      <div style="font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(10,10,10,0.45);font-family:monospace;margin-bottom:0.5rem">שאלות נפוצות</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        <button class="lp-suggest" data-q="מה זה האתר תלוש?">מה זה האתר</button>
+        <button class="lp-suggest" data-q="כמה זה עולה?">תמחור</button>
+        <button class="lp-suggest" data-q="איך עובד הסנכרון?">איך עובד הסנכרון</button>
+        <button class="lp-suggest" data-q="האם המידע שלי בטוח?">פרטיות</button>
+      </div>
+    </div>
+    <div style="padding:0.75rem;border-top:1px solid rgba(10,10,10,0.1);background:#FDFBF7">
+      <form id="lpBotForm" style="display:flex;gap:0.5rem">
+        <input id="lpBotInput" type="text" placeholder="שאל אותי על האתר..." autocomplete="off" spellcheck="false" style="flex:1;padding:10px 12px;background:#F7F3EA;border:1px solid rgba(10,10,10,0.15);font-size:13.5px;font-family:inherit;outline:none" />
+        <button type="submit" style="background:#0a0a0a;color:#B89B5E;padding:0 1rem;border:none;cursor:pointer" aria-label="שלח"><i data-lucide="arrow-left" class="w-4 h-4"></i></button>
+      </form>
+      <div style="font-size:10px;color:rgba(10,10,10,0.4);margin-top:0.5rem;font-family:monospace;letter-spacing:0.05em;text-align:center">תשובות מתבססות על האתר בלבד · לא ייעוץ משפטי</div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .lp-suggest { font-size:11px; padding:5px 10px; background:#fff; border:1px solid rgba(10,10,10,0.12); color:rgba(10,10,10,0.7); cursor:pointer; transition:all .15s; font-family:inherit; }
+  .lp-suggest:hover { border-color:#B89B5E; color:#0a0a0a; background:#FDFBF7; }
+  .lp-msg-user { align-self:flex-end; background:#0a0a0a; color:#FDFBF7; padding:10px 14px; max-width:85%; font-size:13.5px; line-height:1.55; }
+  .lp-msg-bot { align-self:flex-start; background:#fff; border:1px solid rgba(10,10,10,0.08); padding:12px 14px; max-width:90%; font-size:13.5px; line-height:1.6; color:#0a0a0a; }
+  .lp-msg-bot strong { color:#B89B5E; }
+  .lp-typing::after { content:'...'; animation: typing 1.2s steps(4) infinite; }
+  @keyframes typing { 0%{content:'.';} 33%{content:'..';} 66%{content:'...';} }
+</style>
+
+<script>
+(function() {
+  const SYS = `אתה עוזר חכם של אתר "תלוש" — מערכת לבדיקת תלושי שכר במגזר הפרטי בישראל.
+תפקידך: לענות על שאלות על האתר בלבד. אל תיתן ייעוץ משפטי/מס/חשבונאי. אל תענה על שאלות לא רלוונטיות.
+
+== מה האתר עושה? ==
+מקבל תלוש שכר + חוזה העסקה + פרופיל מס. משווה ביניהם ב-29 בדיקות. מציג פערים שזיהינו (החזרים אפשריים) ובניית מכתב דרישה למעסיק.
+
+== מסלולים ==
+- **Basic** (8₪/תלוש): 14 בדיקות בסיסיות + דוח PDF
+- **Pro** (10₪/תלוש): 29 בדיקות + פרופיל מס + מטריצת סנכרון
+- **Premium** (14₪/תלוש): 29 בדיקות + מכתב דרישה + מרכז זכאויות + עוזר חכם
+הנחות לפי כמות: 3 תלושים -10%, 6 -17%, 12 -25%.
+
+== פרטיות ==
+כל המידע נשמר ב-localStorage של הדפדפן. לא נשלח לשרת חיצוני, לא נצפה ע״י אף אחד.
+
+== חוקי תשובות ==
+- ענה תמיד בעברית, קצר ומדויק (2-4 משפטים).
+- השתמש ב-**מודגש** למילים חשובות.
+- אם נשאלת על משהו לא קשור לאתר — סרב באדיבות.
+- אם נשאלת לייעוץ משפטי/מס ספציפי — הפנה לכתב הוויתור.
+- אל תמציא נתונים שלא מופיעים ב-system prompt הזה.`;
+
+  const $ = id => document.getElementById(id);
+  const container = $('lpBotContainer');
+  const toggle = $('lpBotToggle');
+  const panel = $('lpBotPanel');
+  const close = $('lpBotClose');
+  const msgs = $('lpBotMessages');
+  const form = $('lpBotForm');
+  const input = $('lpBotInput');
+  let conv = [], typing = false;
+
+  function add(role, text) {
+    const div = document.createElement('div');
+    div.className = 'lp-msg-' + role;
+    div.style.animation = 'fadeUp .3s ease';
+    div.innerHTML = (text||'').replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br/>');
+    msgs.appendChild(div);
+    msgs.scrollTop = msgs.scrollHeight;
+    return div;
+  }
+
+  async function send(text) {
+    if (!text.trim() || typing) return;
+    typing = true;
+    add('user', text);
+    conv.push({role:'user', content:text});
+    const t = add('bot', '');
+    t.innerHTML = '<span class="lp-typing"></span>';
+    try {
+      const recent = conv.slice(-6);
+      const hist = recent.length>1 ? '\n\nשיחה אחרונה:\n' + recent.slice(0,-1).map(m => `${m.role==='user'?'משתמש':'אתה'}: ${m.content}`).join('\n') : '';
+      const reply = await window.claude.complete({
+        messages:[{role:'user', content: SYS + hist + '\n\nשאלת המשתמש: ' + text + '\n\nענה בעברית, קצר ומדויק (2-4 משפטים).'}]
+      });
+      t.innerHTML = (reply || 'מצטער, לא הצלחתי לענות. נסה שוב.').replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br/>');
+      conv.push({role:'assistant', content:reply});
+    } catch(e) {
+      t.innerHTML = 'מצטער, יש בעיה בחיבור.';
+    }
+    typing = false;
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  toggle.addEventListener('click', () => {
+    panel.style.display = 'flex';
+    toggle.style.display = 'none';
+    if (!msgs.children.length) add('bot', 'שלום! אני העוזר החכם של תלוש. שאל אותי על האתר — מה אנחנו עושים, איך נרשמים, כמה זה עולה, ומה ההבדל בין המסלולים.\n\nשאלות נפוצות בתחתית 👇');
+    setTimeout(()=>input.focus(), 100);
+  });
+  close.addEventListener('click', () => {
+    panel.style.display = 'none';
+    toggle.style.display = 'flex';
+  });
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const t = input.value.trim();
+    if (!t) return;
+    input.value = '';
+    send(t);
+  });
+  document.querySelectorAll('.lp-suggest').forEach(c => c.addEventListener('click', () => send(c.dataset.q)));
+
+  // Re-run lucide icons after DOM mutations
+  if (window.lucide) window.lucide.createIcons();
+})();
+</script>
+
+</body>
+</html>

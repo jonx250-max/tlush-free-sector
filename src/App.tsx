@@ -5,7 +5,6 @@ import { ErrorBoundary } from './components/ErrorBoundary'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { Layout } from './components/Layout'
 
-const LandingPage = lazy(() => import('./pages/LandingPage').then(m => ({ default: m.LandingPage })))
 const LoginPage = lazy(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })))
 const SignupPage = lazy(() => import('./pages/SignupPage').then(m => ({ default: m.SignupPage })))
 const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage').then(m => ({ default: m.ForgotPasswordPage })))
@@ -16,6 +15,19 @@ const ProfilePage = lazy(() => import('./pages/ProfilePage').then(m => ({ defaul
 const ToolsPage = lazy(() => import('./pages/ToolsPage').then(m => ({ default: m.ToolsPage })))
 const OnboardingWizard = lazy(() => import('./pages/OnboardingWizard').then(m => ({ default: m.OnboardingWizard })))
 const ResultsPage = lazy(() => import('./pages/ResultsPage').then(m => ({ default: m.ResultsPage })))
+
+/**
+ * Server-side rewrite (vercel.json) routes / and /landing to
+ * public/marketing/index.html. This fallback runs only on local dev
+ * (`vite preview` doesn't honor vercel.json rewrites for static HTML)
+ * and immediately redirects via the public path.
+ */
+function LandingFallback() {
+  if (typeof window !== 'undefined') {
+    window.location.replace('/marketing/index.html')
+  }
+  return null
+}
 
 function LoadingSpinner() {
   return (
@@ -33,8 +45,11 @@ export default function App() {
           <Suspense fallback={<LoadingSpinner />}>
             <Routes>
               {/* Public routes */}
-              <Route path="/" element={<Navigate to="/landing" replace />} />
-              <Route path="/landing" element={<LandingPage />} />
+              {/* /, /landing → served as static HTML from public/marketing/index.html
+                  via vercel.json rewrites (P6: 1:1 design fidelity). React Landing
+                  fallback below for non-Vercel local dev (`vite preview`). */}
+              <Route path="/" element={<LandingFallback />} />
+              <Route path="/landing" element={<LandingFallback />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignupPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />

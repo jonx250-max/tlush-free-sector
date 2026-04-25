@@ -9,16 +9,18 @@ const securityHeaders = {
   'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
   'Content-Security-Policy': [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' https://vercel.live",
+    // CDNs needed by marketing landing page (GSAP, Tailwind, Lucide, Lenis)
+    "script-src 'self' 'unsafe-inline' https://vercel.live https://cdn.tailwindcss.com https://unpkg.com https://cdnjs.cloudflare.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "img-src 'self' data: https:",
     "font-src 'self' data: https://fonts.gstatic.com",
-    "connect-src 'self' https://*.supabase.co",
-    "frame-src https://vercel.live",
+    "connect-src 'self' https://*.supabase.co https://accounts.google.com https://ipapi.co",
+    "frame-src https://vercel.live https://accounts.google.com",
     "worker-src 'self' blob:",
+    "media-src 'self'",
     "frame-ancestors 'none'",
     "base-uri 'self'",
-    "form-action 'self'"
+    "form-action 'self' https://accounts.google.com https://*.supabase.co",
   ].join('; '),
 }
 

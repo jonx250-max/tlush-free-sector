@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#0a0a0a"></rect>
+  <rect x="40" y="40" width="432" height="432" fill="none" stroke="#B89B5E" stroke-width="2"></rect>
+  <text x="256" y="340" font-family="Frank Ruhl Libre, Playfair Display, Georgia, serif" font-size="280" font-weight="900" fill="#FDFBF7" text-anchor="middle">ת</text>
+  <circle cx="380" cy="160" r="8" fill="#B89B5E"></circle>
+  <text x="256" y="430" font-family="ui-monospace, monospace" font-size="32" letter-spacing="6" fill="#B89B5E" text-anchor="middle">TALUSH</text>
+</svg>
