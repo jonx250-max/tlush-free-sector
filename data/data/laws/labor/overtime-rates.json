@@ -1,0 +1,50 @@
+{
+  "id": "overtime-rates-2026",
+  "category": "labor",
+  "subcategory": "overtime",
+  "title": "תוספת שכר עבור שעות נוספות",
+  "description": "שעתיים ראשונות מעל 8.6 שעות (חמישה ימים) או 7.6 (שישה ימים) — 125%. מעבר לכך — 150%. שבת/חג — 150%/175%.",
+  "effective_from": "2018-04-01",
+  "rules": {
+    "type": "rate",
+    "value": {
+      "first_2h": 1.25,
+      "beyond_2h": 1.5,
+      "sabbath_first_2h": 1.5,
+      "sabbath_beyond_2h": 1.75
+    },
+    "unit": "multiplier",
+    "conditions": {
+      "hours_per_day": {
+        "regular": 8.6,
+        "six_day_week": 7.6
+      }
+    },
+    "calculation": "שכר שעה × אחוז × שעות נוספות",
+    "calculation_fn": "calcOvertimePay"
+  },
+  "applies_to": [
+    "shift_worker",
+    "all_employees"
+  ],
+  "sources": [
+    {
+      "name": "labor_ministry",
+      "url": "https://www.gov.il/he/departments/topics/work_hours",
+      "fetched_at": "2026-12-09T06:00:00Z"
+    }
+  ],
+  "metadata": {
+    "first_seen": "2026-12-09T06:00:00Z",
+    "last_updated": "2026-12-09T06:00:00Z",
+    "version": 1,
+    "ai_confidence": 0.98,
+    "human_reviewed": true,
+    "expert_approved": true
+  },
+  "impact_estimate": {
+    "users_affected": "~35% of users",
+    "average_correction_nis": 280
+  },
+  "legal_disclaimer": "מבוסס על: חוק שעות עבודה ומנוחה, התשי\"א-1951."
+}

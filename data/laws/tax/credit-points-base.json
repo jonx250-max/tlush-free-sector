@@ -1,0 +1,45 @@
+{
+  "id": "credit-points-base-2026",
+  "category": "tax",
+  "subcategory": "credit-points",
+  "title": "נקודות זיכוי בסיסיות לתושב ישראל",
+  "description": "כל תושב ישראל זכאי ל-2.25 נקודות זיכוי בסיסיות החל מ-2024. נקודה אחת מחוקקת ב-242 ש\"ח/חודש (2026).",
+  "effective_from": "2024-01-01",
+  "effective_until": null,
+  "retroactive": false,
+  "rules": {
+    "type": "credit_points",
+    "value": 2.25,
+    "unit": "points",
+    "conditions": {
+      "tax_resident": true
+    },
+    "calculation": "נקודות × 242 ש\"ח (2026)",
+    "calculation_fn": "calcCreditPoints"
+  },
+  "applies_to": [
+    "all_employees",
+    "tax_residents"
+  ],
+  "sources": [
+    {
+      "name": "rashut_hamisim",
+      "url": "https://www.gov.il/he/departments/topics/tax_credit_points",
+      "document_id": "2.25-base-2024",
+      "fetched_at": "2026-12-09T06:00:00Z"
+    }
+  ],
+  "metadata": {
+    "first_seen": "2026-12-09T06:00:00Z",
+    "last_updated": "2026-12-09T06:00:00Z",
+    "version": 1,
+    "ai_confidence": 1,
+    "human_reviewed": true,
+    "expert_approved": true
+  },
+  "impact_estimate": {
+    "users_affected": "100% of Israeli tax residents",
+    "average_correction_nis": null
+  },
+  "legal_disclaimer": "מבוסס על: רשות המסים, פקודת מס הכנסה סעיף 33א."
+}

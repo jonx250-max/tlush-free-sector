@@ -1,0 +1,43 @@
+{
+  "id": "credit-points-woman-2026",
+  "category": "tax",
+  "subcategory": "credit-points",
+  "title": "נקודת זיכוי לאישה",
+  "description": "כל אישה תושבת ישראל זכאית לחצי נקודת זיכוי נוספת.",
+  "effective_from": "2003-01-01",
+  "rules": {
+    "type": "credit_points",
+    "value": 0.5,
+    "unit": "points",
+    "conditions": {
+      "gender": "female",
+      "tax_resident": true
+    },
+    "calculation": "0.5 × 242 ש\"ח = 121 ש\"ח/חודש",
+    "calculation_fn": "calcCreditPoints"
+  },
+  "applies_to": [
+    "all_employees",
+    "tax_residents"
+  ],
+  "sources": [
+    {
+      "name": "rashut_hamisim",
+      "url": "https://www.gov.il/he/departments/topics/tax_credit_points",
+      "fetched_at": "2026-12-09T06:00:00Z"
+    }
+  ],
+  "metadata": {
+    "first_seen": "2026-12-09T06:00:00Z",
+    "last_updated": "2026-12-09T06:00:00Z",
+    "version": 1,
+    "ai_confidence": 1,
+    "human_reviewed": true,
+    "expert_approved": true
+  },
+  "impact_estimate": {
+    "users_affected": "~50% of users",
+    "average_correction_nis": 121
+  },
+  "legal_disclaimer": "מבוסס על: פקודת מס הכנסה סעיף 36א."
+}

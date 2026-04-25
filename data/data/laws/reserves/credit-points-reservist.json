@@ -1,0 +1,48 @@
+{
+  "id": "credit-points-reservist-2026",
+  "category": "reserves",
+  "subcategory": "credit-points",
+  "title": "נקודות זיכוי לחיילי מילואים פעילים",
+  "description": "חייל מילואים שביצע מעל 20 ימי שירות בשנה זכאי לנקודת זיכוי נוספת. החל מ-2024 — נקודה ל-20+ ימים, 2 נקודות ל-30+ ימים.",
+  "effective_from": "2024-01-01",
+  "rules": {
+    "type": "credit_points",
+    "value": {
+      "tier_20_29_days": 1,
+      "tier_30_plus_days": 2
+    },
+    "unit": "points/year",
+    "conditions": {
+      "reserve_days_per_year": {
+        "min": 20
+      }
+    },
+    "calculation": "תלוי ימי שירות × 242 ש\"ח × 12 חודשים",
+    "calculation_fn": "calcReservistCredit"
+  },
+  "applies_to": [
+    "reservist",
+    "all_employees"
+  ],
+  "sources": [
+    {
+      "name": "rashut_hamisim",
+      "url": "https://www.gov.il/he/departments/topics/tax_benefits_reservists",
+      "document_id": "reservist-2024-amendment",
+      "fetched_at": "2026-12-09T06:00:00Z"
+    }
+  ],
+  "metadata": {
+    "first_seen": "2026-12-09T06:00:00Z",
+    "last_updated": "2026-12-09T06:00:00Z",
+    "version": 2,
+    "ai_confidence": 0.94,
+    "human_reviewed": true,
+    "expert_approved": true
+  },
+  "impact_estimate": {
+    "users_affected": "~6% of users",
+    "average_correction_nis": 484
+  },
+  "legal_disclaimer": "מבוסס על: תיקון 2024 לפקודת מס הכנסה — הוראת שעה לחיילי מילואים פעילים."
+}

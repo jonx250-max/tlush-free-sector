@@ -1,0 +1,103 @@
+name: 🤖 Auto-Update Laws
+
+on:
+  schedule:
+    # Run daily at 06:00 Israel time (03:00 / 04:00 UTC depending on DST)
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+    inputs:
+      source:
+        description: 'Specific source (kolzchut|rashut_hamisim|labor_ministry|reshumot) or empty for all'
+        required: false
+        type: string
+
+jobs:
+  scrape-and-classify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install deps
+        run: npm ci || npm install
+
+      - name: Scrape sources
+        run: |
+          if [ -n "${{ inputs.source }}" ]; then
+            node scripts/auto-update/scraper.js --source=${{ inputs.source }}
+          else
+            node scripts/auto-update/scraper.js
+          fi
+
+      - name: Classify with Claude
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: node scripts/auto-update/classifier.js
+
+      - name: Auto-merge safe changes
+        run: node scripts/auto-update/merge.js --auto-only
+
+      - name: Rebuild index
+        run: node scripts/auto-update/build-index.js
+
+      - name: Open PR with auto-merged law changes
+        run: |
+          git config user.name "talush-bot[bot]"
+          git config user.email "bot@talush.app"
+          git add data/laws/ scrapes/ 2>/dev/null || true
+          if git diff --staged --quiet; then
+            echo "No law changes to PR"
+            exit 0
+          fi
+          BRANCH="laws/auto-$(date +%Y-%m-%d)-${GITHUB_RUN_NUMBER}"
+          git checkout -b "$BRANCH"
+          git commit -m "🤖 Auto-update laws ($(date +%Y-%m-%d))
+
+          Auto-merged: $(jq '.auto_merged | length' data/laws/_changelog.json 2>/dev/null || echo 0) changes
+          Pending review: $(jq '.pending | length' data/laws/_pending_review.json 2>/dev/null || echo 0) items"
+          git push origin "$BRANCH"
+          gh pr create \
+            --base main \
+            --head "$BRANCH" \
+            --title "🤖 Auto-update laws ($(date +%Y-%m-%d))" \
+            --body "Automated law-update PR. **Review carefully** before merging — retroactive changes trigger re-evaluation of all affected user analyses." \
+            --label automated,laws-update
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Notify on pending reviews
+        if: always()
+        run: |
+          PENDING=$(jq '.pending | length' data/laws/_pending_review.json)
+          if [ "$PENDING" -gt 0 ]; then
+            echo "::warning::$PENDING items awaiting human review at /Admin.html"
+          fi
+
+      - name: Upload scrape artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scrapes-${{ github.run_id }}
+          path: scrapes/
+          retention-days: 30
+
+  notify-users:
+    needs: scrape-and-classify
+    runs-on: ubuntu-latest
+    if: success()
+    steps:
+      - name: Check for retroactive changes
+        run: |
+          # If any approved change is retroactive → trigger user notifications
+          # (placeholder — real impl calls SendGrid / Push Notifications)
+          echo "TODO: integrate with notification service"

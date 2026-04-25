@@ -1,0 +1,14 @@
+{
+  "name": "talush-auto-update",
+  "version": "1.0.0",
+  "description": "Talush — Automated law-update pipeline",
+  "private": true,
+  "scripts": {
+    "scrape": "node scraper.js",
+    "classify": "node classifier.js",
+    "merge:auto": "node merge.js --auto-only",
+    "build:index": "node build-index.js",
+    "all": "npm run scrape && npm run classify && npm run merge:auto && npm run build:index"
+  },
+  "engines": { "node": ">=20" }
+}

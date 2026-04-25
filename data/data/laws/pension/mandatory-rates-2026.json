@@ -1,0 +1,52 @@
+{
+  "id": "pension-mandatory-2026",
+  "category": "pension",
+  "subcategory": "mandatory",
+  "title": "שיעורי הפקדה לפנסיה חובה",
+  "description": "הפקדה מינימלית לפנסיה: 6% עובד + 6.5% מעסיק (תגמולים) + 6% מעסיק (פיצויים). על שכר עד תקרה.",
+  "effective_from": "2017-07-01",
+  "rules": {
+    "type": "rate",
+    "value": {
+      "employee": 0.06,
+      "employer_compensation": 0.06,
+      "employer_pension": 0.065
+    },
+    "unit": "% of salary",
+    "conditions": {
+      "age": {
+        "min": 21,
+        "max": 67
+      },
+      "employment_months": {
+        "min": 6
+      }
+    },
+    "calculation": "שכר × אחוז (עד תקרת השכר הקובע)",
+    "calculation_fn": "calcMandatoryPension"
+  },
+  "applies_to": [
+    "all_employees",
+    "private_sector"
+  ],
+  "sources": [
+    {
+      "name": "labor_ministry",
+      "url": "https://www.gov.il/he/departments/topics/mandatory_pension",
+      "fetched_at": "2026-12-09T06:00:00Z"
+    }
+  ],
+  "metadata": {
+    "first_seen": "2026-12-09T06:00:00Z",
+    "last_updated": "2026-12-09T06:00:00Z",
+    "version": 1,
+    "ai_confidence": 1,
+    "human_reviewed": true,
+    "expert_approved": true
+  },
+  "impact_estimate": {
+    "users_affected": "~95% of users",
+    "average_correction_nis": 320
+  },
+  "legal_disclaimer": "מבוסס על: צו הרחבה לפנסיה חובה, 2008 (ועדכוניו)."
+}

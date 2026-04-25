@@ -1,0 +1,50 @@
+{
+  "version": "1.0.0",
+  "updated_at": "2026-12-09T06:00:00Z",
+  "geo_block": {
+    "enabled": true,
+    "allowed_countries": ["IL"],
+    "block_message_he": "השירות זמין רק לתושבי ישראל",
+    "bypass_methods": ["invite_token"]
+  },
+  "vpn_detection": {
+    "enabled": true,
+    "providers": ["ipqualityscore", "maxmind"],
+    "action_on_detect": "require_sms",
+    "tor_action": "block_completely"
+  },
+  "rate_limits": {
+    "payslip_upload": { "max": 3, "window_seconds": 60, "scope": "ip" },
+    "letter_generate": { "max": 5, "window_seconds": 60, "scope": "user" },
+    "chat_query": { "max": 30, "window_seconds": 3600, "scope": "user" },
+    "signup": { "max": 3, "window_seconds": 86400, "scope": "ip" }
+  },
+  "multi_account": {
+    "free_trial_per_device": 1,
+    "free_trial_per_id_number": 1,
+    "fingerprint_method": "canvas+screen+ua+tz",
+    "duplicate_action": "require_sms",
+    "server_ledger_required": true
+  },
+  "fake_payslip_detection": {
+    "require_digital_signature": false,
+    "require_ocr_consistency": true,
+    "min_text_density": 0.3,
+    "blocked_patterns": ["lorem ipsum", "sample", "דוגמה בלבד"],
+    "action_on_fake": "block_and_log"
+  },
+  "logging": {
+    "log_all_blocks": true,
+    "log_retention_days": 90,
+    "alert_threshold_blocks_per_hour": 50
+  },
+  "abuse_categories": [
+    "GEO_BLOCK",
+    "VPN_DETECTED",
+    "TOR_EXIT",
+    "MULTI_ACCOUNT",
+    "FAKE_PAYSLIP",
+    "RATE_LIMIT_EXCEEDED",
+    "SUSPICIOUS_PATTERN"
+  ]
+}

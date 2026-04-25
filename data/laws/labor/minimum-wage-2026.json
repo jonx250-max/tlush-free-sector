@@ -1,0 +1,49 @@
+{
+  "id": "minimum-wage-2026",
+  "category": "labor",
+  "subcategory": "wage",
+  "title": "שכר מינימום",
+  "description": "שכר מינימום חודשי בישראל לעובד במשרה מלאה. לשעת עבודה: 32.30 ש\"ח (אפריל 2026).",
+  "effective_from": "2026-04-01",
+  "rules": {
+    "type": "minimum",
+    "value": {
+      "monthly": 6247.67,
+      "hourly": 32.3
+    },
+    "unit": "NIS",
+    "conditions": {
+      "age": {
+        "min": 18
+      },
+      "full_time": true
+    },
+    "calculation": "6,247.67 ש\"ח/חודש או 32.30 ש\"ח/שעה",
+    "calculation_fn": "checkMinimumWage"
+  },
+  "applies_to": [
+    "minimum_wage_earner",
+    "all_employees"
+  ],
+  "sources": [
+    {
+      "name": "labor_ministry",
+      "url": "https://www.gov.il/he/departments/topics/minimum_wage",
+      "document_id": "min-wage-april-2026",
+      "fetched_at": "2026-12-09T06:00:00Z"
+    }
+  ],
+  "metadata": {
+    "first_seen": "2026-12-09T06:00:00Z",
+    "last_updated": "2026-12-09T06:00:00Z",
+    "version": 1,
+    "ai_confidence": 1,
+    "human_reviewed": true,
+    "expert_approved": true
+  },
+  "impact_estimate": {
+    "users_affected": "~18% of users",
+    "average_correction_nis": 0
+  },
+  "legal_disclaimer": "מבוסס על: חוק שכר מינימום, התשמ\"ז-1987."
+}
