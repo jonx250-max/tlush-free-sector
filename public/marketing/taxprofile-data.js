@@ -25,12 +25,7 @@
     if (!user) return
 
     try {
-      const cfgRes = await fetch('/api/public-config')
-      const { supabaseUrl, supabaseAnonKey } = await cfgRes.json()
-      const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.104.1')
-      supabase = createClient(supabaseUrl, supabaseAnonKey, {
-        auth: { persistSession: true, autoRefreshToken: true },
-      })
+      supabase = await window.TalushAuth.getClient()
 
       const { data: profile } = await supabase
         .from('tax_profiles')

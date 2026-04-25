@@ -39,8 +39,12 @@
     const { supabaseUrl, supabaseAnonKey } = await cfgRes.json()
     const { createClient } = await import(SUPABASE_CDN)
     client = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'pkce' },
     })
+    // Force session detection from URL hash (#access_token=... after OAuth) —
+    // Supabase v2 does this on createClient but await getSession() to ensure
+    // we don't race with auth-guard's getUser() call.
+    await client.auth.getSession()
   })().catch((err) => {
     console.error('[TalushAuth] init failed:', err)
     throw err
@@ -54,6 +58,16 @@
 
   window.TalushAuth = {
     ready,
+    /**
+     * Expose the underlying Supabase client for callers that need direct
+     * .from()/.rpc() access (auth-guard, dashboard-data, taxprofile-data,
+     * admin-data, audit-data). Falls back to creating a new client only
+     * if the bridge fails — same auth state shared via localStorage.
+     */
+    async getClient() {
+      await ready
+      return client
+    },
     async signIn(email, password) {
       try {
         const c = await ensureClient()
@@ -67,13 +81,18 @@
     async signUp(email, password, fullName) {
       try {
         const c = await ensureClient()
-        const { error } = await c.auth.signUp({
+        const { data, error } = await c.auth.signUp({
           email,
           password,
-          options: { data: { full_name: fullName } },
+          options: {
+            data: { full_name: fullName },
+            emailRedirectTo: `${window.location.origin}/dashboard`,
+          },
         })
         if (error) return { ok: false, error: toHebrew(error) }
-        return { ok: true }
+        // Returns hasSession=true if Supabase auto-creates session (no email
+        // confirmation required), false if user must verify email first.
+        return { ok: true, hasSession: !!data?.session, user: data?.user }
       } catch (err) {
         return { ok: false, error: toHebrew(err) }
       }

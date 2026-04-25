@@ -33,12 +33,7 @@
 
     // 3. Fetch checks + purchases (RLS-isolated to current user)
     try {
-      const cfgRes = await fetch('/api/public-config')
-      const { supabaseUrl, supabaseAnonKey } = await cfgRes.json()
-      const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.104.1')
-      const sb = createClient(supabaseUrl, supabaseAnonKey, {
-        auth: { persistSession: true, autoRefreshToken: true },
-      })
+      const sb = await window.TalushAuth.getClient()
 
       const [checksRes, purchasesRes] = await Promise.all([
         sb.from('checks').select('id, total_gap_nis, created_at').order('created_at', { ascending: false }).limit(50),

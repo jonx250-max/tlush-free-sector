@@ -350,6 +350,7 @@ function updateStrength(v){
 }
 
 // === Signup form wired to Supabase auth via /marketing/auth-bridge.js ===
+let __lastSignupResult = null;
 document.getElementById('signupForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const form = e.target;
@@ -360,18 +361,48 @@ document.getElementById('signupForm').addEventListener('submit', async (e) => {
   const fullName = fullNameInput?.value?.trim() || '';
   if (!email || !password) return;
 
+  __lastSignupResult = null;
   try {
     await window.Talush.withLoading(btn, 'יוצר חשבון...', async () => {
       const result = await window.TalushAuth.signUp(email, password, fullName);
       if (!result.ok) throw new Error(result.error || 'שגיאה לא ידועה');
-    }, 'החשבון נוצר! מעבר להגדרת פרופיל מס...');
+      __lastSignupResult = result;
+    });
   } catch (err) {
     window.Talush.toast(err.message, 'error');
     return;
   }
 
+  // Supabase returns no session when email-confirmation is required.
+  // Show "check your email" instead of redirecting (otherwise user
+  // bounces from /tax-profile back to /login).
+  if (!__lastSignupResult?.hasSession) {
+    showEmailConfirmCard(email);
+    return;
+  }
   setTimeout(() => { window.location.href = '/tax-profile'; }, 1000);
 });
+
+function showEmailConfirmCard(email) {
+  const form = document.getElementById('signupForm');
+  if (!form) return;
+  const card = document.createElement('div');
+  card.className = 'rounded border border-gold/30 bg-gold/5 p-6 mt-4 text-center';
+  const title = document.createElement('div');
+  title.className = 'text-gold font-serif text-xl mb-2';
+  title.textContent = 'בדוק את הדוא"ל שלך';
+  const body = document.createElement('div');
+  body.className = 'text-sm text-cream/70 leading-relaxed';
+  body.textContent = `שלחנו אימייל אימות ל-${email}. לחץ על הקישור באימייל כדי לסיים יצירת החשבון.`;
+  const hint = document.createElement('div');
+  hint.className = 'text-[11px] text-cream/40 mt-3';
+  hint.textContent = 'לא מצאת? בדוק בתיקיית הספאם.';
+  card.appendChild(title);
+  card.appendChild(body);
+  card.appendChild(hint);
+  form.parentNode?.insertBefore(card, form);
+  form.style.display = 'none';
+}
 </script>
 <script src="/marketing/auth-bridge.js"></script>
 </body>

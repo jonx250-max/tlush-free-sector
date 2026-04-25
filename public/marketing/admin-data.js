@@ -7,12 +7,7 @@
     if (!window.TalushSession?.isAdmin) return
 
     try {
-      const cfgRes = await fetch('/api/public-config')
-      const { supabaseUrl, supabaseAnonKey } = await cfgRes.json()
-      const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.104.1')
-      const sb = createClient(supabaseUrl, supabaseAnonKey, {
-        auth: { persistSession: true, autoRefreshToken: true },
-      })
+      const sb = await window.TalushAuth.getClient()
 
       // Fetch laws_corrections (auto-update queue)
       const { data: corrections } = await sb
