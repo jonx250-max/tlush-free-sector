@@ -39,3 +39,6 @@ src/graphify-out/
 dogfood-output/
 .playwright-mcp/
 *.png
+
+# Talush integration reference package (gitignored, local-only)
+talush-package/

@@ -88,9 +88,44 @@ Three god-node refactors completed: `diffEngine.compare`, `taxCalculator.calcula
 
 ## Next phase
 
-Phase 2 = ruflo-architecture SPARC redesign against this backlog.
-Phase 3 = writing-plans → per-slice implementation.
-Phase 4 slices: A (diffEngine refactor) → B (tax refactor) → C (round consolidation) → D (page splits).
+Phase 1 (audit) closed. **Phase 2 — Talush Integration** active.
+
+### Phase 2: Talush Integration (started 2026-04-25)
+
+**Plan**: `C:/Users/jonx2/.claude/plans/unified-snacking-sedgewick.md` (~200h scope, 11 sub-phases P0-P11)
+
+**Goal**: Integrate `FREE TLUSH.zip` design+logic package (13 HTML pages + 9 JS modules + 10 laws + auto-update pipeline + security policy + GitHub Action) into existing Vite+React+TS+Supabase project. Preserve 100% of ZIP logic. Ship perfect desktop+mobile UX.
+
+**Locked decisions**:
+- Stack: stay on Vite (skip Next.js migration — saves 80h, preserves 237 tests + CI)
+- Pricing: **one-time per-payslip** (Basic ₪8 / Pro ₪10 / Premium ₪14, with 0/10/17/25% volume discount on 1/3/6/12 months)
+- Letter generation: Premium-only
+- Rights center: 18 in Pro, 60+ in Premium, with 4-layer legal-defensive design
+- Pattern Detection: 3+ consecutive months trigger, Pro+ gate
+- Maya/Business tier: SKIPPED for MVP
+- Notarization: OpenTimestamps (free Bitcoin anchor)
+- Payments: Tranzila deferred to Phase 8 (after MVP validation)
+- Privacy: hybrid client+server (encryption-at-rest, RLS), NOT pure-client
+- Brand: `freemarket.tlush.co.il`
+- Admin: `jonx250@gmail.com` only
+
+**P0 status (in progress)**: branch `chore/talush-prep` created, taste-skill + awesome-claude-code cloned to `~/.claude/skills/`, ZIP contamination moved to `talush-package/` (gitignored), auth + deps audit done.
+
+**Sub-phases**:
+- P0 Pre-flight (4h) — current
+- P1 Tailwind+i18n+a11y (8h)
+- P2 Auth+RBAC+Profile (10h)
+- P3 DB schema+audit log+notarization (12h)
+- P4 9 missing calculators (28h)
+- P5 Pricing matrix+free-tier guard (12h)
+- P6 13 UI pages (40h)
+- P7 Auto-update pipeline+admin/audit (16h)
+- P8 Security middleware (14h)
+- P9 OCR+AI bot+heic (12h)
+- P10 Tranzila payments (10h, deferred)
+- P11 Production go-live + T1-T7 test matrix (16h)
+
+**Total**: ~158-200h realistic, 6.7 calendar weeks at 30h/week solo.
 
 ---
 
