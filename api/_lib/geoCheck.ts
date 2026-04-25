@@ -13,7 +13,10 @@
 
 const ALLOWED_COUNTRY = 'IL'
 
-const HARDCODED_DATACENTER_ASN_PREFIXES = ['16509', '14618', '8075', '15169', '13335']
+// Reserved for future VPN/datacenter detection (Plan §8 IPQualityScore wiring).
+// Common datacenter ASNs: AWS 16509, GCP 14618 (was 15169), Azure 8075, DO 14061.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _DATACENTER_ASN_PREFIXES = ['16509', '14618', '8075', '15169', '13335'] as const
 
 export interface GeoCheckResult {
   allowed: boolean

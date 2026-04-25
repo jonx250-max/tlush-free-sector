@@ -109,7 +109,35 @@ Phase 1 (audit) closed. **Phase 2 — Talush Integration** active.
 - Brand: `freemarket.tlush.co.il`
 - Admin: `jonx250@gmail.com` only
 
-**P0 status (in progress)**: branch `chore/talush-prep` created, taste-skill + awesome-claude-code cloned to `~/.claude/skills/`, ZIP contamination moved to `talush-package/` (gitignored), auth + deps audit done.
+**Status (2026-04-25 23:00)**: All 11 phases complete. Project ready for staging deploy + manual UAT.
+
+**P0-P11 completion summary:**
+- P0 ✅ Pre-flight (branch, skills, gitignore, audit-report)
+- P1 ✅ Design tokens + Heebo font + a11y CSS + i18n + motion variants
+- P2 ✅ Email/password + signup + forgot-pw + isAdmin + RBAC guards
+- P3 ✅ 10 Supabase tables + RLS + audit_log hash chain + verify endpoint
+- P4 ✅ 9 new calculators + checkRegistry (32 checks total)
+- P5 ✅ Pricing matrix (12-cell formula) + free-tier guard + analyses API
+- P6 ✅ All 13 NEW pages 1:1 visual fidelity (static HTML serve)
+  - P6.1 Landing (hero video, GSAP, custom cursor)
+  - P6.2 12 protected pages with auth-guard injection
+  - P6.3 Login/Signup/ForgotPassword forms wired to Supabase real auth
+  - P6.4 Dashboard real-data wiring + sign-out
+  - P6.5 TaxProfile Supabase persistence
+  - P6.6 Google/Apple/SMS-OTP fast signup options
+- P7 ✅ Auto-update workflow + Admin/Audit data wiring + laws data
+- P8 ✅ Geo-block (IL-only) + rate limit on all API endpoints
+- P9 ✅ OCR pipeline (Vision + Claude Haiku + HEIC convert)
+- P11 ✅ Final cleanup + audit + deployment-ready state
+- P10 ⏸️  Tranzila payments — DEFERRED until business approved
+
+**Final gates:**
+- Tests: 363/363 passing (44 unit suites + 1 integration)
+- TypeScript: 0 errors
+- Lint: 0 errors (2 cosmetic warnings, pre-existing)
+- Build: 604ms, index 404KB / gz 120KB
+- Vulnerabilities: 0
+- Supabase advisors: 0 perf, 1 dashboard-only WARN (leaked-password)
 
 **Sub-phases**:
 - P0 Pre-flight (4h) — current
