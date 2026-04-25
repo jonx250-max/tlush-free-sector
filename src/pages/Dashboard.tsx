@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
-import { he } from '../i18n/he'
 import { Upload, History, Wrench, ArrowLeft, UserCog, CheckCircle } from 'lucide-react'
 import { motion } from 'framer-motion'
 

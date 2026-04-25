@@ -7,7 +7,6 @@ import {
   calculateKerenHistahlmut,
   calculateAllDeductions,
   DEFAULT_PENSION,
-  DEFAULT_KEREN,
 } from './deductionsCalculator'
 
 describe('calculateNationalInsurance', () => {

@@ -17,16 +17,6 @@ const HEBREW_MONTHS: Record<string, number> = {
   ספטמבר: 9, אוקטובר: 10, נובמבר: 11, דצמבר: 12,
 }
 
-// ── Template signatures ──────────────────────────────────────
-const TEMPLATE_SIGNATURES: Record<string, string[]> = {
-  hilan: ['הילן', 'HILAN', 'Hilan'],
-  michpal: ['מכפל', 'MICHPAL', 'Michpal'],
-  harmony: ['הרמוני', 'HARMONY', 'Harmony'],
-  hashkama: ['חשכמה', 'מרכז השכר'],
-  sap: ['SAP'],
-  tafnit: ['תפנית', 'TAFNIT'],
-}
-
 // ── Field detection patterns ─────────────────────────────────
 // Maps Hebrew field names to payslip fields
 const EARNINGS_PATTERNS: Array<{ pattern: RegExp; field: keyof ParsedPayslip }> = [
@@ -157,13 +147,6 @@ function detectStrategy(rows: ParsedRow[]): ParseStrategy {
   return 'regex'
 }
 
-function detectTemplate(text: string): string {
-  for (const [name, sigs] of Object.entries(TEMPLATE_SIGNATURES)) {
-    if (sigs.some(s => text.includes(s))) return name
-  }
-  return 'unknown'
-}
-
 // ══════════════════════════════════════════════════════════════
 // TABLE PARSING
 // ══════════════════════════════════════════════════════════════
@@ -264,7 +247,7 @@ function extractMonth(text: string): number | null {
     if (text.includes(name)) return num
   }
   // Try MM/YYYY or MM-YYYY pattern
-  const dateMatch = text.match(/\b(0?[1-9]|1[0-2])\s*[/\-\.]\s*(20\d{2})\b/)
+  const dateMatch = text.match(/\b(0?[1-9]|1[0-2])\s*[/\-.]\s*(20\d{2})\b/)
   if (dateMatch) return parseInt(dateMatch[1])
   return null
 }

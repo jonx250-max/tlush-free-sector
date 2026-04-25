@@ -378,7 +378,7 @@ function extractNoticePeriod(text: string): ExtractedField<number> {
 }
 
 function extractEffectiveDate(text: string): ExtractedField<string> {
-  const match = text.match(/(\d{1,2})[/.\-](\d{1,2})[/.\-](20\d{2})/)
+  const match = text.match(/(\d{1,2})[/.-](\d{1,2})[/.-](20\d{2})/)
   if (match) {
     return field(
       `${match[3]}-${match[2].padStart(2, '0')}-${match[1].padStart(2, '0')}`,

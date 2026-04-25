@@ -74,22 +74,18 @@ function isProfileComplete(profile: UserProfile | null): boolean {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [profile, setProfile] = useState<UserProfile | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [user, setUser] = useState<User | null>(() =>
+    appConfig.isDemoAuthEnabled ? DEMO_USER : null
+  )
+  const [profile, setProfile] = useState<UserProfile | null>(() =>
+    appConfig.isDemoAuthEnabled ? DEMO_PROFILE : null
+  )
+  const [isLoading, setIsLoading] = useState(() =>
+    !appConfig.isDemoAuthEnabled && !!supabase
+  )
 
   useEffect(() => {
-    if (appConfig.isDemoAuthEnabled) {
-      setUser(DEMO_USER)
-      setProfile(DEMO_PROFILE)
-      setIsLoading(false)
-      return
-    }
-
-    if (!supabase) {
-      setIsLoading(false)
-      return
-    }
+    if (appConfig.isDemoAuthEnabled || !supabase) return
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
