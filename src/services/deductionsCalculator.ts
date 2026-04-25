@@ -52,7 +52,7 @@ export const DEFAULT_PENSION: PensionConfig = {
   severanceRate: 0.0833,
 }
 
-export const DEFAULT_KEREN: KerenConfig = {
+const DEFAULT_KEREN: KerenConfig = {
   employeeRate: 0.025,
   employerRate: 0.075,
 }
