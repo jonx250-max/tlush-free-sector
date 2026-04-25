@@ -16,7 +16,7 @@ export default defineConfig({
     url: 'http://127.0.0.1:5173',
     reuseExistingServer: !process.env.CI,
     timeout: 60_000,
-    env: { VITE_DEMO_AUTH: 'true' },
+    env: { VITE_DEMO_AUTH: 'false' },
   },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
