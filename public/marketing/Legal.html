@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>מרכז משפטי · בדיקת תלוש שכר</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700&family=Frank+Ruhl+Libre:wght@300;400;700;900&display=swap" rel="stylesheet">
+<script>
+tailwind.config = {
+  theme: { extend: {
+    fontFamily: { sans: ['Assistant','sans-serif'], serif: ['"Frank Ruhl Libre"','serif'], mono: ['ui-monospace','monospace'] },
+    colors: { cream:'#FDFBF7', sand:'#F4F1EB', charcoal:'#0a0a0a', gold:'#B89B5E' }
+  }}
+}
+</script>
+<style>
+  body { font-family: 'Assistant', sans-serif; background:#FDFBF7; color:#0a0a0a; }
+  .noise-overlay{position:fixed;top:-50%;left:-50%;width:200%;height:200vh;pointer-events:none;z-index:1;opacity:.025;background-image:url('data:image/svg+xml,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="n"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23n)"/%3E%3C/svg%3E')}
+
+  /* Hero */
+  .hero { background:#0a0a0a; color:#FDFBF7; }
+  .gold-line { height:1px; background:linear-gradient(to right, transparent, rgba(184,155,94,0.5), transparent); }
+
+  /* Sidebar nav */
+  .toc-link { display:flex; align-items:center; gap:14px; padding:14px 18px; color:rgba(10,10,10,0.55); font-size:14px; border-right:2px solid transparent; transition: all .25s; cursor:pointer; white-space:nowrap; }
+  .toc-link:hover { color:#0a0a0a; background: rgba(184,155,94,0.05); }
+  .toc-link.active { color:#0a0a0a; border-right-color:#B89B5E; background: rgba(184,155,94,0.07); font-weight:600; }
+  /* Mobile: horizontal sticky TOC */
+  @media (max-width: 1023px){
+    .toc-aside { position: sticky; top: 0; z-index: 30; background: #FDFBF7; padding-top: 8px; padding-bottom: 8px; margin: 0 -1.5rem 1.5rem; padding-left: 1.5rem; padding-right: 1.5rem; border-bottom: 1px solid rgba(10,10,10,0.08); }
+    .toc-aside nav { display: flex; flex-direction: row; overflow-x: auto; -webkit-overflow-scrolling: touch; gap: 4px; padding: 0; border: none; margin-bottom: 0 !important; }
+    .toc-aside nav::-webkit-scrollbar { display: none; }
+    .toc-aside .toc-link { padding: 10px 14px; border-right: none; border-bottom: 2px solid transparent; flex-shrink: 0; font-size: 13px; }
+    .toc-aside .toc-link.active { border-right: none; border-bottom-color: #B89B5E; }
+    .toc-aside .toc-help { display: none; }
+  }
+  .toc-link .num { font-family: ui-monospace, monospace; font-size:10px; color:#B89B5E; letter-spacing:.15em; }
+
+  /* Document */
+  .doc-section { padding: 60px 0; border-bottom: 1px solid rgba(10,10,10,0.08); scroll-margin-top: 24px; }
+  .doc-section:last-child { border-bottom: none; }
+  .doc-section h2 { font-family:'Frank Ruhl Libre', serif; font-weight:900; font-size: clamp(2rem, 4vw, 3rem); line-height:1.05; margin-bottom:8px; color:#0a0a0a; }
+  .doc-section .eyebrow { font-family: ui-monospace, monospace; font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase; color:#B89B5E; margin-bottom: 18px; }
+  .doc-section .lede { font-size: 17px; line-height: 1.75; color: rgba(10,10,10,0.7); margin-bottom: 36px; max-width: 640px; }
+  .doc-section h3 { font-family:'Frank Ruhl Libre', serif; font-weight:700; font-size: 22px; margin-top: 36px; margin-bottom: 14px; color:#0a0a0a; padding-bottom: 8px; border-bottom: 1px solid rgba(10,10,10,0.08); }
+  .doc-section h3 .n { font-family: ui-monospace, monospace; color:#B89B5E; font-size: 14px; margin-left: 12px; font-weight: 400; }
+  .doc-section p { color: rgba(10,10,10,0.78); line-height: 1.85; font-size: 15px; margin-bottom: 14px; }
+  .doc-section ul { margin: 12px 0 18px; padding-right: 24px; list-style: none; }
+  .doc-section ul li { position: relative; color: rgba(10,10,10,0.78); line-height: 1.85; font-size: 15px; margin-bottom: 10px; padding-right: 18px; }
+  .doc-section ul li::before { content:''; position:absolute; right:0; top:13px; width:6px; height:6px; background:#B89B5E; }
+
+  /* Critical box */
+  .critical { background: rgba(166,93,46,0.05); border:1px solid rgba(166,93,46,0.25); border-right: 3px solid #a65d2e; padding: 22px 26px; margin: 28px 0; }
+  .critical .label { font-family: ui-monospace, monospace; font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase; color:#a65d2e; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+  .critical p { color: rgba(10,10,10,0.85); font-size: 14px; line-height: 1.75; margin-bottom: 0; }
+
+  /* Quiet box */
+  .quiet { background: rgba(184,155,94,0.05); border-right: 3px solid #B89B5E; padding: 18px 22px; margin: 22px 0; }
+  .quiet p { color: rgba(10,10,10,0.78); font-size: 14px; margin-bottom: 0; line-height: 1.7; }
+
+  /* Defined term */
+  .term { font-weight: 700; color: #0a0a0a; }
+  .term-def { background: rgba(184,155,94,0.08); padding: 1px 6px; border-radius: 1px; font-style: italic; }
+
+  /* Footer */
+  .legal-footer { background:#0a0a0a; color:#FDFBF7; }
+
+  /* Print */
+  @media print {
+    .no-print { display:none !important; }
+    .doc-section { break-inside: avoid; padding: 24px 0; }
+    body { background:#fff; }
+  }
+
+  /* Smooth scroll for anchor nav */
+  html { scroll-behavior: smooth; }
+</style>
+<!-- Meta -->
+<meta name="theme-color" content="#0a0a0a">
+<meta name="description" content="29 בדיקות אוטומטיות לתלוש השכר שלכם במגזר הפרטי — חישוב נטו רב-שנתי, השוואה לחוזה, מרכז זכאויות. מקומי, פרטי, מאובטח.">
+<meta name="format-detection" content="telephone=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+
+<!-- Open Graph / Social -->
+<meta property="og:type" content="website">
+<meta property="og:locale" content="he_IL">
+<meta property="og:site_name" content="תלוש">
+<meta property="og:title" content="תלוש · בדיקת תלוש שכר במגזר הפרטי">
+<meta property="og:description" content="29 בדיקות אוטומטיות לתלוש השכר שלכם — מקומי, פרטי, ללא שמירת נתונים בשרת.">
+<meta property="og:image" content="icon-512.svg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="תלוש · בדיקת תלוש שכר במגזר הפרטי">
+<meta name="twitter:description" content="29 בדיקות אוטומטיות לתלוש השכר שלכם.">
+<meta name="twitter:image" content="icon-512.svg">
+
+<!-- Icons -->
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="apple-touch-icon.svg">
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="talush-a11y.css">
+<script src="talush-ui.js" defer></script>
+<script src="talush-error-boundary.js?v=1777126914727"></script>
+<script src="talush-data-export.js" defer></script>
+<style>@keyframes spin { to { transform: rotate(360deg); } }</style>
+<script src="security-guard.js" defer></script>
+<script src="audit-logger.js" defer></script>
+</head>
+<body class="antialiased" data-screen-label="Legal Center">
+<a href="#main-content" class="skip-link" style="position:absolute;top:-40px;right:0;background:#B89B5E;color:#0a0a0a;padding:10px 20px;z-index:99999;text-decoration:none;font-weight:600;font-size:13px;letter-spacing:0.15em;text-transform:uppercase;transition:top .2s;" onfocus="this.style.top='0'" onblur="this.style.top='-40px'">דלג לתוכן הראשי</a>
+<div class="noise-overlay"></div>
+
+<!-- Top nav -->
+<header class="no-print sticky top-0 z-40 bg-cream/95 backdrop-blur border-b border-charcoal/10">
+  <div class="max-w-7xl mx-auto px-6 lg:px-10 py-5 flex items-center justify-between">
+    <a href="/" class="flex items-center gap-3 group">
+      <div class="w-9 h-9 border border-charcoal/30 group-hover:border-gold flex items-center justify-center font-serif font-black transition-colors">ב</div>
+      <div class="leading-tight">
+        <div class="font-serif font-black text-base">בדיקת תלוש שכר</div>
+        <div class="text-[10px] tracking-[0.25em] uppercase text-charcoal/50">מרכז משפטי</div>
+      </div>
+    </a>
+    <div class="flex items-center gap-3">
+      <button onclick="window.print()" class="hidden md:flex items-center gap-2 text-xs tracking-widest uppercase text-charcoal/60 hover:text-gold transition-colors">
+        <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+        <span>הדפס / שמור PDF</span>
+      </button>
+      <a href="/login" class="bg-charcoal text-cream px-5 py-3 text-[11px] tracking-[0.2em] uppercase hover:bg-gold hover:text-charcoal transition-colors">כניסה למערכת</a>
+    </div>
+  </div>
+</header>
+
+<!-- Hero -->
+<section class="hero relative overflow-hidden">
+  <div class="absolute top-0 left-0 right-0 gold-line"></div>
+  <div class="max-w-7xl mx-auto px-6 lg:px-10 py-20 md:py-28 relative">
+    <div class="text-[11px] tracking-[0.3em] uppercase text-gold font-mono mb-6">▸ Legal · Privacy · Disclaimer</div>
+    <h1 class="font-serif font-black leading-[0.95] tracking-tight mb-8" style="font-size: clamp(2.75rem, 7vw, 5.5rem);">
+      מרכז משפטי<br/>
+      <span class="text-gold">שקיפות מלאה.</span>
+    </h1>
+    <p class="text-white/70 text-lg md:text-xl leading-relaxed max-w-2xl font-light">
+      אנחנו מאמינים שמסמכים משפטיים צריכים להיות קריאים, לא מוצפנים. כאן תמצא את כל מה שצריך לדעת — תנאי שימוש, מדיניות פרטיות, כתב ויתור והסכם רישיון. ללא ז'רגון מיותר, עם ההגנות הנדרשות.
+    </p>
+    <div class="flex items-center gap-8 mt-12 text-[10px] tracking-[0.3em] uppercase text-white/40 font-mono">
+      <span>עודכן · 15.04.2026</span>
+      <span class="hidden md:inline">גרסה 2.4</span>
+      <span class="hidden md:inline">תחולה · ישראל</span>
+    </div>
+  </div>
+</section>
+
+<!-- Body grid: TOC + content -->
+<div class="max-w-7xl mx-auto px-6 lg:px-10 py-12 md:py-20">
+  <div class="grid lg:grid-cols-[260px_1fr] gap-12 lg:gap-20">
+
+    <!-- TOC -->
+    <aside class="toc-aside no-print lg:sticky lg:top-24 self-start">
+      <div class="text-[10px] tracking-[0.3em] uppercase text-charcoal/50 font-mono mb-4 px-2 toc-help">מסמכים</div>
+      <nav class="border-y border-charcoal/10 py-2 mb-6">
+        <a href="#terms" class="toc-link" data-target="terms">
+          <span class="num">01</span><span>תנאי שימוש</span>
+        </a>
+        <a href="#privacy" class="toc-link" data-target="privacy">
+          <span class="num">02</span><span>מדיניות פרטיות</span>
+        </a>
+        <a href="#disclaimer" class="toc-link" data-target="disclaimer">
+          <span class="num">03</span><span>כתב ויתור</span>
+        </a>
+        <a href="#license" class="toc-link" data-target="license">
+          <span class="num">04</span><span>הסכם רישיון</span>
+        </a>
+      </nav>
+
+      <div class="toc-help">
+      <div class="text-[10px] tracking-[0.3em] uppercase text-charcoal/50 font-mono mb-3 px-2">צריך עזרה?</div>
+      <a href="mailto:jonx250@gmail.com" class="block px-2 text-sm text-charcoal/70 hover:text-gold transition-colors">
+        jonx250@gmail.com
+      </a>
+      <p class="px-2 text-xs text-charcoal/45 mt-2 leading-relaxed">
+        לשאלות משפטיות, בקשות מחיקה או דיווח על תקלה.
+      </p>
+      </div>
+    </aside>
+
+    <!-- Content -->
+    <main>
+
+      <!-- ============ DOCUMENT 1: TERMS OF USE ============ -->
+      <article id="terms" class="doc-section">
+        <div class="eyebrow">▸ מסמך 01</div>
+        <h2>תנאי שימוש</h2>
+        <p class="lede">
+          תנאי השימוש מסדירים את הזכויות והחובות של כל מי שגולש או נרשם למערכת. בעצם השימוש בשירות, אתה מאשר שקראת את התנאים והבנת אותם.
+        </p>
+
+        <h3>1. הגדרות<span class="n">§1</span></h3>
+        <p>בתנאים אלה, יהיו למונחים הבאים המשמעות שלצדם:</p>
+        <ul>
+          <li><span class="term">"השירות"</span> או <span class="term">"המערכת"</span> — כלי דיגיטלי לבדיקת תלושי שכר, השוואה לחוזה העסקה ואיתור פערים, הזמין דרך אתר זה.</li>
+          <li><span class="term">"המפעיל"</span> — בעלי המערכת, המפתחים והנציגים מטעמם.</li>
+          <li><span class="term">"המשתמש"</span> — כל אדם פרטי או תאגיד הגולש, נרשם או מבצע פעולה במערכת.</li>
+          <li><span class="term">"דוח"</span> — הפלט שמופק על-ידי המערכת, הכולל זיהוי פערים פוטנציאליים בתלוש.</li>
+          <li><span class="term">"נתונים"</span> — קבצי תלושים, חוזי העסקה וכל מידע אישי שהמשתמש מזין.</li>
+        </ul>
+
+        <h3>2. כשירות לשימוש<span class="n">§2</span></h3>
+        <p>השימוש במערכת מותר ליחידים בני 18 ומעלה, או לתאגידים רשומים כדין במדינת ישראל. הרשמה תוך מסירת פרטים שגויים תוביל לחסימה מיידית וביטול הסכמה זו.</p>
+
+        <h3>3. אופי השירות<span class="n">§3</span></h3>
+        <p>המערכת מספקת ניתוח אלגוריתמי-טכני של תלושי שכר, על בסיס השוואה לנתוני חוזה העסקה שהמשתמש מזין בעצמו. הניתוח מבוסס על:</p>
+        <ul>
+          <li>הוראות חוקי העבודה הישראליים — חוק שעות עבודה ומנוחה, חוק חופשה שנתית, חוק פיצויי פיטורין וכיו"ב.</li>
+          <li>צווי הרחבה והסכמים קיבוציים כלליים שהוחלו במשק.</li>
+          <li>טבלאות ערכים מקובלות (שכר מינימום, ביטוח לאומי, מס בריאות).</li>
+        </ul>
+        <div class="critical">
+          <div class="label"><i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i>חשוב</div>
+          <p>הדוח מהווה <span class="term">אומדן אלגוריתמי בלבד</span>, לא חוות דעת משפטית, לא חוות דעת חשב שכר מוסמך, ואינו תחליף לייעוץ מקצועי. אין להסתמך עליו לפני אימות עם עורך דין או מומחה רלוונטי.</p>
+        </div>
+
+        <h3>4. שימוש מותר ואסור<span class="n">§4</span></h3>
+        <p>המשתמש רשאי להשתמש במערכת אך ורק לבדיקת התלושים שלו או של גורם שהסמיך אותו לכך בכתב. אסור:</p>
+        <ul>
+          <li>להעלות תלושים של עובד אחר ללא הסכמתו.</li>
+          <li>להשתמש במערכת לפגיעה בצד שלישי, פרסום שקרי או הוצאת לשון הרע.</li>
+          <li>לבצע הנדסה לאחור, לפרק את הקוד או לעקוף מנגנוני אבטחה.</li>
+          <li>למכור, להשכיר או להעביר את הגישה לחשבון לצד שלישי.</li>
+          <li>להשתמש במערכת ביצירת ייעוץ משפטי מסחרי לצדדים שלישיים ללא רישיון מתאים.</li>
+        </ul>
+
+        <h3>5. רישום וחשבון<span class="n">§5</span></h3>
+        <p>הרשמה לשירות מחייבת מסירת כתובת דוא"ל תקפה וסיסמה. המשתמש אחראי באופן בלעדי לשמירה על סודיות פרטי הכניסה. כל פעולה שתבוצע מהחשבון תיוחס למשתמש הרשום.</p>
+
+        <h3>6. תשלום וביטול עסקה<span class="n">§6</span></h3>
+        <p>השימוש הראשון בשירות הוא חינם (Freemium). שימוש מתמשך מותנה ברכישת מסלול. התשלום הוא חד-פעמי לפי מסלול שנבחר, ללא חיוב מתחדש.</p>
+        <ul>
+          <li><span class="term">החזר מלא:</span> זכאי המשתמש תוך 14 יום מיום הרכישה, ובלבד שלא הופק יותר מדוח אחד תחת המסלול.</li>
+          <li><span class="term">החזר חלקי:</span> לאחר הפקת דוח אחד ועד 14 יום — החזר יחסי לפי מספר התלושים שלא נוצלו.</li>
+          <li><span class="term">לאחר 14 יום:</span> אין החזר.</li>
+        </ul>
+
+        <h3>7. סיום ההתקשרות<span class="n">§7</span></h3>
+        <p>המשתמש רשאי למחוק את חשבונו בכל עת מתוך הגדרות החשבון. המפעיל רשאי לסיים התקשרות, לחסום משתמש או למחוק חשבון במקרה של הפרת תנאים, חשד למרמה או דרישה רשמית של רשות מוסמכת.</p>
+
+        <h3>8. סמכות שיפוט<span class="n">§8</span></h3>
+        <p>על תנאים אלה יחול הדין הישראלי בלבד, ללא תחולת כללי ברירת הדין. סמכות השיפוט הבלעדית לכל מחלוקת הנובעת מתנאים אלה או מהשימוש במערכת תהיה נתונה לבתי המשפט המוסמכים בעיר תל-אביב-יפו.</p>
+
+        <h3>9. שינויים בתנאים<span class="n">§9</span></h3>
+        <p>המפעיל רשאי לעדכן את תנאי השימוש מעת לעת. עדכון מהותי יוצג למשתמש בכניסה הבאה למערכת ויחייב הסכמה מפורשת. שימוש מתמשך לאחר עדכון מהווה הסכמה לתנאים החדשים.</p>
+
+        <div class="quiet">
+          <p>📜 <span class="term">תאריך עדכון אחרון:</span> 15 באפריל 2026 · גרסה 2.4. גרסאות קודמות זמינות בארכיון לפי בקשה במייל.</p>
+        </div>
+      </article>
+
+
+      <!-- ============ DOCUMENT 2: PRIVACY POLICY ============ -->
+      <article id="privacy" class="doc-section">
+        <div class="eyebrow">▸ מסמך 02</div>
+        <h2>מדיניות פרטיות</h2>
+        <p class="lede">
+          הפרטיות שלך היא העיקרון המרכזי של הארכיטקטורה שלנו. המערכת תוכננה כך שהנתונים הרגישים שלך — תלושים, שכר, פרטי חוזה — לא יוצאים מהמכשיר שלך אף פעם.
+        </p>
+
+        <div class="quiet">
+          <p>🛡 <span class="term">תקציר ב-30 שניות:</span> הקבצים מעובדים בדפדפן בלבד. אין שרת. אין שמירת תלושים. אין מכירת מידע. אין שיתוף עם צדדים שלישיים. אנחנו שומרים רק מייל וסיסמה מוצפנת — וגם זה תמחק כשתבקש.</p>
+        </div>
+
+        <h3>1. בסיס חוקי<span class="n">§1</span></h3>
+        <p>מדיניות זו עומדת בדרישות חוק הגנת הפרטיות, התשמ"א-1981, תקנות הגנת הפרטיות (אבטחת מידע), התשע"ז-2017, ותקנות GDPR (Regulation EU 2016/679) במידה שהן חלות על משתמשים אזרחי האיחוד האירופי.</p>
+
+        <h3>2. איזה נתונים אנחנו אוספים<span class="n">§2</span></h3>
+        <p>אנחנו אוספים רק את המינימום ההכרחי להפעלת השירות:</p>
+        <ul>
+          <li><span class="term">פרטי חשבון:</span> כתובת דוא"ל, סיסמה מוצפנת (bcrypt), שם פרטי (אופציונלי), שם פרטי בלבד.</li>
+          <li><span class="term">מטא-נתונים אנונימיים:</span> מספר תלושים שנבדקו, ציון תקינות (לא תוכן התלוש), תאריך ההתקשרות.</li>
+          <li><span class="term">לוגים טכניים:</span> כתובת IP מוצפנת, סוג דפדפן, זמן גלישה — נשמרים 14 יום ונמחקים אוטומטית.</li>
+          <li><span class="term">פרטי תשלום:</span> מועברים ישירות לסולק (Stripe / Tranzila) ולא מאוחסנים אצלנו. אנחנו רואים רק 4 ספרות אחרונות.</li>
+        </ul>
+
+        <h3>3. מה <em>לא</em> אנחנו אוספים<span class="n">§3</span></h3>
+        <div class="critical">
+          <div class="label"><i data-lucide="server-off" class="w-3.5 h-3.5"></i>אפס שרת לתלושים</div>
+          <p>קבצי התלושים, החוזה, נתוני השכר ופרטי המעסיק — <span class="term">אינם נשלחים מעולם לשרת שלנו</span>. כל העיבוד מתבצע בדפדפן (Client-Side) באמצעות JavaScript. כשאתה סוגר את הטאב, המידע נמחק מהזיכרון.</p>
+        </div>
+
+        <h3>3א. אחסון מקומי בדפדפן (localStorage)<span class="n">§3א</span></h3>
+        <div class="critical">
+          <div class="label"><i data-lucide="hard-drive" class="w-3.5 h-3.5"></i>שקיפות מלאה</div>
+          <p>לשם נוחות, חלק מהנתונים נשמרים ב-<span class="term">אחסון המקומי של הדפדפן (localStorage)</span> — מנגנון תקני ב-HTML5 שמאפשר אחסון על המכשיר עצמו. נתונים אלה <span class="term">אינם נשלחים לשום שרת שלנו או של צד שלישי</span>, אינם נצפים על ידי אף אחד מלבדך, וזמינים רק לדפדפן זה במכשיר זה.</p>
+        </div>
+        <p>הנתונים הנשמרים מקומית כוללים: <span class="term">פרופיל מס</span> (גיל, מצב משפחתי, ילדים, עיר, השכלה, זכאויות), <span class="term">העדפות תצוגה</span> (תבנית כהה/בהירה), ו-<span class="term">סטטוס הסכמה לתנאים</span>.</p>
+        <p><span class="term">חשוב לדעת:</span></p>
+        <ul>
+          <li>נתונים אלה <span class="term">נשארים על המכשיר</span> גם לאחר סגירת הדפדפן, עד שתמחק אותם ידנית.</li>
+          <li>אם אתה משתמש במספר מכשירים — הפרופיל לא מסונכרן ביניהם (כי אין שרת).</li>
+          <li>ניקוי היסטוריית הדפדפן או "ניקוי נתוני אתר" ימחק את הפרופיל.</li>
+          <li>במצב גלישה בסתר (Incognito), הנתונים נמחקים אוטומטית בסגירת הלשונית.</li>
+          <li>למחיקה מיידית: <span class="term">הגדרות החשבון ← מחק פרופיל</span>, או הגדרות הדפדפן ← נתוני אתרים.</li>
+        </ul>
+
+        <h3>4. למה אנחנו משתמשים בנתונים<span class="n">§4</span></h3>
+        <ul>
+          <li>הפעלה והתאמה של השירות אישית.</li>
+          <li>חיוב ושליחת קבלות.</li>
+          <li>תקשורת על שינויים מהותיים בשירות (אופציונלי, ניתן לבטל).</li>
+          <li>שיפור המוצר באמצעות מטא-נתונים אנונימיים בלבד.</li>
+          <li>עמידה בדרישות חוקיות (כגון: דרישת רשויות מס או חקירה משטרתית).</li>
+        </ul>
+
+        <h3>5. שיתוף עם צדדים שלישיים<span class="n">§5</span></h3>
+        <p>אנחנו <span class="term">לא מוכרים, משכירים או חולקים</span> נתונים אישיים עם צדדים שלישיים, למעט:</p>
+        <ul>
+          <li><span class="term">ספקי תשתית הכרחיים:</span> Stripe לתשלומים, Cloudflare ל-CDN. שניהם בעלי תקני SOC 2 Type II.</li>
+          <li><span class="term">דרישה חוקית:</span> צו בית משפט, חקירה משטרתית, דרישת רשות מוסמכת.</li>
+          <li><span class="term">הסכמה מפורשת:</span> אם המשתמש אישר במפורש שיתוף לטובת אינטגרציה ספציפית.</li>
+        </ul>
+
+        <h3>6. עוגיות (Cookies)<span class="n">§6</span></h3>
+        <p>אנחנו משתמשים בעוגיות מינימליות — רק עוגיות הכרחיות לתפקוד (Session Cookies) ועוגיית העדפה (תבנית כהה/בהירה). אין עוגיות פרסום, מעקב צד-שלישי או Pixel-Tracking.</p>
+
+        <h3>7. הזכויות שלך<span class="n">§7</span></h3>
+        <p>בהתאם לחוק הגנת הפרטיות ול-GDPR, יש לך זכות:</p>
+        <ul>
+          <li><span class="term">עיון:</span> לקבל עותק של הנתונים שאנחנו מחזיקים עליך.</li>
+          <li><span class="term">תיקון:</span> לתקן מידע שגוי.</li>
+          <li><span class="term">מחיקה ("הזכות להישכח"):</span> למחוק את החשבון וכל הנתונים. ביצוע מיידי, ללא תשלום.</li>
+          <li><span class="term">הגבלת עיבוד:</span> להקפיא שימוש בנתונים זמנית.</li>
+          <li><span class="term">ניידות:</span> לקבל את הנתונים בפורמט מובנה (JSON) להעברה לשירות אחר.</li>
+          <li><span class="term">התנגדות:</span> להתנגד לעיבוד מסוים.</li>
+        </ul>
+        <p>למימוש כל אחת מהזכויות — שלח מייל ל-<a href="mailto:jonx250@gmail.com" class="text-gold underline">jonx250@gmail.com</a>. נחזיר תשובה תוך 14 יום.</p>
+
+        <div class="critical-box" style="margin-top:1.5rem">
+          <div class="critical-title">📦 ייצוא מיידי — זכות הניידות שלך</div>
+          <p style="margin-bottom:1rem">לחיצה אחת תוריד את כל הנתונים שלך כקובץ ZIP — פרופיל, היסטוריית פעולות, זכויות, מסמכים. הכל מובנה ב-JSON, ניתן להעברה לכל שירות אחר. נשמר במכשיר שלך — לא נשלח לאף מקום.</p>
+          <button id="legal-export-btn" onclick="handleDataExport(this)" type="button"
+            style="background:#B89B5E;color:#0a0a0a;border:none;padding:14px 28px;font-family:'Assistant',sans-serif;font-weight:600;font-size:13px;letter-spacing:0.15em;text-transform:uppercase;cursor:pointer;display:inline-flex;align-items:center;gap:10px;transition:all .2s">
+            <i data-lucide="download" style="width:16px;height:16px"></i>
+            <span>הורדת תיק נתונים</span>
+          </button>
+          <div style="margin-top:0.75rem;font-size:11px;color:rgba(10,10,10,0.5);font-family:monospace;letter-spacing:0.05em">פורמט: ZIP · גודל משוער: ~5KB · ללא העלאה לשרת</div>
+        </div>
+
+        <h3>8. אבטחת מידע<span class="n">§8</span></h3>
+        <p>הנתונים שאנחנו כן שומרים (חשבון משתמש בלבד) מאובטחים באמצעות:</p>
+        <ul>
+          <li>הצפנה בתעבורה (TLS 1.3).</li>
+          <li>הצפנה במנוחה (AES-256) לסיסמאות.</li>
+          <li>2FA אופציונלי לחשבונות.</li>
+          <li>גיבויים מוצפנים יומיים.</li>
+          <li>בדיקות חדירה (Pen-Tests) רבעוניות.</li>
+        </ul>
+
+        <h3>9. העברת נתונים לחו"ל<span class="n">§9</span></h3>
+        <p>השרתים שלנו ממוקמים באיחוד האירופי (Frankfurt, AWS). העברת נתונים מחוץ ל-EU מתבצעת רק עם ספקי תשתית בעלי הסכמי Standard Contractual Clauses לפי סעיף 46 ל-GDPR.</p>
+
+        <h3>10. ילדים<span class="n">§10</span></h3>
+        <p>השירות אינו מיועד לקטינים מתחת לגיל 18. אם נודע לנו שאספנו נתונים של קטין ללא אישור הורה — נמחק אותם מיידית.</p>
+
+        <h3>11. שינויים במדיניות<span class="n">§11</span></h3>
+        <p>שינויים מהותיים יוצגו בכניסה הבאה ויידרשו הסכמה מפורשת מחדש. שינויים טכניים-קלים יעודכנו ללא הודעה אישית, אך יסומנו בתאריך העדכון.</p>
+
+        <div class="quiet">
+          <p>📩 <span class="term">ממונה הגנת הפרטיות (DPO):</span> <a href="mailto:jonx250@gmail.com" class="text-gold underline">jonx250@gmail.com</a> · <span class="term">תאריך עדכון:</span> 15.04.2026.</p>
+        </div>
+      </article>
+
+
+      <!-- ============ DOCUMENT 3: LEGAL DISCLAIMER ============ -->
+      <article id="disclaimer" class="doc-section">
+        <div class="eyebrow">▸ מסמך 03</div>
+        <h2>כתב ויתור משפטי</h2>
+        <p class="lede">
+          זהו המסמך החשוב ביותר בעמוד הזה. בעצם השימוש במערכת, אתה מסכים לתנאים שלהלן בנוגע לאחריות, הסתמכות ופתרון מחלוקות.
+        </p>
+
+        <h3>1. אופי הדוח<span class="n">§1</span></h3>
+        <p>הדוחות שמופקים על-ידי המערכת מהווים <span class="term">אומדן אלגוריתמי-טכני בלבד</span> המבוסס על השוואה אוטומטית בין נתונים שהמשתמש הזין. הם:</p>
+        <ul>
+          <li>אינם חוות דעת משפטית.</li>
+          <li>אינם חוות דעת של חשב שכר מוסמך.</li>
+          <li>אינם חוות דעת של רואה חשבון או יועץ מס.</li>
+          <li>אינם תחליף לייעוץ מקצועי-אישי.</li>
+          <li>אינם מהווים ראייה קבילה אוטומטית בבית משפט או בית דין לעבודה.</li>
+        </ul>
+
+        <h3>2. AS-IS — השירות כפי שהוא<span class="n">§2</span></h3>
+        <div class="critical">
+          <div class="label"><i data-lucide="shield-off" class="w-3.5 h-3.5"></i>הסתייגות מלאה</div>
+          <p>השירות ניתן <span class="term">"AS-IS"</span> ו-<span class="term">"AS-AVAILABLE"</span>. בעלי המערכת ומפתחיה <span class="term">אינם מתחייבים</span> לכך שהשירות יהיה זמין רציף, חופשי משגיאות, חופשי מבאגים, מדויק לחלוטין, או מתאים למטרה ספציפית. כל הסתמכות על השירות היא באחריותו הבלעדית של המשתמש.</p>
+        </div>
+
+        <h3>3. הגבלת אחריות<span class="n">§3</span></h3>
+        <p>בכפוף לדין החל, בעלי המערכת ומפתחיה <span class="term">לא יהיו אחראים</span> לכל נזק:</p>
+        <ul>
+          <li><span class="term">ישיר:</span> כספי, רכושי או כל נזק מוחשי אחר שנגרם משימוש בדוח.</li>
+          <li><span class="term">עקיף או תוצאתי:</span> אובדן הכנסה, אובדן הזדמנות, פיטורין, פגיעה במוניטין מקצועי, מחלוקת עם מעסיק.</li>
+          <li><span class="term">מקרי או מיוחד:</span> כולל אך לא מוגבל ל-עוגמת נפש, הוצאות משפטיות שנגרמו בעקבות הסתמכות על דוח שגוי.</li>
+          <li>נזק שנגרם מכישלון טכני, אי-זמינות, פריצת אבטחה (למרות נקיטת אמצעי הגנה סבירים) או פעולת כוח עליון.</li>
+        </ul>
+        <p>בכל מקרה ובמצטבר, האחריות הכוללת של בעלי המערכת לא תעלה על הסכום ששילם המשתמש בפועל בעבור השירות במסלול הרלוונטי.</p>
+
+        <h3>4. ויתור על תביעות<span class="n">§4</span></h3>
+        <p>המשתמש מצהיר ומאשר במפורש כי:</p>
+        <ul>
+          <li>הוא קרא והבין את אופי השירות וגבולותיו.</li>
+          <li>הוא יוודא כל ממצא בדוח באמצעות איש מקצוע מוסמך לפני נקיטת פעולה.</li>
+          <li>הוא <span class="term">מוותר בזאת</span> על כל טענה, דרישה או תביעה כנגד בעלי המערכת, מפתחיה ונציגיהם, בגין כל נזק או הפסד הקשור לשימוש בדוח או להסתמכות עליו.</li>
+        </ul>
+
+        <h3>5. הסתמכות על מקורות חיצוניים<span class="n">§5</span></h3>
+        <p>חישובי המערכת מבוססים על הוראות חוק, צווי הרחבה וטבלאות ערכים שעשויים להתעדכן. למרות מאמצינו לעדכן את האלגוריתם — ייתכן פער זמני בין הוראת חוק חדשה לבין יישומה במערכת. <span class="term">אחריות המשתמש לוודא שההוראות הרלוונטיות לתקופת התלוש שלו תואמות את חישוב המערכת.</span></p>
+
+        <h3>6. שימוש במכתב דרישה<span class="n">§6</span></h3>
+        <p>המערכת מאפשרת הפקת מסמך "מכתב דרישה" אוטומטי. המשתמש מאשר כי:</p>
+        <ul>
+          <li>הוא בלבד אחראי לתוכן המכתב, לדיוקו ולהשלכותיו המשפטיות.</li>
+          <li>הוא מבין שמכתב דרישה הוא מסמך משפטי-מהותי שעשוי להוות עילה לטענות הדדיות.</li>
+          <li>מומלץ להעביר את המכתב לעיון עורך דין לפני שליחתו למעסיק.</li>
+          <li>שימוש במכתב כאמצעי לחץ בלתי-הוגן או הוצאת לשון הרע — באחריות המשתמש בלבד.</li>
+        </ul>
+
+        <h3>7. שיפוי<span class="n">§7</span></h3>
+        <p>המשתמש מתחייב לשפות את בעלי המערכת בגין כל נזק, הוצאה או תביעה שייגרמו עקב הפרת תנאים אלה, שימוש לרעה במערכת או הפרת זכות צד שלישי במהלך השימוש.</p>
+
+        <h3>8. כוח עליון<span class="n">§8</span></h3>
+        <p>בעלי המערכת לא יישאו באחריות לכל נזק שנגרם עקב כוח עליון, לרבות אך לא מוגבל ל: שיתוק תקשורת, מתקפת סייבר רחבת-היקף, משבר תשתית, פעולה ממשלתית או מצב חירום.</p>
+
+        <div class="quiet">
+          <p>⚖ אם סעיף כלשהו במסמך זה ייקבע כבטל או בלתי-אכיף, יישארו יתר הסעיפים בתוקפם המלא. <span class="term">תאריך עדכון:</span> 15.04.2026.</p>
+        </div>
+      </article>
+
+
+      <!-- ============ DOCUMENT 4: LICENSE AGREEMENT ============ -->
+      <article id="license" class="doc-section">
+        <div class="eyebrow">▸ מסמך 04</div>
+        <h2>הסכם רישיון</h2>
+        <p class="lede">
+          רישיון השימוש מסדיר מה מותר ומה אסור לעשות עם תוצרי המערכת — הדוחות, הקוד והאלגוריתמים. ברירת המחדל היא רישיון אישי-מוגבל.
+        </p>
+
+        <h3>1. רישיון לשימוש אישי<span class="n">§1</span></h3>
+        <p>המפעיל מעניק למשתמש רישיון <span class="term">אישי, לא בלעדי, לא ניתן להעברה</span> לשימוש במערכת בכפוף לתנאי השימוש הכלליים. הרישיון תקף כל עוד המשתמש עומד בתנאים ולא הופסק על-ידי המפעיל.</p>
+
+        <h3>2. בעלות בקניין רוחני<span class="n">§2</span></h3>
+        <p>כל הזכויות במערכת — לרבות הקוד, האלגוריתמים, הממשק, העיצוב, הלוגו והתכנים — שייכות בלעדית למפעיל ולמפתחים. שימוש בלתי-מורשה הוא הפרת זכויות יוצרים ועלול לחשוף את המשתמש לתביעה אזרחית ופלילית.</p>
+
+        <h3>3. שימוש בדוח שהופק<span class="n">§3</span></h3>
+        <p>הדוח שהמשתמש מפיק שייך לו לכל דבר ועניין. <span class="term">מותר:</span></p>
+        <ul>
+          <li>לשמור עותק לעצמו ולהעבירו ליועצי מקצוע (עו"ד, רו"ח, חשב שכר).</li>
+          <li>להשתמש בו במגעים עם המעסיק.</li>
+          <li>לצרף אותו כראייה משלימה בהליך משפטי, בכפוף לכללי הראיות.</li>
+        </ul>
+        <p><span class="term">אסור:</span></p>
+        <ul>
+          <li>לפרסם את הדוח בפומבי ללא הסכמת המפעיל (לדוגמה: ברשתות חברתיות עם זיהוי המעסיק).</li>
+          <li>למכור את הדוח לצד שלישי כשירות מסחרי.</li>
+          <li>להציג את הדוח כאילו הוא חוות דעת מקצועית של המפעיל.</li>
+          <li>להעתיק את עיצוב הדוח או הלוגו לצרכים מסחריים.</li>
+        </ul>
+
+        <h3>4. סימני מסחר<span class="n">§4</span></h3>
+        <p>השם "בדיקת תלוש שכר" והלוגו הם סימני מסחר של המפעיל. אסור להשתמש בהם בכל הקשר שעלול להטעות לגבי קשר רשמי לשירות.</p>
+
+        <h3>5. תרומות וקוד פתוח<span class="n">§5</span></h3>
+        <p>חלקים מהמערכת עשויים להיות מבוססים על רכיבי קוד פתוח (Open-Source). רשימת הרכיבים, רישיונותיהם וזכויות היוצרים — זמינים בעמוד <em>Acknowledgments</em> בתחתית האתר.</p>
+
+        <h3>6. סיום הרישיון<span class="n">§6</span></h3>
+        <p>הרישיון יפקע אוטומטית במקרה של:</p>
+        <ul>
+          <li>מחיקת חשבון על-ידי המשתמש.</li>
+          <li>הפרת תנאי השימוש.</li>
+          <li>סיום השירות על-ידי המפעיל.</li>
+        </ul>
+        <p>עם פקיעת הרישיון, על המשתמש להפסיק כל שימוש במערכת ולמחוק עותקים מקומיים של הקוד, אם קיימים.</p>
+
+        <div class="quiet">
+          <p>© 2026 בעלי המערכת. כל הזכויות שמורות. <span class="term">תאריך עדכון:</span> 15.04.2026 · גרסה 2.4.</p>
+        </div>
+      </article>
+
+      <!-- Closing CTA -->
+      <div class="mt-20 p-10 md:p-14 bg-charcoal text-cream relative overflow-hidden">
+        <div class="absolute top-0 left-0 right-0 gold-line"></div>
+        <div class="text-[10px] tracking-[0.3em] uppercase text-gold font-mono mb-4">▸ נשארו שאלות?</div>
+        <h3 class="font-serif text-3xl md:text-4xl font-black mb-4 leading-tight">לא הכל ברור במסמך משפטי.</h3>
+        <p class="text-white/70 max-w-2xl text-base md:text-lg leading-relaxed mb-8">
+          אם משהו בתנאים מטריד אותך, אם אתה צריך הבהרה לגבי שימוש ספציפי, או אם אתה מבקש למחוק את הנתונים שלך — שלח מייל. נחזיר תשובה תוך 14 יום, לרוב הרבה יותר מהר.
+        </p>
+        <div class="flex flex-wrap gap-4">
+          <a href="mailto:jonx250@gmail.com" class="bg-gold text-charcoal px-8 py-4 text-xs tracking-[0.2em] uppercase font-semibold hover:bg-cream transition-colors">צור קשר</a>
+          <button onclick="window.print()" class="border border-white/30 text-white px-8 py-4 text-xs tracking-[0.2em] uppercase hover:border-gold hover:text-gold transition-colors">הורד עותק PDF</button>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- Footer -->
+<footer class="legal-footer mt-20">
+  <div class="max-w-7xl mx-auto px-6 lg:px-10 py-12 flex flex-col md:flex-row items-center justify-between gap-6 text-xs text-white/50">
+    <div class="flex items-center gap-3">
+      <i data-lucide="shield-check" class="w-4 h-4 text-gold"></i>
+      <span>הנתונים מעובדים מקומית בדפדפן שלך. ללא שרת. ללא דליפה.</span>
+    </div>
+    <div class="flex items-center gap-6">
+      <a href="/" class="hover:text-gold transition-colors">דף הבית</a>
+      <a href="/login" class="hover:text-gold transition-colors">כניסה</a>
+      <a href="/signup" class="hover:text-gold transition-colors">הרשמה</a>
+      <a href="mailto:jonx250@gmail.com" class="hover:text-gold transition-colors">jonx250@gmail.com</a>
+    </div>
+    <div class="font-mono tracking-widest uppercase text-white/30">© 2026 · v2.4</div>
+  </div>
+</footer>
+
+<script>
+lucide.createIcons();
+
+// Active TOC tracking
+(function(){
+  const sections = document.querySelectorAll('.doc-section');
+  const links = document.querySelectorAll('.toc-link');
+  const setActive = (id) => {
+    links.forEach(l => l.classList.toggle('active', l.dataset.target === id));
+  };
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) setActive(e.target.id);
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(s => io.observe(s));
+  // Initial
+  if (sections[0]) setActive(sections[0].id);
+})();
+
+// Data export
+async function handleDataExport(btn) {
+  const orig = btn.innerHTML;
+  btn.disabled = true;
+  btn.style.opacity = '0.7';
+  btn.innerHTML = '<i data-lucide="loader-2" style="width:16px;height:16px;animation:spin 1s linear infinite"></i><span>מכין את התיק...</span>';
+  if (window.lucide) lucide.createIcons();
+
+  try {
+    if (!window.talushExportData) {
+      throw new Error('export module not loaded');
+    }
+    const result = await window.talushExportData();
+    btn.innerHTML = '<i data-lucide="check" style="width:16px;height:16px"></i><span>הורד! (' + result.sizeKB + 'KB)</span>';
+    if (window.lucide) lucide.createIcons();
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      btn.innerHTML = orig;
+      if (window.lucide) lucide.createIcons();
+    }, 3000);
+  } catch (err) {
+    console.error('Export failed:', err);
+    btn.innerHTML = '<i data-lucide="alert-circle" style="width:16px;height:16px"></i><span>שגיאה — נסה שוב</span>';
+    if (window.lucide) lucide.createIcons();
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      btn.innerHTML = orig;
+      if (window.lucide) lucide.createIcons();
+    }, 3000);
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#FAF7EE">
+<title>ארכיטקטורת עדכון חוקים אוטומטית · תלוש</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700&family=Frank+Ruhl+Libre:wght@300;400;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        cream: '#FAF7EE',
+        sand: '#F0EAD6',
+        charcoal: '#1A1A1A',
+        gold: '#B89B5E',
+        rose: '#C9A99B'
+      },
+      fontFamily: {
+        sans: ['Assistant', 'sans-serif'],
+        serif: ['Frank Ruhl Libre', 'serif'],
+        mono: ['JetBrains Mono', 'monospace']
+      }
+    }
+  }
+}
+</script>
+<style>
+  body { background: #FAF7EE; color: #1A1A1A; font-family: 'Assistant', sans-serif; }
+
+  .arch-card {
+    background: white;
+    border: 1px solid rgba(26,26,26,0.08);
+    border-radius: 0;
+    transition: all 0.3s;
+  }
+  .arch-card:hover { border-color: #B89B5E; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(184,155,94,0.12); }
+
+  .pipeline-step {
+    position: relative;
+    padding-right: 3rem;
+  }
+  .pipeline-step::before {
+    content: '';
+    position: absolute;
+    right: 1rem;
+    top: 0;
+    bottom: -2rem;
+    width: 2px;
+    background: linear-gradient(to bottom, #B89B5E 0%, #B89B5E 50%, transparent 100%);
+  }
+  .pipeline-step:last-child::before { display: none; }
+  .pipeline-step::after {
+    content: '';
+    position: absolute;
+    right: 0.5rem;
+    top: 1rem;
+    width: 1.25rem;
+    height: 1.25rem;
+    background: #B89B5E;
+    border: 4px solid #FAF7EE;
+    border-radius: 50%;
+    box-shadow: 0 0 0 1px #B89B5E;
+  }
+
+  .gold-accent { border-right: 3px solid #B89B5E; }
+  .badge { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.25rem 0.625rem; font-size: 0.625rem; letter-spacing: 0.15em; text-transform: uppercase; font-family: 'JetBrains Mono', monospace; }
+  .badge-gold { background: rgba(184,155,94,0.12); color: #8a7345; border: 1px solid rgba(184,155,94,0.3); }
+  .badge-ok { background: rgba(34,139,34,0.08); color: #2d7a2d; border: 1px solid rgba(34,139,34,0.2); }
+  .badge-warn { background: rgba(217,119,6,0.08); color: #b45309; border: 1px solid rgba(217,119,6,0.2); }
+
+  pre code { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; line-height: 1.6; }
+  .code-block { background: #1a1a1a; color: #e5e5e5; border-radius: 4px; padding: 1.25rem; overflow-x: auto; }
+  .code-block .key { color: #B89B5E; }
+  .code-block .str { color: #a3d9a3; }
+  .code-block .num { color: #f5d76e; }
+  .code-block .comment { color: #6a6a6a; font-style: italic; }
+
+  .arrow-down { color: #B89B5E; opacity: 0.6; }
+
+  .source-pill { font-size: 0.75rem; padding: 0.25rem 0.625rem; background: rgba(184,155,94,0.08); border: 1px solid rgba(184,155,94,0.2); color: #5a4d2e; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.05em; }
+
+  details summary { cursor: pointer; user-select: none; }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::after { content: '▼'; float: left; transition: transform 0.2s; opacity: 0.4; font-size: 0.75rem; margin-top: 0.5rem; }
+  details[open] summary::after { transform: rotate(180deg); }
+
+  .ascii-diagram {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    line-height: 1.4;
+    direction: ltr;
+    text-align: left;
+    background: #1a1a1a;
+    color: #e5e5e5;
+    padding: 1.5rem;
+    overflow-x: auto;
+    border-radius: 4px;
+    white-space: pre;
+  }
+
+  .ascii-diagram .h { color: #B89B5E; font-weight: 600; }
+  .ascii-diagram .s { color: #a3d9a3; }
+</style>
+</head>
+<body class="antialiased">
+
+<!-- Header -->
+<header class="sticky top-0 z-40 bg-cream/95 backdrop-blur border-b border-charcoal/10">
+  <div class="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 border border-charcoal/30 flex items-center justify-center font-serif font-black">ב</div>
+      <div class="leading-tight">
+        <div class="text-[10px] tracking-[0.3em] uppercase font-mono text-charcoal/60">תלוש · מסמך טכני</div>
+        <div class="font-serif font-bold">ארכיטקטורת עדכון חוקים</div>
+      </div>
+    </div>
+    <a href="/dashboard" class="text-xs tracking-[0.2em] uppercase text-charcoal/60 hover:text-gold transition-colors">חזרה לדשבורד ←</a>
+  </div>
+</header>
+
+<!-- Hero -->
+<section class="max-w-6xl mx-auto px-6 py-12">
+  <div class="text-[10px] tracking-[0.4em] uppercase font-mono text-gold mb-4">SYSTEM DESIGN · v1.0 · DEC 2026</div>
+  <h1 class="font-serif text-5xl md:text-6xl font-black leading-tight mb-6">
+    איך נשמור את המערכת<br>
+    <span class="text-gold">מעודכנת בזמן אמת.</span>
+  </h1>
+  <p class="text-xl text-charcoal/70 leading-relaxed max-w-3xl">
+    מערכת אוטומטית מקצה־לקצה לאיסוף, סיווג, ועדכון יומי של חוקי שכר ועבודה ממקורות רישמיים — עם הגנה משפטית מלאה ומעקב היסטורי.
+  </p>
+
+  <!-- Quick stats -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-12">
+    <div class="arch-card p-6">
+      <div class="text-[10px] tracking-[0.3em] uppercase font-mono text-charcoal/50 mb-2">תדירות</div>
+      <div class="font-serif text-3xl font-bold">יומית</div>
+      <div class="text-xs text-charcoal/60 mt-1">06:00 UTC</div>
+    </div>
+    <div class="arch-card p-6">
+      <div class="text-[10px] tracking-[0.3em] uppercase font-mono text-charcoal/50 mb-2">מקורות</div>
+      <div class="font-serif text-3xl font-bold">6</div>
+      <div class="text-xs text-charcoal/60 mt-1">רישמיים בלבד</div>
+    </div>
+    <div class="arch-card p-6">
+      <div class="text-[10px] tracking-[0.3em] uppercase font-mono text-charcoal/50 mb-2">לטנטיות</div>
+      <div class="font-serif text-3xl font-bold">≤24h</div>
+      <div class="text-xs text-charcoal/60 mt-1">מפרסום לפרודקשן</div>
+    </div>
+    <div class="arch-card p-6">
+      <div class="text-[10px] tracking-[0.3em] uppercase font-mono text-charcoal/50 mb-2">עלות</div>
+      <div class="font-serif text-3xl font-bold">$5</div>
+      <div class="text-xs text-charcoal/60 mt-1">/חודש</div>
+    </div>
+  </div>
+</section>
+
+<!-- Pipeline -->
+<section class="max-w-6xl mx-auto px-6 py-12 border-t border-charcoal/10">
+  <div class="text-[10px] tracking-[0.4em] uppercase font-mono text-gold mb-4">01 · PIPELINE</div>
+  <h2 class="font-serif text-4xl font-bold mb-12">הזרימה היומית — Day in the life</h2>
+
+  <div class="space-y-6">
+    <!-- Step 1 -->
+    <div class="pipeline-step">
+      <div class="arch-card p-6 mr-4">
+        <div class="flex items-start justify-between gap-4 mb-3">
+          <div>
+            <span class="badge badge-gold">06:00:00 UTC</span>
+            <h3 class="font-serif text-2xl font-bold mt-2">⏰ Trigger — GitHub Actions</h3>
+          </div>
+          <i data-lucide="clock" class="w-6 h-6 text-gold/60"></i>
+        </div>
+        <p class="text-charcoal/75 leading-relaxed">
+          Cron schedule מפעיל workflow אוטומטי. גם ניתן להפעלה ידנית דרך GitHub UI.
+        </p>
+        <pre class="code-block mt-4 text-xs"><code><span class="comment"># .github/workflows/daily-laws-update.yml</span>
+<span class="key">on:</span>
+  <span class="key">schedule:</span>
+    - <span class="key">cron:</span> <span class="str">'0 6 * * *'</span>   <span class="comment"># 08:00 ישראל</span>
+  <span class="key">workflow_dispatch:</span>     <span class="comment"># ידני</span></code></pre>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="pipeline-step">
+      <div class="arch-card p-6 mr-4">
+        <div class="flex items-start justify-between gap-4 mb-3">
+          <div>
+            <span class="badge badge-gold">06:00:01 → 06:00:30</span>
+            <h3 class="font-serif text-2xl font-bold mt-2">📡 Scrapers — איסוף ממקורות רישמיים</h3>
+          </div>
+          <i data-lucide="download-cloud" class="w-6 h-6 text-gold/60"></i>
+        </div>
+        <p class="text-charcoal/75 leading-relaxed mb-4">
+          6 scrapers רצים במקביל. כל אחד שולף שינויים מ-24 השעות האחרונות.
+        </p>
+        <div class="flex flex-wrap gap-2">
+          <span class="source-pill">kolzchut.org.il</span>
+          <span class="source-pill">rashut-hamisim.gov.il</span>
+          <span class="source-pill">btl.gov.il</span>
+          <span class="source-pill">labor.gov.il</span>
+          <span class="source-pill">knesset.gov.il</span>
+          <span class="source-pill">nevo.co.il</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="pipeline-step">
+      <div class="arch-card p-6 mr-4">
+        <div class="flex items-start justify-between gap-4 mb-3">
+          <div>
+            <span class="badge badge-gold">06:00:30 → 06:01:00</span>
+            <h3 class="font-serif text-2xl font-bold mt-2">🤖 AI Classifier — סיווג חכם</h3>
+          </div>
+          <i data-lucide="cpu" class="w-6 h-6 text-gold/60"></i>
+        </div>
+        <p class="text-charcoal/75 leading-relaxed mb-4">
+          Claude Haiku מסווג כל פריט: רלוונטי? קטגוריה? תוקף? קהל יעד? ציון ביטחון?
+        </p>
+        <div class="grid grid-cols-3 gap-3">
+          <div class="border border-emerald-200 bg-emerald-50/50 p-3">
+            <div class="text-xs font-mono text-emerald-800 mb-1">≥ 0.85</div>
+            <div class="text-sm font-semibold">Auto-merge</div>
+            <div class="text-xs text-charcoal/60 mt-1">עולה ישר לפרודקשן</div>
+          </div>
+          <div class="border border-orange-200 bg-orange-50/50 p-3">
+            <div class="text-xs font-mono text-orange-800 mb-1">0.65 - 0.85</div>
+            <div class="text-sm font-semibold">Manual review</div>
+            <div class="text-xs text-charcoal/60 mt-1">מייל יומי לאדמין</div>
+          </div>
+          <div class="border border-charcoal/15 bg-sand/30 p-3">
+            <div class="text-xs font-mono text-charcoal/60 mb-1">&lt; 0.65</div>
+            <div class="text-sm font-semibold">Discard</div>
+            <div class="text-xs text-charcoal/60 mt-1">נדחה אוטומטית</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 4 -->
+    <div class="pipeline-step">
+      <div class="arch-card p-6 mr-4">
+        <div class="flex items-start justify-between gap-4 mb-3">
+          <div>
+            <span class="badge badge-gold">06:01:00 → 06:01:30</span>
+            <h3 class="font-serif text-2xl font-bold mt-2">📊 Merger — עדכון מבנה הנתונים</h3>
+          </div>
+          <i data-lucide="git-merge" class="w-6 h-6 text-gold/60"></i>
+        </div>
+        <p class="text-charcoal/75 leading-relaxed">
+          ממזג את הפריטים החדשים ל-<code class="font-mono text-xs bg-sand px-1.5 py-0.5">data/laws/{category}/*.json</code>.
+          מייצר entry ב-changelog. שומר snapshot של הגרסה הקודמת.
+        </p>
+      </div>
+    </div>
+
+    <!-- Step 5 -->
+    <div class="pipeline-step">
+      <div class="arch-card p-6 mr-4">
+        <div class="flex items-start justify-between gap-4 mb-3">
+          <div>
+            <span class="badge badge-gold">06:01:30 → 06:02:00</span>
+            <h3 class="font-serif text-2xl font-bold mt-2">🔄 Re-evaluator — בדיקה מחודשת היסטורית</h3>
+          </div>
+          <i data-lucide="rotate-ccw" class="w-6 h-6 text-gold/60"></i>
+        </div>
+        <p class="text-charcoal/75 leading-relaxed">
+          שולף את כל הבדיקות מ-90 הימים האחרונים, מריץ אותן מחדש עם החוקים החדשים, ומסמן בדיקות שתוצאתן השתנתה.
+        </p>
+      </div>
+    </div>
+
+    <!-- Step 6 -->
+    <div class="pipeline-step">
+      <div class="arch-card p-6 mr-4">
+        <div class="flex items-start justify-between gap-4 mb-3">
+          <div>
+            <span class="badge badge-gold">06:02:00 → 06:03:30</span>
+            <h3 class="font-serif text-2xl font-bold mt-2">🚀 Git push + Deploy</h3>
+          </div>
+          <i data-lucide="upload" class="w-6 h-6 text-gold/60"></i>
+        </div>
+        <pre class="code-block text-xs"><code><span class="key">git</span> add data/
+<span class="key">git</span> commit -m <span class="str">"auto: laws update 2026-12-09 (+3 -1 ~2)"</span>
+<span class="key">git</span> push origin main
+
+<span class="comment"># Vercel rebuilds → production live in ~90 sec</span></code></pre>
+      </div>
+    </div>
+
+    <!-- Step 7 -->
+    <div class="pipeline-step">
+      <div class="arch-card p-6 mr-4">
+        <div class="flex items-start justify-between gap-4 mb-3">
+          <div>
+            <span class="badge badge-ok">06:04:00</span>
+            <h3 class="font-serif text-2xl font-bold mt-2">📧 Notifier — התראות חכמות</h3>
+          </div>
+          <i data-lucide="mail" class="w-6 h-6 text-gold/60"></i>
+        </div>
+        <p class="text-charcoal/75 leading-relaxed mb-4">
+          רק למשתמשים מושפעים. ללא ספאם.
+        </p>
+        <ul class="space-y-2 text-sm">
+          <li class="flex items-start gap-2"><i data-lucide="mail" class="w-4 h-4 text-gold mt-0.5"></i> <span>מייל אישי למושפעים — "ייתכן שמגיע לך החזר נוסף"</span></li>
+          <li class="flex items-start gap-2"><i data-lucide="bell" class="w-4 h-4 text-gold mt-0.5"></i> <span>Push notification (PWA)</span></li>
+          <li class="flex items-start gap-2"><i data-lucide="alert-triangle" class="w-4 h-4 text-gold mt-0.5"></i> <span>Banner במערכת — "חוק חדש שמשפיע עליך"</span></li>
+          <li class="flex items-start gap-2"><i data-lucide="badge-check" class="w-4 h-4 text-gold mt-0.5"></i> <span>Badge "חוק חדש" על בדיקות ישנות</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Architecture Diagram -->
+<section class="max-w-6xl mx-auto px-6 py-12 border-t border-charcoal/10">
+  <div class="text-[10px] tracking-[0.4em] uppercase font-mono text-gold mb-4">02 · ARCHITECTURE</div>
+  <h2 class="font-serif text-4xl font-bold mb-8">דיאגרמת מערכת</h2>
+
+  <div class="ascii-diagram">┌─────────────────────────────────────────────────────────────────┐
+│                  <span class="h">GitHub Actions — Daily 06:00 UTC</span>               │
+│                       (טריגר: cron + manual)                     │
+└──────────────────────┬──────────────────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    <span class="h">📡 SCRAPER LAYER</span>                             │
+│  ─────────────────────────────────────────────────────────────  │
+│   <span class="s">kolzchut.org.il</span>      ← Recent Changes API + RSS feeds         │
+│   <span class="s">rashut-hamisim</span>       ← /he/news scraper + PDF parser          │
+│   <span class="s">btl.gov.il</span>          ← /he/Benefits scraper                    │
+│   <span class="s">labor.gov.il</span>        ← /he/news + RSS                          │
+│   <span class="s">knesset.gov.il</span>      ← Open Data API (legislative bills)       │
+│   <span class="s">nevo.co.il</span>          ← Free tier daily digest                  │
+│                                                                 │
+│  → Output: raw_changes/{date}/source-name.json                  │
+└──────────────────────┬──────────────────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                  <span class="h">🤖 AI CLASSIFIER (Claude Haiku)</span>                │
+│  ─────────────────────────────────────────────────────────────  │
+│  לכל פריט גולמי:                                                 │
+│   1. רלוונטי? · 2. קטגוריה · 3. תוקף · 4. קהל · 5. confidence   │
+│                                                                 │
+│  → confidence ≥ 0.85 → auto-merge                               │
+│  → confidence 0.65-0.85 → manual review queue                   │
+│  → confidence < 0.65 → discard                                  │
+└──────────────────────┬──────────────────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                  <span class="h">📊 STRUCTURED DATA LAYER</span>                       │
+│   data/laws/{category}/{slug}.json   ← מבנה נתונים מסודר        │
+│   data/laws/_index.json              ← מטא־קטלוג                │
+│   data/laws/_changelog.json          ← Audit trail מלא          │
+│   data/laws/_versions/{date}.tar.gz  ← Snapshot יומי            │
+└──────────────────────┬──────────────────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────────────┐
+│              <span class="h">🚀 GIT COMMIT + DEPLOY (CI/CD)</span>                     │
+│   git push → Vercel/Netlify rebuilds                            │
+│   → Production updated within 90 seconds                        │
+└──────────────────────┬──────────────────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                  <span class="h">📧 USER NOTIFICATION LAYER</span>                     │
+│   1. Re-evaluate בדיקות היסטוריות עם החוק החדש                  │
+│   2. Email: "{N} משתמשים מושפעים מחוק חדש"                       │
+│   3. Banner במערכת · 4. Push (PWA) · 5. Badge "חוק חדש"         │
+└─────────────────────────────────────────────────────────────────┘</div>
+</section>
+
+<!-- JSON Schema -->
+<section class="max-w-6xl mx-auto px-6 py-12 border-t border-charcoal/10">
+  <div class="text-[10px] tracking-[0.4em] uppercase font-mono text-gold mb-4">03 · DATA MODEL</div>
+  <h2 class="font-serif text-4xl font-bold mb-8">Schema — מבנה JSON של חוק</h2>
+
+  <details class="arch-card p-6">
+    <summary class="font-semibold flex items-center justify-between">
+      <span>דוגמה: נקודות זיכוי להורה יחיד</span>
+      <span class="badge badge-gold">JSON Schema v2020-12</span>
+    </summary>
+    <pre class="code-block mt-6"><code>{
+  <span class="key">"id"</span>: <span class="str">"credit-points-single-parent-2026"</span>,
+  <span class="key">"category"</span>: <span class="str">"tax"</span>,
+  <span class="key">"subcategory"</span>: <span class="str">"credit-points"</span>,
+  <span class="key">"title"</span>: <span class="str">"נקודות זיכוי להורה יחיד"</span>,
+  <span class="key">"effective_from"</span>: <span class="str">"2026-01-01"</span>,
+  <span class="key">"retroactive"</span>: <span class="num">false</span>,
+
+  <span class="key">"rules"</span>: {
+    <span class="key">"type"</span>: <span class="str">"credit_points"</span>,
+    <span class="key">"value"</span>: <span class="num">2</span>,
+    <span class="key">"conditions"</span>: {
+      <span class="key">"marital_status"</span>: [<span class="str">"single"</span>, <span class="str">"divorced"</span>, <span class="str">"widowed"</span>],
+      <span class="key">"has_children"</span>: <span class="num">true</span>,
+      <span class="key">"child_age_max"</span>: <span class="num">18</span>
+    },
+    <span class="key">"calculation"</span>: <span class="str">"credit_points * 242 NIS/month"</span>
+  },
+
+  <span class="key">"sources"</span>: [
+    {
+      <span class="key">"name"</span>: <span class="str">"kolzchut"</span>,
+      <span class="key">"url"</span>: <span class="str">"https://www.kolzchut.org.il/..."</span>,
+      <span class="key">"fetched_at"</span>: <span class="str">"2026-12-09T06:00:12Z"</span>,
+      <span class="key">"snapshot_hash"</span>: <span class="str">"sha256:a3f2..."</span>
+    }
+  ],
+
+  <span class="key">"metadata"</span>: {
+    <span class="key">"first_seen"</span>: <span class="str">"2026-11-20T06:00:00Z"</span>,
+    <span class="key">"last_updated"</span>: <span class="str">"2026-12-09T06:00:12Z"</span>,
+    <span class="key">"version"</span>: <span class="num">3</span>,
+    <span class="key">"ai_confidence"</span>: <span class="num">0.94</span>,
+    <span class="key">"human_reviewed"</span>: <span class="num">true</span>
+  },
+
+  <span class="key">"impact_estimate"</span>: {
+    <span class="key">"users_affected"</span>: <span class="str">"~12% of payslip checks"</span>,
+    <span class="key">"average_correction_nis"</span>: <span class="num">484</span>
+  },
+
+  <span class="key">"legal_disclaimer"</span>: <span class="str">"מבוסס על: רשות המסים — חוזר 152/2026."</span>
+}</code></pre>
+  </details>
+</section>
+
+<!-- Legal Protection -->
+<section class="max-w-6xl mx-auto px-6 py-12 border-t border-charcoal/10">
+  <div class="text-[10px] tracking-[0.4em] uppercase font-mono text-gold mb-4">04 · LEGAL PROTECTION</div>
+  <h2 class="font-serif text-4xl font-bold mb-3">הגנה משפטית — Audit Trail</h2>
+  <p class="text-charcoal/70 mb-8 max-w-3xl">
+    לכל בדיקה נשמר snapshot מדויק של גרסת החוק שהשתמשה בה. אם משתמש טוען "המערכת טעתה" — נוכל להראות בדיוק מה היה הקלט שלו, איזו גרסה של איזה חוק שימשה, והקישור למקור הרישמי.
+  </p>
+
+  <div class="arch-card p-6">
+    <div class="flex items-center gap-3 mb-4">
+      <i data-lucide="shield-check" class="w-6 h-6 text-gold"></i>
+      <span class="font-serif text-xl font-bold">לכל בדיקה נשמר:</span>
+    </div>
+    <pre class="code-block"><code>{
+  <span class="key">"check_id"</span>: <span class="str">"chk_2026_12_09_abc123"</span>,
+  <span class="key">"timestamp"</span>: <span class="str">"2026-12-09T14:32:18Z"</span>,
+  <span class="key">"input"</span>: { ... payslip + tax profile ... },
+  <span class="key">"laws_snapshot"</span>: {
+    <span class="key">"version"</span>: <span class="str">"2026.12.09"</span>,
+    <span class="key">"git_commit"</span>: <span class="str">"a3f2c8d"</span>,
+    <span class="key">"snapshot_url"</span>: <span class="str">"data/laws/_versions/2026-12-09.tar.gz"</span>,
+    <span class="key">"laws_used"</span>: [
+      <span class="str">"credit-points-single-parent-2026@v3"</span>,
+      <span class="str">"minimum-wage-2026@v1"</span>
+    ]
+  },
+  <span class="key">"result"</span>: { ... },
+  <span class="key">"disclaimer_version"</span>: <span class="str">"v2.4"</span>
+}</code></pre>
+  </div>
+</section>
+
+<!-- Edge Cases -->
+<section class="max-w-6xl mx-auto px-6 py-12 border-t border-charcoal/10">
+  <div class="text-[10px] tracking-[0.4em] uppercase font-mono text-gold mb-4">05 · EDGE CASES</div>
+  <h2 class="font-serif text-4xl font-bold mb-8">מקרי קצה שטופלו</h2>
+
+  <div class="grid md:grid-cols-2 gap-4">
+    <div class="arch-card p-5 gold-accent">
+      <div class="text-sm font-bold text-charcoal/85 mb-1">Scraper נשבר (אתר שונה מבנה)</div>
+      <div class="text-sm text-charcoal/65 leading-relaxed">אזעקה למייל אדמין, ממשיך עם השאר. retry 3x לפני skip.</div>
+    </div>
+    <div class="arch-card p-5 gold-accent">
+      <div class="text-sm font-bold text-charcoal/85 mb-1">AI classifier טעה</div>
+      <div class="text-sm text-charcoal/65 leading-relaxed">confidence &lt; 0.85 → manual review queue במייל יומי לאדמין.</div>
+    </div>
+    <div class="arch-card p-5 gold-accent">
+      <div class="text-sm font-bold text-charcoal/85 mb-1">חוק רטרואקטיבי</div>
+      <div class="text-sm text-charcoal/65 leading-relaxed">flag מיוחד, מייל דחוף, re-evaluate היסטוריה אוטומטי.</div>
+    </div>
+    <div class="arch-card p-5 gold-accent">
+      <div class="text-sm font-bold text-charcoal/85 mb-1">חוק שמתבטל</div>
+      <div class="text-sm text-charcoal/65 leading-relaxed"><code class="font-mono text-xs bg-sand px-1 py-0.5">effective_until</code> ב-JSON, גרסה ישנה נשמרת ב-snapshot.</div>
+    </div>
+    <div class="arch-card p-5 gold-accent">
+      <div class="text-sm font-bold text-charcoal/85 mb-1">תאריך לא ברור</div>
+      <div class="text-sm text-charcoal/65 leading-relaxed">confidence יורד אוטומטית, נכנס ל-manual review.</div>
+    </div>
+    <div class="arch-card p-5 gold-accent">
+      <div class="text-sm font-bold text-charcoal/85 mb-1">שינוי שעלול לפגוע במשתמשים</div>
+      <div class="text-sm text-charcoal/65 leading-relaxed">dry-run, השוואה ל-baseline, אישור ידני לפני push.</div>
+    </div>
+  </div>
+</section>
+
+<!-- Cost & KPI -->
+<section class="max-w-6xl mx-auto px-6 py-12 border-t border-charcoal/10">
+  <div class="grid md:grid-cols-2 gap-12">
+    <div>
+      <div class="text-[10px] tracking-[0.4em] uppercase font-mono text-gold mb-4">06 · COST</div>
+      <h2 class="font-serif text-3xl font-bold mb-6">עלות חודשית</h2>
+      <table class="w-full text-sm">
+        <tbody>
+          <tr class="border-b border-charcoal/10"><td class="py-2.5">GitHub Actions</td><td class="py-2.5 text-left font-mono text-emerald-700">חינם</td></tr>
+          <tr class="border-b border-charcoal/10"><td class="py-2.5">Vercel Hobby</td><td class="py-2.5 text-left font-mono text-emerald-700">חינם</td></tr>
+          <tr class="border-b border-charcoal/10"><td class="py-2.5">Claude Haiku API</td><td class="py-2.5 text-left font-mono text-charcoal/75">~$5</td></tr>
+          <tr class="border-b border-charcoal/10"><td class="py-2.5">Sendgrid (10K mails)</td><td class="py-2.5 text-left font-mono text-emerald-700">חינם</td></tr>
+          <tr><td class="py-2.5 font-bold">סה"כ</td><td class="py-2.5 text-left font-mono font-bold text-gold text-lg">~$5/חודש</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="text-[10px] tracking-[0.4em] uppercase font-mono text-gold mb-4">07 · KPI</div>
+      <h2 class="font-serif text-3xl font-bold mb-6">מדדי הצלחה</h2>
+      <table class="w-full text-sm">
+        <tbody>
+          <tr class="border-b border-charcoal/10"><td class="py-2.5">לטנטיות עדכון</td><td class="py-2.5 text-left font-mono">&lt; 24 שעות</td></tr>
+          <tr class="border-b border-charcoal/10"><td class="py-2.5">Coverage</td><td class="py-2.5 text-left font-mono">≥ 95%</td></tr>
+          <tr class="border-b border-charcoal/10"><td class="py-2.5">False positive</td><td class="py-2.5 text-left font-mono">&lt; 5%</td></tr>
+          <tr class="border-b border-charcoal/10"><td class="py-2.5">False negative</td><td class="py-2.5 text-left font-mono">&lt; 2%</td></tr>
+          <tr><td class="py-2.5">Uptime</td><td class="py-2.5 text-left font-mono">99.5%</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- Roadmap -->
+<section class="max-w-6xl mx-auto px-6 py-12 border-t border-charcoal/10">
+  <div class="text-[10px] tracking-[0.4em] uppercase font-mono text-gold mb-4">08 · ROADMAP</div>
+  <h2 class="font-serif text-4xl font-bold mb-8">צעדי יישום (10–11 שבועות)</h2>
+
+  <div class="space-y-4">
+    <details class="arch-card p-5" open>
+      <summary class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <span class="badge badge-gold">PHASE 1</span>
+          <span class="font-bold">תשתית · 2-3 שבועות</span>
+        </div>
+      </summary>
+      <ul class="mt-4 space-y-2 text-sm text-charcoal/75 mr-8">
+        <li>• JSON Schema ל-laws</li>
+        <li>• מילוי ידני של 30-50 חוקים קריטיים קיימים</li>
+        <li>• Git repo עם CI בסיסי</li>
+        <li>• API endpoint <code class="font-mono text-xs bg-sand px-1">/api/laws/all</code></li>
+      </ul>
+    </details>
+
+    <details class="arch-card p-5">
+      <summary class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <span class="badge badge-gold">PHASE 2</span>
+          <span class="font-bold">Scrapers · 2 שבועות</span>
+        </div>
+      </summary>
+      <ul class="mt-4 space-y-2 text-sm text-charcoal/75 mr-8">
+        <li>• Scraper לכל-זכות (kolzchut)</li>
+        <li>• Scraper לרשות המסים</li>
+        <li>• Scraper לביטוח לאומי</li>
+        <li>• Scraper לכנסת (Open Data API)</li>
+      </ul>
+    </details>
+
+    <details class="arch-card p-5">
+      <summary class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <span class="badge badge-gold">PHASE 3</span>
+          <span class="font-bold">AI + Merge · 2 שבועות</span>
+        </div>
+      </summary>
+      <ul class="mt-4 space-y-2 text-sm text-charcoal/75 mr-8">
+        <li>• Claude Classifier integration</li>
+        <li>• Merger logic + changelog</li>
+        <li>• Snapshot system</li>
+      </ul>
+    </details>
+
+    <details class="arch-card p-5">
+      <summary class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <span class="badge badge-gold">PHASE 4</span>
+          <span class="font-bold">Notifications · שבוע</span>
+        </div>
+      </summary>
+      <ul class="mt-4 space-y-2 text-sm text-charcoal/75 mr-8">
+        <li>• Re-evaluator</li>
+        <li>• Email notifications (Sendgrid)</li>
+        <li>• Banner system במערכת</li>
+      </ul>
+    </details>
+
+    <details class="arch-card p-5">
+      <summary class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <span class="badge badge-warn">PHASE 5</span>
+          <span class="font-bold">Rollout · 3 שבועות</span>
+        </div>
+      </summary>
+      <ul class="mt-4 space-y-2 text-sm text-charcoal/75 mr-8">
+        <li>• Staging environment (שבועיים)</li>
+        <li>• Manual review (שבוע 1-2)</li>
+        <li>• Feature flag 10% (שבוע 3)</li>
+        <li>• Full rollout (שבוע 4)</li>
+      </ul>
+    </details>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="max-w-6xl mx-auto px-6 py-16 border-t border-charcoal/10">
+  <div class="bg-charcoal text-cream p-10 text-center">
+    <div class="text-[10px] tracking-[0.4em] uppercase font-mono text-gold mb-4">NEXT STEPS</div>
+    <h2 class="font-serif text-3xl font-bold mb-4">מוכן לבנות את הצעד הבא?</h2>
+    <p class="text-cream/75 max-w-2xl mx-auto mb-8 leading-relaxed">
+      המסמך המלא מכיל פרומפט AI, prompt למפתח, וקוד דוגמה לכל סקריפט.
+      ניתן להעביר ל-Claude Code לבנייה של ה-POC.
+    </p>
+    <div class="flex flex-wrap justify-center gap-4">
+      <a href="AUTO_UPDATE_ARCHITECTURE.md" download class="bg-gold text-charcoal px-8 py-4 text-xs tracking-[0.2em] uppercase font-semibold hover:bg-cream transition-colors">
+        הורד מסמך טכני מלא ↓
+      </a>
+      <a href="HANDOFF_INSTRUCTIONS.md" download class="border border-cream/30 px-8 py-4 text-xs tracking-[0.2em] uppercase hover:border-gold hover:text-gold transition-colors">
+        מדריך handoff
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="border-t border-charcoal/10 py-8 mt-12">
+  <div class="max-w-6xl mx-auto px-6 text-center">
+    <div class="text-[10px] tracking-[0.4em] uppercase font-mono text-charcoal/40">
+      תלוש · מסמך טכני v1.0 · דצמבר 2026
+    </div>
+  </div>
+</footer>
+
+<script>
+  lucide.createIcons();
+</script>
+</body>
+</html>

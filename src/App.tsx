@@ -5,10 +5,6 @@ import { ErrorBoundary } from './components/ErrorBoundary'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { Layout } from './components/Layout'
 
-const LoginPage = lazy(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })))
-const SignupPage = lazy(() => import('./pages/SignupPage').then(m => ({ default: m.SignupPage })))
-const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage').then(m => ({ default: m.ForgotPasswordPage })))
-const Dashboard = lazy(() => import('./pages/Dashboard').then(m => ({ default: m.Dashboard })))
 const UploadPage = lazy(() => import('./pages/UploadPage').then(m => ({ default: m.UploadPage })))
 const HistoryPage = lazy(() => import('./pages/HistoryPage').then(m => ({ default: m.HistoryPage })))
 const ProfilePage = lazy(() => import('./pages/ProfilePage').then(m => ({ default: m.ProfilePage })))
@@ -17,17 +13,34 @@ const OnboardingWizard = lazy(() => import('./pages/OnboardingWizard').then(m =>
 const ResultsPage = lazy(() => import('./pages/ResultsPage').then(m => ({ default: m.ResultsPage })))
 
 /**
- * Server-side rewrite (vercel.json) routes / and /landing to
- * public/marketing/index.html. This fallback runs only on local dev
- * (`vite preview` doesn't honor vercel.json rewrites for static HTML)
- * and immediately redirects via the public path.
+ * Static HTML pages served via vercel.json rewrites (P6: 1:1 design
+ * fidelity). For local dev (Vite doesn't honor vercel.json rewrites),
+ * these fallbacks redirect immediately to the static asset paths.
+ *
+ * Pages: /, /landing, /login, /signup, /forgot-password, /dashboard,
+ *        /tax-profile, /calculator, /rights, /legal, /admin, /audit, /404
  */
-function LandingFallback() {
-  if (typeof window !== 'undefined') {
-    window.location.replace('/marketing/index.html')
+function makeStaticFallback(path: string) {
+  return function StaticFallback() {
+    if (typeof window !== 'undefined') {
+      window.location.replace(path)
+    }
+    return null
   }
-  return null
 }
+
+const LandingFallback = makeStaticFallback('/marketing/index.html')
+const LoginFallback = makeStaticFallback('/marketing/Login.html')
+const SignupFallback = makeStaticFallback('/marketing/Signup.html')
+const ForgotPasswordFallback = makeStaticFallback('/marketing/ForgotPassword.html')
+const DashboardFallback = makeStaticFallback('/marketing/Dashboard.html')
+const TaxProfileFallback = makeStaticFallback('/marketing/TaxProfile.html')
+const CalculatorFallback = makeStaticFallback('/marketing/NetCalculator.html')
+const RightsFallback = makeStaticFallback('/marketing/Rights.html')
+const LegalFallback = makeStaticFallback('/marketing/Legal.html')
+const AdminFallback = makeStaticFallback('/marketing/Admin.html')
+const AuditFallback = makeStaticFallback('/marketing/Audit.html')
+const NotFoundFallback = makeStaticFallback('/marketing/404.html')
 
 function LoadingSpinner() {
   return (
@@ -44,23 +57,27 @@ export default function App() {
         <AuthProvider>
           <Suspense fallback={<LoadingSpinner />}>
             <Routes>
-              {/* Public routes */}
-              {/* /, /landing → served as static HTML from public/marketing/index.html
-                  via vercel.json rewrites (P6: 1:1 design fidelity). React Landing
-                  fallback below for non-Vercel local dev (`vite preview`). */}
+              {/* Static HTML pages — served by vercel.json rewrites; these
+                  React routes are local-dev fallbacks that redirect */}
               <Route path="/" element={<LandingFallback />} />
               <Route path="/landing" element={<LandingFallback />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/signup" element={<SignupPage />} />
-              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/login" element={<LoginFallback />} />
+              <Route path="/signup" element={<SignupFallback />} />
+              <Route path="/forgot-password" element={<ForgotPasswordFallback />} />
+              <Route path="/dashboard" element={<DashboardFallback />} />
+              <Route path="/tax-profile" element={<TaxProfileFallback />} />
+              <Route path="/calculator" element={<CalculatorFallback />} />
+              <Route path="/rights" element={<RightsFallback />} />
+              <Route path="/legal" element={<LegalFallback />} />
+              <Route path="/admin" element={<AdminFallback />} />
+              <Route path="/audit" element={<AuditFallback />} />
+              <Route path="/404" element={<NotFoundFallback />} />
 
-              {/* Protected routes with Layout */}
               {/* Onboarding (protected, no layout) */}
               <Route path="/onboarding" element={<ProtectedRoute><OnboardingWizard /></ProtectedRoute>} />
 
-              {/* Protected routes with Layout */}
+              {/* React app routes (auth-required, with shared Layout) */}
               <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-                <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/upload" element={<UploadPage />} />
                 <Route path="/results" element={<ResultsPage />} />
                 <Route path="/history" element={<HistoryPage />} />
@@ -69,7 +86,7 @@ export default function App() {
               </Route>
 
               {/* 404 */}
-              <Route path="*" element={<Navigate to="/landing" replace />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Suspense>
         </AuthProvider>

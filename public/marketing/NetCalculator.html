@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>מחשבון נטו · בדיקת תלוש שכר</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700&family=Frank+Ruhl+Libre:wght@300;400;700;900&display=swap" rel="stylesheet">
+<script>
+tailwind.config = {
+  theme: { extend: {
+    fontFamily: { sans: ['Assistant','sans-serif'], serif: ['"Frank Ruhl Libre"','serif'], mono: ['ui-monospace','monospace'] },
+    colors: { cream:'#FDFBF7', sand:'#F4F1EB', charcoal:'#0a0a0a', gold:'#B89B5E', gold2:'#9b8149' }
+  }}
+}
+</script>
+<style>
+  body { font-family: 'Assistant', sans-serif; background:#FDFBF7; color:#0a0a0a; }
+  .head-bar { background:#0a0a0a; color:#FDFBF7; }
+  .gold-line { height:1px; background:linear-gradient(to right, transparent, rgba(184,155,94,0.5), transparent); }
+  .field-label { display:block; font-family: ui-monospace, monospace; font-size:11px; letter-spacing:0.25em; text-transform:uppercase; color: rgba(10,10,10,0.55); margin-bottom:10px; }
+  .input-line { background:transparent; border:none; border-bottom:1.5px solid rgba(10,10,10,0.15); padding:13px 0; width:100%; font-size:18px; font-weight:600; transition: border-color .3s; outline:none; direction:rtl; color:#0a0a0a; }
+  .input-line:focus { border-bottom-color:#B89B5E; }
+
+  /* Year selector */
+  .year-btn { color: rgba(255,255,255,0.55); border-bottom:2px solid transparent; }
+  .year-btn:hover { color:#FDFBF7; }
+  .year-btn.active { background:#B89B5E; color:#0a0a0a; font-weight:700; }
+  input[type="range"] { -webkit-appearance:none; width:100%; height:3px; background:rgba(10,10,10,0.1); outline:none; }
+  input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:18px; height:18px; background:#B89B5E; border:3px solid #0a0a0a; cursor:pointer; }
+  input[type="range"]::-moz-range-thumb { width:18px; height:18px; background:#B89B5E; border:3px solid #0a0a0a; cursor:pointer; border-radius:0; }
+
+  /* Toggle */
+  .toggle { position:relative; display:inline-block; width:44px; height:24px; }
+  .toggle input { opacity:0; width:0; height:0; }
+  .toggle .slider { position:absolute; cursor:pointer; inset:0; background:rgba(10,10,10,0.15); transition:.3s; }
+  .toggle .slider::before { position:absolute; content:""; height:18px; width:18px; right:3px; top:3px; background:#fff; transition:.3s; }
+  .toggle input:checked + .slider { background:#B89B5E; }
+  .toggle input:checked + .slider::before { transform:translateX(-20px); }
+
+  /* Result panel */
+  .result-panel { background:#0a0a0a; color:#FDFBF7; padding:36px 36px; position:sticky; top:24px; }
+  .breakdown-row { display:grid; grid-template-columns: 1fr auto auto; gap:14px; padding:13px 0; border-bottom:1px solid rgba(255,255,255,0.07); align-items:baseline; font-size:13px; }
+  .breakdown-row .label { color:rgba(255,255,255,0.65); }
+  /* Mobile: result panel responsive padding + non-sticky */
+  @media (max-width: 1023px){
+    .result-panel { padding: 28px 22px; position: static; }
+  }
+  .breakdown-row .pct { font-family:ui-monospace; font-size:11px; color:rgba(184,155,94,0.7); }
+  .breakdown-row .amt { font-family:'Frank Ruhl Libre', serif; font-size:18px; font-weight:700; color:#FDFBF7; min-width:90px; text-align:left; }
+  .breakdown-row.deduction .amt { color:#d97757; }
+  .breakdown-row.deduction .amt::before { content:'−'; opacity:.6; margin-left:2px; }
+  .breakdown-row.zero .amt { color:rgba(255,255,255,0.25); }
+
+  /* Tax bracket bar */
+  .bracket { display:flex; height:8px; background:rgba(255,255,255,0.05); margin-top:6px; }
+  .bracket div { transition: width .5s; }
+
+  .card { background:#fff; border:1px solid rgba(10,10,10,0.08); padding:36px 40px; }
+  .gold-btn { background:#B89B5E; color:#0a0a0a; padding: 16px 26px; font-weight:600; letter-spacing:.2em; text-transform:uppercase; font-size:11px; transition: all .35s; cursor: pointer; border:1px solid #B89B5E; }
+  .gold-btn:hover { background:#0a0a0a; color:#B89B5E; }
+
+  .source-chip { display:inline-flex; align-items:center; gap:6px; font-family:ui-monospace; font-size:10px; letter-spacing:0.15em; text-transform:uppercase; color:rgba(10,10,10,0.5); padding:4px 10px; border:1px solid rgba(10,10,10,0.15); }
+  .source-chip.dark { color:rgba(255,255,255,0.5); border-color:rgba(255,255,255,0.15); }
+
+  .reveal { opacity:0; transform: translateY(8px); animation: rv .5s cubic-bezier(.2,.6,.2,1) forwards; }
+  @keyframes rv { to { opacity:1; transform:none; } }
+
+  .pct-fill { background:#B89B5E; height:6px; transition: width .5s; }
+</style>
+<!-- Meta -->
+<meta name="theme-color" content="#0a0a0a">
+<meta name="description" content="29 בדיקות אוטומטיות לתלוש השכר שלכם במגזר הפרטי — חישוב נטו רב-שנתי, השוואה לחוזה, מרכז זכאויות. מקומי, פרטי, מאובטח.">
+<meta name="format-detection" content="telephone=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+
+<!-- Open Graph / Social -->
+<meta property="og:type" content="website">
+<meta property="og:locale" content="he_IL">
+<meta property="og:site_name" content="תלוש">
+<meta property="og:title" content="תלוש · בדיקת תלוש שכר במגזר הפרטי">
+<meta property="og:description" content="29 בדיקות אוטומטיות לתלוש השכר שלכם — מקומי, פרטי, ללא שמירת נתונים בשרת.">
+<meta property="og:image" content="icon-512.svg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="תלוש · בדיקת תלוש שכר במגזר הפרטי">
+<meta name="twitter:description" content="29 בדיקות אוטומטיות לתלוש השכר שלכם.">
+<meta name="twitter:image" content="icon-512.svg">
+
+<!-- Icons -->
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="apple-touch-icon.svg">
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="talush-a11y.css">
+<script src="talush-ui.js" defer></script>
+<script src="talush-error-boundary.js?v=1777126914727"></script>
+<script src="security-guard.js" defer></script>
+<script src="audit-logger.js" defer></script>
+</head>
+<body class="antialiased" data-screen-label="Net Calculator">
+<a href="#main-content" class="skip-link" style="position:absolute;top:-40px;right:0;background:#B89B5E;color:#0a0a0a;padding:10px 20px;z-index:99999;text-decoration:none;font-weight:600;font-size:13px;letter-spacing:0.15em;text-transform:uppercase;transition:top .2s;" onfocus="this.style.top='0'" onblur="this.style.top='-40px'">דלג לתוכן הראשי</a>
+<!-- HEADER -->
+<header class="head-bar relative">
+  <div class="absolute top-0 left-0 right-0 gold-line"></div>
+  <div class="max-w-7xl mx-auto px-6 lg:px-10 py-7 flex items-center justify-between">
+    <a href="/dashboard" class="flex items-center gap-3 text-white/70 hover:text-gold transition-colors text-xs tracking-[0.25em] uppercase">
+      <i data-lucide="arrow-right" class="w-4 h-4"></i>
+      חזרה ללוח
+    </a>
+    <div class="flex items-center gap-3">
+      <div class="text-[10px] tracking-[0.3em] uppercase text-white/45 font-mono">כלי עזר · ציבורי</div>
+      <span class="text-white/30">·</span>
+      <div class="font-serif font-black">מחשבון נטו</div>
+    </div>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="head-bar relative overflow-hidden border-t border-white/10">
+  <div class="max-w-7xl mx-auto px-6 lg:px-10 py-14">
+    <div class="grid lg:grid-cols-[1fr_auto] items-end gap-10">
+      <div>
+        <div class="text-[11px] tracking-[0.3em] uppercase text-gold font-mono mb-4">▸ ברוטו ↔ נטו · <span id="headerYear">2026</span></div>
+        <h1 class="font-serif font-black leading-[0.95] tracking-tight mb-5 text-white" style="font-size: clamp(2.2rem, 5vw, 3.8rem);">
+          תראה לי בדיוק<br/>
+          <span class="text-gold">לאן הולך הכסף.</span>
+        </h1>
+        <p class="text-white/65 text-base leading-relaxed max-w-2xl font-light">
+          חישוב מדויק של מס הכנסה, ביטוח לאומי, ביטוח בריאות והפרשות סוציאליות — לפי השיעורים והתקרות הרשמיים של רשות המיסים והביטוח הלאומי.
+        </p>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <span class="source-chip dark"><i data-lucide="building-2" class="w-3 h-3"></i> רשות המיסים</span>
+        <span class="source-chip dark"><i data-lucide="shield" class="w-3 h-3"></i> ביטוח לאומי</span>
+        <span class="source-chip dark"><i data-lucide="book-open" class="w-3 h-3"></i> כל-זכות</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BODY -->
+<div class="max-w-7xl mx-auto px-6 lg:px-10 py-12">
+  <div class="grid lg:grid-cols-[1fr_440px] gap-10">
+
+    <!-- INPUTS -->
+    <main class="space-y-6">
+
+      <!-- Year Selector — shown above all stages -->
+      <section class="card reveal" style="background:#0a0a0a; color:#FDFBF7; padding:24px 28px;">
+        <div class="flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <div class="text-[10px] tracking-[0.3em] uppercase text-gold font-mono mb-1.5">▸ שנת מס</div>
+            <h3 class="font-serif text-xl font-black leading-tight">בחר את השנה לחישוב</h3>
+            <p class="text-white/55 text-xs mt-1">השיעורים, נקודות הזיכוי והתקרות משתנים מדי שנה.</p>
+          </div>
+          <div class="flex gap-1.5 bg-white/5 p-1.5">
+            <button data-year="2022" class="year-btn px-4 py-2 text-sm font-mono tracking-wider transition">2022</button>
+            <button data-year="2023" class="year-btn px-4 py-2 text-sm font-mono tracking-wider transition">2023</button>
+            <button data-year="2024" class="year-btn px-4 py-2 text-sm font-mono tracking-wider transition">2024</button>
+            <button data-year="2025" class="year-btn px-4 py-2 text-sm font-mono tracking-wider transition">2025</button>
+            <button data-year="2026" class="year-btn px-4 py-2 text-sm font-mono tracking-wider transition active">2026</button>
+          </div>
+        </div>
+        <div id="yearInfo" class="mt-4 pt-4 border-t border-white/10 grid grid-cols-2 md:grid-cols-4 gap-4 text-[11px]">
+          <div><div class="text-white/40 font-mono uppercase tracking-widest mb-1">נקודה</div><div class="font-serif text-base text-gold" id="yi-point">₪242</div></div>
+          <div><div class="text-white/40 font-mono uppercase tracking-widest mb-1">תקרת ב.ל.</div><div class="font-serif text-base text-gold" id="yi-cap">₪51,910</div></div>
+          <div><div class="text-white/40 font-mono uppercase tracking-widest mb-1">מדרגה ראשונה</div><div class="font-serif text-base text-gold" id="yi-bracket">10% עד ₪84,120</div></div>
+          <div><div class="text-white/40 font-mono uppercase tracking-widest mb-1">מדרגה עליונה</div><div class="font-serif text-base text-gold" id="yi-top">50%</div></div>
+        </div>
+      </section>
+
+      <section class="card reveal">
+        <div class="flex items-baseline justify-between mb-2">
+          <div class="text-[10px] tracking-[0.3em] uppercase text-gold font-mono">▸ שלב 01</div>
+          <div class="text-[10px] tracking-widest uppercase text-charcoal/40 font-mono">שכר ברוטו</div>
+        </div>
+        <h2 class="font-serif text-2xl font-black text-charcoal mb-6 leading-tight">כמה אתה מרוויח?</h2>
+
+        <div class="mb-8">
+          <label class="field-label">שכר חודשי ברוטו</label>
+          <div class="flex items-baseline gap-3">
+            <input type="number" class="input-line text-3xl !pb-2" id="gross" value="15000" min="0" step="100" />
+            <span class="text-charcoal/50 text-xl">₪</span>
+          </div>
+          <input type="range" id="grossSlider" min="3000" max="60000" step="100" value="15000" class="mt-5" />
+          <div class="flex justify-between text-[10px] text-charcoal/40 mt-2 font-mono">
+            <span>₪3,000</span>
+            <span>₪30,000</span>
+            <span>₪60,000</span>
+          </div>
+        </div>
+
+        <div class="grid sm:grid-cols-2 gap-x-10 gap-y-6 pt-6 border-t border-charcoal/10">
+          <div>
+            <label class="field-label">היקף משרה</label>
+            <select class="input-line" id="scope">
+              <option value="100">משרה מלאה (100%)</option>
+              <option value="80">80%</option>
+              <option value="50">חצי משרה (50%)</option>
+              <option value="25">רבע משרה (25%)</option>
+            </select>
+          </div>
+          <div>
+            <label class="field-label">סוג העסקה</label>
+            <select class="input-line" id="empType">
+              <option value="monthly">חודשי (גלובלי)</option>
+              <option value="hourly">שעתי</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <section class="card reveal">
+        <div class="flex items-baseline justify-between mb-2">
+          <div class="text-[10px] tracking-[0.3em] uppercase text-gold font-mono">▸ שלב 02</div>
+          <div class="text-[10px] tracking-widest uppercase text-charcoal/40 font-mono">נקודות זיכוי</div>
+        </div>
+        <h2 class="font-serif text-2xl font-black text-charcoal mb-2 leading-tight">נקודות זיכוי</h2>
+        <p class="text-charcoal/55 text-sm mb-6">2.25 נקודות בסיס לכל תושב + 0.5 לאישה. כל נקודה = ₪242/חודש.</p>
+
+        <!-- Profile Banner -->
+        <div id="profileBanner" class="hidden mb-6 flex items-center gap-3 p-4 bg-charcoal text-cream border-r-2 border-gold">
+          <i data-lucide="check-circle-2" class="w-4 h-4 text-gold shrink-0"></i>
+          <div class="flex-1 text-sm">
+            <span id="profileBannerName"></span>הנתונים נטענו אוטומטית מפרופיל המס שלך — <strong class="text-gold" id="profileBannerPts">2.25</strong> נקודות זיכוי.
+          </div>
+          <a href="/tax-profile" class="text-[10px] tracking-widest uppercase text-white/60 hover:text-gold whitespace-nowrap">עדכן ←</a>
+        </div>
+
+        <div class="grid sm:grid-cols-2 gap-x-10 gap-y-6">
+          <div>
+            <label class="field-label">סך נקודות זיכוי</label>
+            <input type="number" class="input-line" id="points" value="2.25" min="0" max="10" step="0.25" />
+            <a href="/tax-profile" class="text-xs text-gold hover:underline mt-2 inline-flex items-center gap-1">
+              <i data-lucide="user-cog" class="w-3 h-3"></i>
+              חשב אוטומטית מפרופיל מס
+            </a>
+          </div>
+          <div>
+            <label class="field-label">פטור גיאוגרפי</label>
+            <select class="input-line" id="geoExempt">
+              <option value="0">ללא פטור</option>
+              <option value="7">אזור עדיפות ב׳ (7%)</option>
+              <option value="11">אזור עדיפות א׳ (11%)</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <section class="card reveal">
+        <div class="flex items-baseline justify-between mb-2">
+          <div class="text-[10px] tracking-[0.3em] uppercase text-gold font-mono">▸ שלב 03</div>
+          <div class="text-[10px] tracking-widest uppercase text-charcoal/40 font-mono">הפרשות סוציאליות</div>
+        </div>
+        <h2 class="font-serif text-2xl font-black text-charcoal mb-6 leading-tight">פנסיה והשתלמות</h2>
+
+        <div class="grid sm:grid-cols-2 gap-x-10 gap-y-6">
+          <div>
+            <label class="field-label flex items-center justify-between">
+              <span>פנסיה — חלק העובד</span>
+              <span class="text-charcoal/50 normal-case tracking-normal">%</span>
+            </label>
+            <input type="number" class="input-line" id="pension" value="6" min="0" max="7" step="0.5" />
+            <div class="text-[11px] text-charcoal/45 mt-2">חוקי: 6% מינימום (מקס׳ 7%).</div>
+          </div>
+          <div>
+            <label class="field-label flex items-center justify-between">
+              <span>קרן השתלמות — עובד</span>
+              <span class="text-charcoal/50 normal-case tracking-normal">%</span>
+            </label>
+            <input type="number" class="input-line" id="study" value="2.5" min="0" max="5" step="0.5" />
+            <div class="text-[11px] text-charcoal/45 mt-2">סטנדרט: 2.5% (פטור ממס עד תקרת ₪15,712).</div>
+          </div>
+        </div>
+
+        <div class="mt-8 pt-6 border-t border-charcoal/10 flex items-center justify-between">
+          <div>
+            <div class="text-sm font-semibold text-charcoal">תושב אזור עדיפות 12+ חודשים?</div>
+            <div class="text-[11px] text-charcoal/50 mt-0.5">חובה למימוש פטור גיאוגרפי</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="geoQual" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+      </section>
+
+      <!-- Tax Bracket Visualization -->
+      <section class="card reveal">
+        <div class="flex items-baseline justify-between mb-2">
+          <div class="text-[10px] tracking-[0.3em] uppercase text-gold font-mono">▸ ניתוח</div>
+          <div class="text-[10px] tracking-widest uppercase text-charcoal/40 font-mono">מדרגות מס 2026</div>
+        </div>
+        <h2 class="font-serif text-2xl font-black text-charcoal mb-2 leading-tight">איך השכר שלך מתחלק?</h2>
+        <p class="text-charcoal/55 text-sm mb-6">המס בישראל פרוגרסיבי — כל מדרגה ממוסה בשיעור שונה.</p>
+
+        <div id="brackets" class="space-y-3"></div>
+      </section>
+
+    </main>
+
+    <!-- RESULT -->
+    <aside>
+      <div class="result-panel">
+        <div class="text-[10px] tracking-[0.3em] uppercase text-gold font-mono mb-2">▸ תוצאה</div>
+        <h3 class="font-serif text-xl font-black mb-1 leading-tight">השכר נטו שלך</h3>
+        <p class="text-white/55 text-xs mb-6">מתעדכן בזמן אמת</p>
+
+        <div class="mb-6">
+          <div class="flex items-baseline gap-2">
+            <span class="font-serif font-black text-gold leading-none" style="font-size:64px;" id="netDisplay">11,243</span>
+            <span class="font-serif text-3xl text-white/60">₪</span>
+          </div>
+          <div class="text-xs text-white/55 mt-2">
+            <span id="netPctDisplay">74.9%</span> מהברוטו · <span id="yearlyDisplay">₪134,916</span> בשנה
+          </div>
+          <div class="w-full bg-white/10 mt-4">
+            <div class="pct-fill" id="netBar" style="width:75%"></div>
+          </div>
+        </div>
+
+        <div class="mt-8 mb-2">
+          <div class="text-[10px] tracking-[0.3em] uppercase text-white/45 font-mono">פירוט ניכויים</div>
+        </div>
+
+        <div class="breakdown-row">
+          <span class="label">שכר ברוטו</span>
+          <span class="pct"></span>
+          <span class="amt" id="grossOut">15,000</span>
+        </div>
+        <div class="breakdown-row deduction" id="r-pension">
+          <span class="label">פנסיה (עובד)</span>
+          <span class="pct" id="p-pension">6.0%</span>
+          <span class="amt" id="v-pension">900</span>
+        </div>
+        <div class="breakdown-row deduction" id="r-study">
+          <span class="label">קרן השתלמות</span>
+          <span class="pct" id="p-study">2.5%</span>
+          <span class="amt" id="v-study">375</span>
+        </div>
+        <div class="breakdown-row deduction" id="r-bl">
+          <span class="label">ביטוח לאומי</span>
+          <span class="pct" id="p-bl">—</span>
+          <span class="amt" id="v-bl">—</span>
+        </div>
+        <div class="breakdown-row deduction" id="r-bri">
+          <span class="label">ביטוח בריאות</span>
+          <span class="pct" id="p-bri">—</span>
+          <span class="amt" id="v-bri">—</span>
+        </div>
+        <div class="breakdown-row deduction" id="r-tax">
+          <span class="label">מס הכנסה (לאחר זיכויים)</span>
+          <span class="pct" id="p-tax">—</span>
+          <span class="amt" id="v-tax">—</span>
+        </div>
+
+        <div class="pt-5 mt-3 border-t-2 border-gold">
+          <div class="flex justify-between items-baseline">
+            <span class="text-[11px] tracking-[0.25em] uppercase text-gold font-mono">סה״כ נטו</span>
+            <span class="font-serif font-black text-gold text-3xl" id="netTotal">₪11,243</span>
+          </div>
+        </div>
+
+        <div class="mt-6 pt-6 border-t border-white/10 space-y-3 text-[11px] text-white/55">
+          <div class="flex items-start gap-2">
+            <i data-lucide="info" class="w-3 h-3 text-gold shrink-0 mt-0.5"></i>
+            <span>זהו אומדן בלבד. ערכים בפועל תלויים בטופס 101, הפרשות מעסיק, וניכויי רשות.</span>
+          </div>
+          <div class="flex items-start gap-2">
+            <i data-lucide="external-link" class="w-3 h-3 text-gold shrink-0 mt-0.5"></i>
+            <a href="https://www.btl.gov.il/Insurance/Maasik/Pages/hacnasaHacayevet.aspx" target="_blank" class="hover:text-gold underline">תקרות רשמיות — ביטוח לאומי</a>
+          </div>
+        </div>
+
+        <a href="/dashboard" class="gold-btn w-full text-center mt-6 flex items-center justify-center gap-2">
+          <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+          בדוק תלוש מול חוזה
+        </a>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- SOURCES -->
+  <div class="mt-12 pt-10 border-t border-charcoal/10">
+    <div class="text-[10px] tracking-[0.3em] uppercase text-charcoal/45 font-mono mb-4">▸ מקורות מידע רשמיים</div>
+    <div class="grid md:grid-cols-3 gap-4">
+      <a href="https://www.btl.gov.il/Insurance/Maasik/Pages/hacnasaHacayevet.aspx" target="_blank" class="block p-5 border border-charcoal/10 hover:border-gold transition-colors group">
+        <div class="flex items-start justify-between mb-3">
+          <i data-lucide="building-2" class="w-5 h-5 text-gold"></i>
+          <i data-lucide="external-link" class="w-3.5 h-3.5 text-charcoal/40 group-hover:text-gold"></i>
+        </div>
+        <div class="font-serif font-bold text-charcoal mb-1">המוסד לביטוח לאומי</div>
+        <div class="text-xs text-charcoal/55 leading-relaxed">תקרות והכנסה החייבת בדמי ביטוח</div>
+      </a>
+      <a href="https://www.gov.il/en/collectors/informationtype?officeId=c0d8ba69-e309-4fe5-801f-855971774a90&TargetAudienceId=3cb299cb-c21a-46c4-be74-fd1c33425517" target="_blank" class="block p-5 border border-charcoal/10 hover:border-gold transition-colors group">
+        <div class="flex items-start justify-between mb-3">
+          <i data-lucide="landmark" class="w-5 h-5 text-gold"></i>
+          <i data-lucide="external-link" class="w-3.5 h-3.5 text-charcoal/40 group-hover:text-gold"></i>
+        </div>
+        <div class="font-serif font-bold text-charcoal mb-1">רשות המיסים בישראל</div>
+        <div class="text-xs text-charcoal/55 leading-relaxed">מדרגות מס, נקודות זיכוי ופטורים</div>
+      </a>
+      <a href="https://www.kolzchut.org.il/he/%D7%AA%D7%A2%D7%A1%D7%95%D7%A7%D7%94_%D7%95%D7%96%D7%9B%D7%95%D7%99%D7%95%D7%AA_%D7%A2%D7%95%D7%91%D7%93%D7%99%D7%9D" target="_blank" class="block p-5 border border-charcoal/10 hover:border-gold transition-colors group">
+        <div class="flex items-start justify-between mb-3">
+          <i data-lucide="book-open" class="w-5 h-5 text-gold"></i>
+          <i data-lucide="external-link" class="w-3.5 h-3.5 text-charcoal/40 group-hover:text-gold"></i>
+        </div>
+        <div class="font-serif font-bold text-charcoal mb-1">כל-זכות</div>
+        <div class="text-xs text-charcoal/55 leading-relaxed">תעסוקה וזכויות עובדים בישראל</div>
+      </a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+lucide.createIcons();
+
+// ============ TAX BRACKETS — MULTI-YEAR (2022-2026) ============
+// Annual income brackets (₪). Source: Israeli Tax Authority (rashut hamisim)
+const TAX_DATA = {
+  2022: {
+    brackets: [
+      { upTo: 77400,    rate: 0.10 },
+      { upTo: 110880,   rate: 0.14 },
+      { upTo: 178080,   rate: 0.20 },
+      { upTo: 247440,   rate: 0.31 },
+      { upTo: 514920,   rate: 0.35 },
+      { upTo: 663240,   rate: 0.47 },
+      { upTo: Infinity, rate: 0.50 },
+    ],
+    pointValue: 223,
+    niLowCap: 6680, niHighCap: 45075,
+    niLow: 0.0040, niHigh: 0.07,
+    healthLow: 0.0310, healthHigh: 0.05,
+  },
+  2023: {
+    brackets: [
+      { upTo: 81480,    rate: 0.10 },
+      { upTo: 116760,   rate: 0.14 },
+      { upTo: 187440,   rate: 0.20 },
+      { upTo: 260520,   rate: 0.31 },
+      { upTo: 542160,   rate: 0.35 },
+      { upTo: 698280,   rate: 0.47 },
+      { upTo: Infinity, rate: 0.50 },
+    ],
+    pointValue: 235,
+    niLowCap: 7122, niHighCap: 47465,
+    niLow: 0.0040, niHigh: 0.07,
+    healthLow: 0.0310, healthHigh: 0.05,
+  },
+  2024: {
+    brackets: [
+      { upTo: 84120,    rate: 0.10 },
+      { upTo: 120720,   rate: 0.14 },
+      { upTo: 193800,   rate: 0.20 },
+      { upTo: 269280,   rate: 0.31 },
+      { upTo: 560280,   rate: 0.35 },
+      { upTo: 721560,   rate: 0.47 },
+      { upTo: Infinity, rate: 0.50 },
+    ],
+    pointValue: 242,
+    niLowCap: 7522, niHighCap: 49030,
+    niLow: 0.0040, niHigh: 0.07,
+    healthLow: 0.0310, healthHigh: 0.05,
+  },
+  2025: {
+    brackets: [
+      { upTo: 84120,    rate: 0.10 },
+      { upTo: 120720,   rate: 0.14 },
+      { upTo: 193800,   rate: 0.20 },
+      { upTo: 269280,   rate: 0.31 },
+      { upTo: 560280,   rate: 0.35 },
+      { upTo: 721560,   rate: 0.47 },
+      { upTo: Infinity, rate: 0.50 },
+    ],
+    pointValue: 242,
+    niLowCap: 7703, niHighCap: 50695,
+    niLow: 0.0104, niHigh: 0.07,
+    healthLow: 0.0323, healthHigh: 0.0517,
+  },
+  2026: {
+    brackets: [
+      { upTo: 84120,    rate: 0.10 },
+      { upTo: 120720,   rate: 0.14 },
+      { upTo: 193800,   rate: 0.20 },
+      { upTo: 269280,   rate: 0.31 },
+      { upTo: 560280,   rate: 0.35 },
+      { upTo: 721560,   rate: 0.47 },
+      { upTo: Infinity, rate: 0.50 },
+    ],
+    pointValue: 242,
+    niLowCap: 7703, niHighCap: 51910,
+    niLow: 0.0104, niHigh: 0.07,
+    healthLow: 0.0323, healthHigh: 0.0517,
+  },
+};
+
+let CURRENT_YEAR = 2026;
+
+function getYearData() {
+  return TAX_DATA[CURRENT_YEAR] || TAX_DATA[2026];
+}
+
+function calcIncomeTax(annualTaxableIncome) {
+  const data = getYearData();
+  let tax = 0;
+  let prev = 0;
+  for (const b of data.brackets) {
+    const slice = Math.max(0, Math.min(annualTaxableIncome, b.upTo) - prev);
+    tax += slice * b.rate;
+    prev = b.upTo;
+    if (annualTaxableIncome <= b.upTo) break;
+  }
+  return tax;
+}
+
+function calcNI(monthlyGross) {
+  if (monthlyGross <= 0) return { ni: 0, health: 0 };
+  const data = getYearData();
+  const cap = Math.min(monthlyGross, data.niHighCap);
+  let ni = 0, health = 0;
+  if (cap <= data.niLowCap) {
+    ni = cap * data.niLow;
+    health = cap * data.healthLow;
+  } else {
+    ni = data.niLowCap * data.niLow + (cap - data.niLowCap) * data.niHigh;
+    health = data.niLowCap * data.healthLow + (cap - data.niLowCap) * data.healthHigh;
+  }
+  return { ni, health };
+}
+
+function fmt(n) {
+  return Math.round(n).toLocaleString('he');
+}
+
+function compute() {
+  const gross = +document.getElementById('gross').value || 0;
+  const points = +document.getElementById('points').value || 0;
+  const geoExempt = +document.getElementById('geoExempt').value || 0;
+  const geoQual = document.getElementById('geoQual').checked;
+  const pensionPct = (+document.getElementById('pension').value || 0) / 100;
+  const studyPct = (+document.getElementById('study').value || 0) / 100;
+
+  const pension = gross * pensionPct;
+  const study = gross * studyPct;
+
+  // Taxable income = gross - pension (study is exempt up to cap, simplified)
+  const taxableMonthly = gross - pension;
+  const annualTaxable = taxableMonthly * 12;
+
+  // Income tax
+  let annualTax = calcIncomeTax(annualTaxable);
+  // Subtract credit points
+  const annualCredit = points * getYearData().pointValue * 12;
+  annualTax = Math.max(0, annualTax - annualCredit);
+  // Apply geo exemption
+  if (geoQual && geoExempt > 0) annualTax = annualTax * (1 - geoExempt / 100);
+  const monthlyTax = annualTax / 12;
+
+  // National Insurance + Health
+  const { ni, health } = calcNI(gross);
+
+  const totalDeductions = pension + study + ni + health + monthlyTax;
+  const net = gross - totalDeductions;
+  const netPct = gross > 0 ? (net / gross) * 100 : 0;
+
+  // Display
+  document.getElementById('netDisplay').textContent = fmt(net);
+  document.getElementById('netPctDisplay').textContent = netPct.toFixed(1) + '%';
+  document.getElementById('yearlyDisplay').textContent = '₪' + fmt(net * 12);
+  document.getElementById('netBar').style.width = Math.min(100, netPct) + '%';
+  document.getElementById('netTotal').textContent = '₪' + fmt(net);
+  document.getElementById('grossOut').textContent = fmt(gross);
+
+  document.getElementById('v-pension').textContent = fmt(pension);
+  document.getElementById('v-study').textContent = fmt(study);
+  document.getElementById('v-bl').textContent = fmt(ni);
+  document.getElementById('v-bri').textContent = fmt(health);
+  document.getElementById('v-tax').textContent = fmt(monthlyTax);
+
+  document.getElementById('p-pension').textContent = (pensionPct * 100).toFixed(1) + '%';
+  document.getElementById('p-study').textContent = (studyPct * 100).toFixed(1) + '%';
+  document.getElementById('p-bl').textContent = ni > 0 ? ((ni / gross) * 100).toFixed(2) + '%' : '0%';
+  document.getElementById('p-bri').textContent = health > 0 ? ((health / gross) * 100).toFixed(2) + '%' : '0%';
+  document.getElementById('p-tax').textContent = monthlyTax > 0 ? ((monthlyTax / gross) * 100).toFixed(1) + '%' : '0%';
+
+  // Toggle zero rows
+  ['r-pension','r-study','r-bl','r-bri','r-tax'].forEach((id, i) => {
+    const vals = [pension, study, ni, health, monthlyTax];
+    document.getElementById(id).classList.toggle('zero', vals[i] === 0);
+  });
+
+  renderBrackets(annualTaxable);
+}
+
+function renderBrackets(annualIncome) {
+  const container = document.getElementById('brackets');
+  container.innerHTML = '';
+  let prev = 0;
+  for (const b of getYearData().brackets) {
+    if (prev >= annualIncome) break;
+    const top = Math.min(annualIncome, b.upTo);
+    const sliceAnnual = top - prev;
+    const sliceMonthly = sliceAnnual / 12;
+    const taxOnSlice = sliceAnnual * b.rate;
+    const pctOfIncome = (sliceAnnual / annualIncome) * 100;
+
+    const row = document.createElement('div');
+    row.innerHTML = `
+      <div class="flex justify-between items-baseline text-sm mb-1">
+        <div class="flex items-center gap-3">
+          <span class="font-mono text-xs text-gold w-12">${b.label}</span>
+          <span class="text-charcoal/70">₪${fmt(prev/12)}—${b.upTo === Infinity ? '∞' : '₪' + fmt(b.upTo/12)} / חודש</span>
+        </div>
+        <div class="text-xs text-charcoal/60">
+          <span class="font-serif font-bold text-charcoal text-base">₪${fmt(sliceMonthly)}</span>
+          <span class="text-charcoal/45 mx-2">×</span>
+          <span class="text-[#d97757] font-semibold">₪${fmt(taxOnSlice/12)}</span>
+        </div>
+      </div>
+      <div class="bg-charcoal/5 h-1.5">
+        <div class="bg-gold h-1.5 transition-all duration-500" style="width:${pctOfIncome.toFixed(1)}%"></div>
+      </div>
+    `;
+    container.appendChild(row);
+    prev = b.upTo;
+  }
+  if (annualIncome === 0) {
+    container.innerHTML = '<div class="text-sm text-charcoal/40 italic">הזן שכר ברוטו לראות את הניתוח.</div>';
+  }
+}
+
+// Wire up inputs
+['gross','points','geoExempt','pension','study','scope','empType'].forEach(id => {
+  document.getElementById(id).addEventListener('input', compute);
+});
+document.getElementById('geoQual').addEventListener('change', compute);
+
+// Year selector
+document.querySelectorAll('.year-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.year-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    CURRENT_YEAR = +btn.dataset.year;
+    updateYearInfo();
+    updateHeaderYear();
+    compute();
+  });
+});
+
+function updateYearInfo() {
+  const d = getYearData();
+  document.getElementById('yi-point').textContent = '₪' + d.pointValue;
+  document.getElementById('yi-cap').textContent = '₪' + d.niHighCap.toLocaleString('he');
+  document.getElementById('yi-bracket').textContent = '10% עד ₪' + d.brackets[0].upTo.toLocaleString('he');
+  document.getElementById('yi-top').textContent = (d.brackets[d.brackets.length-1].rate * 100).toFixed(0) + '%';
+}
+
+function updateHeaderYear() {
+  const headerYear = document.getElementById('headerYear');
+  if (headerYear) headerYear.textContent = CURRENT_YEAR;
+}
+
+updateYearInfo();
+
+document.getElementById('grossSlider').addEventListener('input', e => {
+  document.getElementById('gross').value = e.target.value;
+  compute();
+});
+document.getElementById('gross').addEventListener('input', e => {
+  const v = +e.target.value;
+  if (v <= 60000 && v >= 0) document.getElementById('grossSlider').value = v;
+});
+
+// ============ LOAD FROM PROFILE (auto pre-fill) ============
+function loadFromProfile() {
+  try {
+    const raw = localStorage.getItem('taxProfile_v1');
+    if (!raw) return;
+    const p = JSON.parse(raw);
+
+    // Calculate points from profile
+    let pts = 2.25;
+    if (p.gender === 'f') pts += 0.5;
+    if (p.status === 'single-parent') pts += 1;
+    pts += (p.kidsYoung || 0) * 1 + (p.kidsOld || 0) * 0.5;
+    if (p.edu === 'bachelor') pts += 1;
+    else if (p.edu === 'master') pts += 0.5;
+    else if (p.edu === 'phd') pts += 1;
+    const sp = new Set(p.special || []);
+    if (sp.has('oleh')) pts += 3;
+    if (sp.has('returning')) pts += 1.5;
+    if (sp.has('discharged')) pts += 1;
+    if (sp.has('disabled')) pts += 2;
+    if (sp.has('alimony')) pts += 1;
+    if (sp.has('parent-special')) pts += 2;
+    if (sp.has('senior')) pts += 0.5;
+    if (sp.has('kibbutz')) pts += 0.25;
+
+    document.getElementById('points').value = pts.toFixed(2);
+    if (p.cityPct) document.getElementById('geoExempt').value = p.cityPct;
+
+    // Show banner
+    const banner = document.getElementById('profileBanner');
+    if (banner) {
+      banner.classList.remove('hidden');
+      const name = (p.firstName || '').trim();
+      document.getElementById('profileBannerName').textContent = name ? name + ', ' : '';
+      document.getElementById('profileBannerPts').textContent = pts.toFixed(2);
+    }
+  } catch(_) {}
+}
+loadFromProfile();
+</script>
+</body>
+</html>

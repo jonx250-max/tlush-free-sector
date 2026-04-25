@@ -5,6 +5,17 @@
   "rewrites": [
     { "source": "/", "destination": "/marketing/index.html" },
     { "source": "/landing", "destination": "/marketing/index.html" },
+    { "source": "/login", "destination": "/marketing/Login.html" },
+    { "source": "/signup", "destination": "/marketing/Signup.html" },
+    { "source": "/forgot-password", "destination": "/marketing/ForgotPassword.html" },
+    { "source": "/dashboard", "destination": "/marketing/Dashboard.html" },
+    { "source": "/tax-profile", "destination": "/marketing/TaxProfile.html" },
+    { "source": "/calculator", "destination": "/marketing/NetCalculator.html" },
+    { "source": "/rights", "destination": "/marketing/Rights.html" },
+    { "source": "/legal", "destination": "/marketing/Legal.html" },
+    { "source": "/admin", "destination": "/marketing/Admin.html" },
+    { "source": "/audit", "destination": "/marketing/Audit.html" },
+    { "source": "/404", "destination": "/marketing/404.html" },
     { "source": "/((?!api|marketing|assets).*)", "destination": "/index.html" }
   ],
   "headers": [

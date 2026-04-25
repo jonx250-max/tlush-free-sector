@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0a0a0a">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.svg">
+<link rel="manifest" href="manifest.json">
+<title>Audit Trail · תיק ראיות משפטי</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="security-guard.js" defer></script>
+<script src="audit-logger.js" defer></script>
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700&family=Frank+Ruhl+Libre:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script>
+tailwind.config = { theme: { extend: {
+  fontFamily: { sans:['Assistant','sans-serif'], serif:['"Frank Ruhl Libre"','serif'], mono:['"JetBrains Mono"','monospace'] },
+  colors: { cream:'#FDFBF7', sand:'#F4F1EB', charcoal:'#0a0a0a', gold:'#B89B5E', gold2:'#9b8149', alarm:'#a83232', good:'#3d7a3d' }
+}}}
+</script>
+<style>
+  body { font-family:'Assistant',sans-serif; background:#FDFBF7; color:#0a0a0a; }
+  .mono { font-family:'JetBrains Mono',monospace; }
+  .pill { display:inline-flex; align-items:center; gap:6px; padding:4px 10px; font-size:10px; letter-spacing:.12em; text-transform:uppercase; font-weight:700; border:1px solid; border-radius:1px; }
+  .pill-gold { color:#B89B5E; border-color:rgba(184,155,94,.4); background:rgba(184,155,94,.05); }
+  .pill-good { color:#3d7a3d; border-color:rgba(61,122,61,.3); background:rgba(61,122,61,.04); }
+  .pill-alarm { color:#a83232; border-color:rgba(168,50,50,.4); background:rgba(168,50,50,.06); }
+  .card { background:#fff; border:1px solid rgba(10,10,10,.08); }
+  .card-dark { background:#0a0a0a; color:#FDFBF7; }
+  details > summary { list-style:none; cursor:pointer; }
+  details > summary::-webkit-details-marker { display:none; }
+  .search-mode { padding:6px 12px; border:1px solid rgba(10,10,10,.15); background:#fff; font-size:12px; cursor:pointer; transition:all .2s; color:rgba(10,10,10,.7); }
+  .search-mode:hover { background:#F4F1EB; }
+  .search-mode.active { background:#0a0a0a; color:#FDFBF7; border-color:#0a0a0a; }
+  .recent-chip { padding:5px 10px; border:1px solid rgba(184,155,94,.3); background:rgba(184,155,94,.05); color:#9b8149; font-size:11px; font-family:'JetBrains Mono',monospace; cursor:pointer; transition:all .2s; }
+  .recent-chip:hover { background:#B89B5E; color:#FDFBF7; border-color:#B89B5E; }
+  .result-row { padding:14px; border:1px solid rgba(10,10,10,.08); cursor:pointer; transition:all .2s; }
+  .result-row:hover { background:#F4F1EB; border-color:#B89B5E; }
+  .timeline-line { position:absolute; right:14px; top:0; bottom:0; width:1px; background:rgba(184,155,94,.3); }
+  .timeline-dot { width:10px; height:10px; border-radius:50%; background:#B89B5E; border:2px solid #FDFBF7; box-shadow:0 0 0 1px #B89B5E; }
+  .legal-doc { background:#fff; padding:48px; max-width:800px; margin:0 auto; box-shadow:0 0 0 1px rgba(10,10,10,.08); font-family:'Frank Ruhl Libre',serif; }
+  .legal-doc h1 { font-size:24px; font-weight:700; margin-bottom:8px; }
+  .legal-doc h2 { font-size:16px; font-weight:700; margin:28px 0 12px; border-bottom:1px solid #B89B5E; padding-bottom:6px; }
+  .legal-doc p, .legal-doc li { font-size:14px; line-height:1.9; margin-bottom:8px; }
+  .legal-doc table { width:100%; border-collapse:collapse; margin:12px 0; font-family:'Assistant',sans-serif; }
+  .legal-doc th, .legal-doc td { border:1px solid rgba(10,10,10,.15); padding:8px 12px; font-size:13px; text-align:right; }
+  .legal-doc th { background:#F4F1EB; font-weight:700; }
+  .stamp { display:inline-block; border:2px solid #a83232; color:#a83232; padding:4px 12px; font-weight:700; font-size:11px; letter-spacing:.2em; transform:rotate(-3deg); font-family:'Assistant',sans-serif; }
+  .skip-link { position:absolute; top:-40px; right:0; background:#0a0a0a; color:#FDFBF7; padding:8px 16px; z-index:100; }
+  .skip-link:focus { top:0; }
+  @media print {
+    .no-print { display:none !important; }
+    body { background:#fff; }
+    .legal-doc { box-shadow:none; padding:24px; }
+  }
+</style>
+</head>
+<body>
+<a href="#main" class="skip-link">דלג לתוכן</a>
+
+<!-- Top bar -->
+<header class="bg-charcoal text-cream sticky top-0 z-40 no-print">
+  <div class="max-w-[1400px] mx-auto px-6 lg:px-10 h-14 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="text-[10px] tracking-[0.3em] text-gold">TALUSH · AUDIT</div>
+      <span class="text-cream/30">·</span>
+      <div class="text-sm">תיק ראיות משפטי</div>
+    </div>
+    <div class="flex items-center gap-5 text-[12px] text-cream/65">
+      <a href="/admin" class="hover:text-cream">← Admin</a>
+      <a href="/dashboard" class="hover:text-cream">דשבורד</a>
+    </div>
+  </div>
+</header>
+
+<main id="main" class="max-w-[1400px] mx-auto px-6 lg:px-10 py-8">
+
+  <!-- Title -->
+  <div class="mb-8 no-print">
+    <div class="text-[10px] tracking-[0.3em] text-gold mb-2">LEGAL EVIDENCE PACKAGE</div>
+    <h1 class="font-serif text-3xl lg:text-4xl mb-2">תיק ראיות משפטי</h1>
+    <p class="text-charcoal/60 text-sm leading-relaxed max-w-3xl">
+      ממשק להפקת תיק ראיות מסודר ומקצועי במקרה של תביעה. כל בדיקה במערכת מותירה חותמת זמן, גרסת חוק, snapshot של המקור ו-hash. תוך לחיצה אחת — תיק PDF מוכן עם תצהיר טכני, נספחים, ורצף ראיות שבית משפט יכול לקרוא.
+    </p>
+  </div>
+
+  <!-- Lookup -->
+  <div class="card p-6 mb-8 no-print">
+    <div class="text-[10px] tracking-[0.3em] text-gold mb-2">STEP 1 · איתור משתמש</div>
+    <h2 class="font-serif text-2xl mb-2">חפש בכל דרך שתעדיף</h2>
+    <p class="text-[13px] text-charcoal/65 mb-5 leading-relaxed">המערכת מזהה אוטומטית את סוג השאילתה — ת.ז., אימייל, Case-ID, מספר טלפון או חלק ממנו. אם משתמש פנה במייל/וואטסאפ/בית משפט — פשוט הדבק את מה שיש לך.</p>
+
+    <!-- Search modes -->
+    <div class="flex flex-wrap gap-2 mb-4">
+      <button onclick="setMode('auto')" class="search-mode active" data-mode="auto"><i data-lucide="sparkles" class="w-3.5 h-3.5 inline ml-1"></i>זיהוי אוטומטי</button>
+      <button onclick="setMode('caseid')" class="search-mode" data-mode="caseid"><i data-lucide="hash" class="w-3.5 h-3.5 inline ml-1"></i>Case-ID</button>
+      <button onclick="setMode('email')" class="search-mode" data-mode="email"><i data-lucide="mail" class="w-3.5 h-3.5 inline ml-1"></i>אימייל</button>
+      <button onclick="setMode('id')" class="search-mode" data-mode="id"><i data-lucide="user" class="w-3.5 h-3.5 inline ml-1"></i>ת.ז.</button>
+      <button onclick="setMode('phone')" class="search-mode" data-mode="phone"><i data-lucide="phone" class="w-3.5 h-3.5 inline ml-1"></i>טלפון</button>
+      <button onclick="setMode('name')" class="search-mode" data-mode="name"><i data-lucide="search" class="w-3.5 h-3.5 inline ml-1"></i>שם מלא</button>
+      <button onclick="setMode('date')" class="search-mode" data-mode="date"><i data-lucide="calendar" class="w-3.5 h-3.5 inline ml-1"></i>טווח תאריכים</button>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+      <input id="lookup-id" type="text" placeholder="הקלד ת.ז. / מייל / Case-ID..." autocomplete="off"
+             class="md:col-span-3 px-4 py-3 border border-charcoal/15 focus:border-gold focus:outline-none text-sm"/>
+      <button onclick="lookup()" class="bg-charcoal text-cream px-6 py-3 text-sm font-semibold hover:bg-gold transition flex items-center justify-center gap-2">
+        <i data-lucide="search" class="w-4 h-4"></i> חפש
+      </button>
+    </div>
+
+    <!-- Live identification feedback -->
+    <div id="detect-hint" class="mt-3 text-[12px] hidden"></div>
+
+    <!-- Recent searches -->
+    <div class="mt-5 pt-5 border-t border-charcoal/8">
+      <div class="text-[10px] tracking-[0.2em] text-charcoal/50 mb-3">חיפושים אחרונים</div>
+      <div class="flex flex-wrap gap-2" id="recent-searches"></div>
+    </div>
+
+    <!-- Quick examples -->
+    <details class="mt-4">
+      <summary class="text-[12px] text-gold hover:text-gold2 inline-flex items-center gap-1.5 cursor-pointer">
+        <i data-lucide="help-circle" class="w-3.5 h-3.5"></i>
+        איך אני יודע מה לחפש? (3 תרחישים נפוצים)
+      </summary>
+      <div class="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div class="bg-sand/50 p-3 border border-charcoal/8">
+          <div class="text-[11px] font-bold text-gold mb-1">1. משתמש פנה במייל</div>
+          <div class="text-[12px] text-charcoal/75 leading-relaxed">הדבק את כתובת השליחה — המערכת תמצא אוטומטית.</div>
+        </div>
+        <div class="bg-sand/50 p-3 border border-charcoal/8">
+          <div class="text-[11px] font-bold text-gold mb-1">2. עורך דין מצטט תיק</div>
+          <div class="text-[12px] text-charcoal/75 leading-relaxed">בכל אימייל ובכל PDF מופיע <span class="mono">Case-ID</span> בפורמט <span class="mono">check-YYYY-MM-DD-XXXX</span>.</div>
+        </div>
+        <div class="bg-sand/50 p-3 border border-charcoal/8">
+          <div class="text-[11px] font-bold text-gold mb-1">3. רק ת.ז. ידועה</div>
+          <div class="text-[12px] text-charcoal/75 leading-relaxed">הקלד 9 ספרות. המערכת תמצא לפי hash מבלי לחשוף את הת.ז. ב-DB.</div>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <!-- Multi-result picker (when search returns >1) -->
+  <div id="multi-results" class="hidden card p-6 mb-6">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="font-serif text-xl">נמצאו <span id="multi-count">0</span> תוצאות — בחר משתמש</h3>
+      <span class="pill pill-gold" id="multi-mode">—</span>
+    </div>
+    <div id="multi-list" class="space-y-2"></div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="results" class="hidden">
+
+    <!-- Identity card -->
+    <div class="card-dark p-6 mb-6">
+      <div class="flex items-center justify-between flex-wrap gap-4 mb-4">
+        <div>
+          <div class="text-[10px] tracking-[0.3em] text-gold mb-1">CASE FILE</div>
+          <h2 class="font-serif text-2xl">תיק <span class="mono text-gold" id="case-id">—</span></h2>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <span class="pill pill-gold">פעיל</span>
+          <span class="pill pill-good" id="case-integrity">חתימה תקינה</span>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+        <div>
+          <div class="text-[10px] tracking-[0.2em] text-cream/45 mb-1">ת.ז. (hash)</div>
+          <div class="mono text-gold text-[11px]" id="case-hash">—</div>
+        </div>
+        <div>
+          <div class="text-[10px] tracking-[0.2em] text-cream/45 mb-1">תאריך הצטרפות</div>
+          <div id="case-joined">—</div>
+        </div>
+        <div>
+          <div class="text-[10px] tracking-[0.2em] text-cream/45 mb-1">סך בדיקות</div>
+          <div class="font-serif text-2xl" id="case-checks">—</div>
+        </div>
+        <div>
+          <div class="text-[10px] tracking-[0.2em] text-cream/45 mb-1">סטטוס הסכמות</div>
+          <div id="case-consents">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Timeline -->
+    <div class="card p-6 mb-6">
+      <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+        <div>
+          <div class="text-[10px] tracking-[0.3em] text-gold mb-1">STEP 2</div>
+          <h2 class="font-serif text-2xl">רצף ראיות (timeline)</h2>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="exportLegal()" class="bg-charcoal text-cream px-5 py-2.5 text-sm font-semibold hover:bg-gold transition flex items-center gap-2">
+            <i data-lucide="file-text" class="w-4 h-4"></i> הפק תצהיר משפטי
+          </button>
+          <button onclick="exportZip()" class="border border-charcoal/15 px-5 py-2.5 text-sm hover:bg-charcoal/5 transition flex items-center gap-2">
+            <i data-lucide="download" class="w-4 h-4"></i> הורד ZIP מלא
+          </button>
+        </div>
+      </div>
+
+      <div class="relative pr-8" id="timeline"></div>
+    </div>
+
+    <!-- Quick stats — what would the lawyer ask -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+      <div class="card p-5">
+        <div class="text-[10px] tracking-[0.2em] text-charcoal/50 mb-2">הסכמה מתועדת</div>
+        <div class="font-serif text-3xl text-good mb-1">✓</div>
+        <div class="text-[12px] text-charcoal/65 leading-relaxed">המשתמש סימן צ'קבוקס "אני מבין שזו לא ייעוץ משפטי" ב-15.06.2026. IP, fingerprint וגרסת מסמך נשמרו.</div>
+      </div>
+      <div class="card p-5">
+        <div class="text-[10px] tracking-[0.2em] text-charcoal/50 mb-2">גרסת חוק שהוצגה</div>
+        <div class="font-serif text-2xl mb-1">v3.2</div>
+        <div class="text-[12px] text-charcoal/65 leading-relaxed">בעת הבדיקה הוצגה גרסת חוק שכר מינימום v3 (4,247 ש"ח). השינוי לערך ב-2026 קרה אחרי הבדיקה.</div>
+      </div>
+      <div class="card p-5">
+        <div class="text-[10px] tracking-[0.2em] text-charcoal/50 mb-2">התראות שנשלחו</div>
+        <div class="font-serif text-3xl mb-1">3</div>
+        <div class="text-[12px] text-charcoal/65 leading-relaxed">המערכת שלחה 3 התראות על שינויי חוק שעלולים להשפיע. המשתמש פתח 2 (event tracked).</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Generated Legal Document Preview -->
+  <div id="legal-preview" class="hidden mt-12">
+    <div class="flex justify-between items-center mb-4 no-print">
+      <h2 class="font-serif text-2xl">תצהיר טכני (תצוגה מקדימה)</h2>
+      <div class="flex gap-2">
+        <button onclick="window.print()" class="border border-charcoal/15 px-4 py-2.5 text-sm hover:bg-charcoal/5 transition flex items-center gap-2">
+          <i data-lucide="printer" class="w-4 h-4"></i> הדפס / שמור PDF
+        </button>
+        <button onclick="closeLegal()" class="text-charcoal/55 hover:text-charcoal text-sm">סגור</button>
+      </div>
+    </div>
+
+    <article class="legal-doc" id="legal-doc-content">
+      <!-- Filled by JS -->
+    </article>
+  </div>
+
+</main>
+
+<footer class="border-t border-charcoal/8 mt-12 py-6 text-center text-xs text-charcoal/45 no-print">
+  Talush Audit Trail · v1.0 · כל יצוא מתועד ביומן אבטחה
+</footer>
+
+<!-- ============================================================ -->
+<script>
+// ─── MOCK USER DATABASE (in prod: server-side query) ───
+const USERS_DB = [
+  {
+    case_id: 'check-2026-08-15-A93F',
+    full_name: 'דניאל כהן',
+    email: 'daniel.cohen@example.co.il',
+    phone: '050-1234567',
+    id_hash: 'sha256:8f2a1b9c4e7d5a3fe1c8',
+    id_last4: '1234',  // displayable hint only
+    joined_at: '2026-06-15',
+    total_checks: 4,
+    last_active: '2026-08-15T14:22:05Z',
+    plan: 'premium'
+  },
+  {
+    case_id: 'check-2026-09-02-B71X',
+    full_name: 'שירה לוי',
+    email: 'shira.levy@gmail.com',
+    phone: '054-9876543',
+    id_hash: 'sha256:c4d8f1b3a2e9...',
+    id_last4: '5678',
+    joined_at: '2026-09-02',
+    total_checks: 2,
+    last_active: '2026-11-30T08:10:00Z',
+    plan: 'free'
+  },
+  {
+    case_id: 'check-2026-11-20-C45M',
+    full_name: 'מאיר אברהם',
+    email: 'meir.a@walla.co.il',
+    phone: '052-5551234',
+    id_hash: 'sha256:e2c8a4f5b6d3...',
+    id_last4: '9012',
+    joined_at: '2026-11-20',
+    total_checks: 1,
+    last_active: '2026-12-08T19:45:00Z',
+    plan: 'free'
+  }
+];
+
+// ─── HELPERS (must come before any use) ───
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => [...r.querySelectorAll(s)];
+
+// Active search mode
+let searchMode = 'auto';
+
+function setMode(mode) {
+  searchMode = mode;
+  $$('.search-mode').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+  const placeholders = {
+    auto: 'הקלד ת.ז. / מייל / Case-ID...',
+    caseid: 'check-YYYY-MM-DD-XXXX',
+    email: 'user@example.com',
+    id: '9 ספרות (ת.ז.)',
+    phone: '050-1234567 או חלק ממנו',
+    name: 'שם פרטי + משפחה',
+    date: 'YYYY-MM-DD או YYYY-MM'
+  };
+  $('#lookup-id').placeholder = placeholders[mode];
+  $('#lookup-id').focus();
+}
+
+// ─── SMART AUTO-DETECTION ───
+function detectQueryType(q) {
+  q = q.trim();
+  if (!q) return null;
+  if (/^check-\d{4}-\d{2}-\d{2}-[A-Z0-9]{4}$/i.test(q)) return 'caseid';
+  if (/^[\w.+-]+@[\w-]+\.[\w.-]+$/.test(q)) return 'email';
+  if (/^\d{9}$/.test(q.replace(/\D/g, ''))) return 'id';
+  if (/^0?5\d[-\s]?\d{3}[-\s]?\d{4}$/.test(q) || /^\d{6,10}$/.test(q.replace(/\D/g, ''))) return 'phone';
+  if (/^\d{4}-\d{2}/.test(q)) return 'date';
+  if (q.split(/\s+/).length >= 2 && /[\u0590-\u05FF]/.test(q)) return 'name';
+  if (q.length >= 2) return 'name';
+  return null;
+}
+
+// Live detection feedback as user types
+$('#lookup-id').addEventListener('input', (e) => {
+  const v = e.target.value;
+  const hint = $('#detect-hint');
+  if (!v) { hint.classList.add('hidden'); return; }
+
+  if (searchMode === 'auto') {
+    const detected = detectQueryType(v);
+    const labels = {
+      caseid: '🔢 זוהה כ-Case-ID',
+      email: '📧 זוהה כאימייל',
+      id: '👤 זוהה כת.ז. (יומר ל-hash לפני חיפוש)',
+      phone: '📱 זוהה כמספר טלפון',
+      name: '✏️ זוהה כשם',
+      date: '📅 זוהה כתאריך'
+    };
+    if (detected) {
+      hint.innerHTML = `<span class="text-good">${labels[detected]}</span>`;
+      hint.classList.remove('hidden');
+    } else {
+      hint.innerHTML = '<span class="text-charcoal/55">הקלד עוד תווים...</span>';
+      hint.classList.remove('hidden');
+    }
+  }
+});
+
+// ─── SEARCH ENGINE ───
+function searchUsers(query, mode) {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+
+  const detectedMode = mode === 'auto' ? detectQueryType(query) : mode;
+
+  return USERS_DB.filter(u => {
+    switch (detectedMode) {
+      case 'caseid': return u.case_id.toLowerCase().includes(q);
+      case 'email':  return u.email.toLowerCase().includes(q);
+      case 'id':     return u.id_last4.includes(q.slice(-4)) || u.id_hash.includes(q);
+      case 'phone':  return u.phone.replace(/\D/g, '').includes(q.replace(/\D/g, ''));
+      case 'name':   return u.full_name.includes(query.trim());
+      case 'date':   return u.joined_at.startsWith(q) || u.last_active.startsWith(q);
+      default:
+        // Catch-all
+        return u.email.toLowerCase().includes(q) ||
+               u.case_id.toLowerCase().includes(q) ||
+               u.full_name.includes(query.trim()) ||
+               u.phone.replace(/\D/g, '').includes(q.replace(/\D/g, ''));
+    }
+  });
+}
+
+// ─── RECENT SEARCHES (localStorage) ───
+function getRecent() { return JSON.parse(localStorage.getItem('talush_audit_recent') || '[]'); }
+function addRecent(query) {
+  let list = getRecent();
+  list = [query, ...list.filter(q => q !== query)].slice(0, 6);
+  localStorage.setItem('talush_audit_recent', JSON.stringify(list));
+  renderRecent();
+}
+function renderRecent() {
+  const list = getRecent();
+  const cont = $('#recent-searches');
+  if (!list.length) {
+    cont.innerHTML = '<span class="text-[12px] text-charcoal/40">אין חיפושים קודמים</span>';
+    return;
+  }
+  cont.innerHTML = list.map(q => `<button class="recent-chip" onclick="rerunSearch('${q.replace(/'/g, "\\'")}')">↺ ${escapeHtml(q)}</button>`).join('');
+}
+function rerunSearch(q) { $('#lookup-id').value = q; lookup(); }
+
+// ─── MULTI-RESULT PICKER ───
+function showMultiResults(results, mode) {
+  const cont = $('#multi-list');
+  $('#multi-count').textContent = results.length;
+  $('#multi-mode').textContent = mode || 'auto';
+  cont.innerHTML = results.map(u => `
+    <div class="result-row" onclick="selectUser('${u.case_id}')">
+      <div class="flex items-center justify-between gap-3 flex-wrap">
+        <div class="flex-1 min-w-[220px]">
+          <div class="font-semibold text-base mb-1">${escapeHtml(u.full_name)}</div>
+          <div class="text-[12px] text-charcoal/65 flex flex-wrap gap-3">
+            <span><i data-lucide="mail" class="w-3 h-3 inline"></i> ${escapeHtml(u.email)}</span>
+            <span><i data-lucide="phone" class="w-3 h-3 inline"></i> ${escapeHtml(u.phone)}</span>
+            <span class="mono">ת.ז. ****${escapeHtml(u.id_last4)}</span>
+          </div>
+        </div>
+        <div class="text-left text-[11px]">
+          <div class="mono text-gold">${escapeHtml(u.case_id)}</div>
+          <div class="text-charcoal/55 mt-1">${u.total_checks} בדיקות · ${u.plan}</div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+  $('#multi-results').classList.remove('hidden');
+  if (window.lucide) lucide.createIcons();
+}
+
+function selectUser(caseId) {
+  $('#multi-results').classList.add('hidden');
+  $('#lookup-id').value = caseId;
+  lookup(true);  // force select this exact case
+}
+
+// ─── MOCK CASE DATA (for the selected user) ───
+const MOCK_CASE = {
+  case_id: 'check-2026-08-15-A93F',
+  user_id_hash: 'sha256:8f2a1b9c4e7d5a3f...e1c8',
+  email_hash: 'sha256:b3c7e2d8f1a4c9...62af',
+  joined_at: '2026-06-15T11:42:18Z',
+  total_checks: 4,
+  consents: [
+    { type: 'terms_of_service', version: 'v2.1', accepted_at: '2026-06-15T11:42:18Z', ip: '82.166.x.x', fp: '8f2a1b9c4e7d' },
+    { type: 'privacy_policy', version: 'v2.1', accepted_at: '2026-06-15T11:42:18Z' },
+    { type: 'legal_disclaimer', version: 'v2.1', accepted_at: '2026-06-15T11:42:18Z' }
+  ],
+  events: [
+    {
+      ts: '2026-06-15T11:42:18Z',
+      type: 'SIGNUP',
+      details: 'הרשמה. הסכמה ל-3 מסמכים משפטיים גרסה v2.1. IP: 82.166.x.x. Fingerprint: 8f2a1b9c.',
+      evidence: ['signup_consent.json', 'terms_v2.1_snapshot.html']
+    },
+    {
+      ts: '2026-06-15T11:48:33Z',
+      type: 'PAYSLIP_UPLOAD',
+      details: 'העלאת תלוש שכר חודש 05/2026. SHA-256 של הקובץ: 7a8b9c... PDF בעל חתימה דיגיטלית של המעסיק.',
+      evidence: ['payslip_05-2026.pdf', 'pdf_signature_verification.json']
+    },
+    {
+      ts: '2026-06-15T11:49:02Z',
+      type: 'CHECK_RUN',
+      details: 'הופעלה בדיקה אוטומטית מול גרסת מאגר חוקים: 2026-06-15-v3.2 (commit a3f8b2c). 12 בדיקות בוצעו, 2 ליקויים נמצאו.',
+      evidence: ['laws_db_v3.2.tar.gz', 'check_result_full.json']
+    },
+    {
+      ts: '2026-06-15T11:50:14Z',
+      type: 'NOTICE_DISPLAYED',
+      details: 'הוצגה הודעה: "ייתכן ולא קיבלת נקודות זיכוי לחייל מילואים. הסכום המוערך: 1,940 ש"ח. הבדיקה מבוססת על המידע שמסרת — אינה מהווה ייעוץ משפטי."',
+      evidence: ['ui_screenshot_warning.png', 'notice_text_v2.1.html']
+    },
+    {
+      ts: '2026-06-15T11:51:02Z',
+      type: 'PDF_EXPORTED',
+      details: 'משתמש לחץ "ייצוא PDF". המסמך הופק עם footer של disclaimer מלא.',
+      evidence: ['exported_report_v2.1.pdf']
+    },
+    {
+      ts: '2026-07-02T08:15:00Z',
+      type: 'LAW_CHANGE_NOTIFIED',
+      details: 'שינוי חוק זוהה (גרסה v3.3 → v4.0): שכר מינימום עלה ל-6,247 ש"ח. נשלח אימייל למשתמש (event delivered + opened).',
+      evidence: ['email_sent_log.json', 'changelog_v3.3_to_v4.0.json']
+    },
+    {
+      ts: '2026-08-15T14:22:05Z',
+      type: 'RE_EVALUATION_OFFERED',
+      details: 'הוצעה הערכה מחדש בעקבות עדכון חוק. המשתמש לחץ "הערך מחדש".',
+      evidence: ['re_eval_consent.json']
+    }
+  ],
+  laws_versions_seen: [
+    { version: 'v3.2', commit: 'a3f8b2c', shown_at: '2026-06-15T11:49:02Z', archive: 'snapshots/laws_v3.2_2026-06-15.tar.gz' },
+    { version: 'v4.0', commit: 'd9e3f1a', shown_at: '2026-08-15T14:22:05Z', archive: 'snapshots/laws_v4.0_2026-08-15.tar.gz' }
+  ],
+  emails_sent: [
+    { ts: '2026-06-15T11:51:30Z', subject: 'הבדיקה שלך ב-Talush — דוח מלא', delivered: true, opened: true },
+    { ts: '2026-07-02T08:15:00Z', subject: 'שינוי בחוק עלול להשפיע על הבדיקה שלך', delivered: true, opened: true },
+    { ts: '2026-08-01T09:00:00Z', subject: 'תזכורת: הצעת הערכה מחדש', delivered: true, opened: false }
+  ]
+};
+
+// ─── MORE HELPERS ───
+const fmt = (iso) => new Date(iso).toLocaleString('he-IL', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+const escapeHtml = (s) => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+
+const EVENT_LABELS = {
+  SIGNUP: { label: 'הרשמה', icon: 'user-plus', color: 'gold' },
+  PAYSLIP_UPLOAD: { label: 'העלאת תלוש', icon: 'upload', color: 'gold' },
+  CHECK_RUN: { label: 'הרצת בדיקה', icon: 'play', color: 'good' },
+  NOTICE_DISPLAYED: { label: 'הודעה הוצגה למשתמש', icon: 'info', color: 'gold' },
+  PDF_EXPORTED: { label: 'ייצוא PDF', icon: 'download', color: 'gold' },
+  LAW_CHANGE_NOTIFIED: { label: 'התראה על שינוי חוק', icon: 'bell', color: 'alarm' },
+  RE_EVALUATION_OFFERED: { label: 'הערכה מחדש', icon: 'refresh-cw', color: 'good' }
+};
+
+// ─── LOOKUP & RENDER ───
+function lookup(forceSelect = false) {
+  const query = $('#lookup-id').value.trim();
+  if (!query) { alert('הזן ערך לחיפוש'); return; }
+
+  addRecent(query);
+
+  if (!forceSelect) {
+    const results = searchUsers(query, searchMode);
+    if (results.length === 0) {
+      $('#multi-results').classList.add('hidden');
+      $('#results').classList.add('hidden');
+      $('#detect-hint').innerHTML = '<span class="text-alarm">⚠ לא נמצאו תוצאות</span>';
+      $('#detect-hint').classList.remove('hidden');
+      return;
+    }
+    if (results.length > 1) {
+      $('#results').classList.add('hidden');
+      showMultiResults(results, searchMode === 'auto' ? detectQueryType(query) : searchMode);
+      return;
+    }
+    // Single result — auto-select
+    $('#multi-results').classList.add('hidden');
+  }
+
+  $('#results').classList.remove('hidden');
+  const c = MOCK_CASE;
+  $('#case-id').textContent = c.case_id;
+  $('#case-hash').textContent = c.user_id_hash.slice(0, 24) + '...';
+  $('#case-joined').textContent = fmt(c.joined_at);
+  $('#case-checks').textContent = c.total_checks;
+  $('#case-consents').textContent = c.consents.length + ' מסמכים · v2.1';
+
+  // Timeline
+  const tl = $('#timeline');
+  tl.innerHTML = '<div class="timeline-line"></div>' + c.events.map((e, i) => {
+    const meta = EVENT_LABELS[e.type] || { label: e.type, icon: 'circle', color: 'gold' };
+    const colorClass = meta.color === 'alarm' ? 'bg-alarm' : meta.color === 'good' ? 'bg-good' : 'bg-gold';
+    return `
+      <div class="relative pr-6 pb-6">
+        <div class="timeline-dot absolute right-[10px] top-2" style="background:${meta.color==='alarm'?'#a83232':meta.color==='good'?'#3d7a3d':'#B89B5E'}"></div>
+        <div class="card p-4 mr-4">
+          <div class="flex items-start justify-between gap-3 mb-2">
+            <div class="flex items-center gap-2">
+              <i data-lucide="${meta.icon}" class="w-4 h-4 text-charcoal/55"></i>
+              <span class="font-semibold text-sm">${meta.label}</span>
+              <span class="pill pill-${meta.color === 'alarm' ? 'alarm' : meta.color === 'good' ? 'good' : 'gold'}">${e.type}</span>
+            </div>
+            <span class="mono text-[11px] text-charcoal/50 flex-shrink-0">${fmt(e.ts)}</span>
+          </div>
+          <p class="text-sm text-charcoal/80 leading-relaxed mb-2">${escapeHtml(e.details)}</p>
+          <details>
+            <summary class="text-[12px] text-gold hover:text-gold2 inline-flex items-center gap-1.5">
+              <i data-lucide="paperclip" class="w-3 h-3"></i> ${e.evidence.length} קבצי ראיה
+            </summary>
+            <div class="mt-2 flex flex-wrap gap-2">
+              ${e.evidence.map(f => `<span class="mono text-[11px] bg-charcoal/5 px-2 py-1 border border-charcoal/10">${escapeHtml(f)}</span>`).join('')}
+            </div>
+          </details>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  if (window.lucide) lucide.createIcons();
+}
+
+// ─── LEGAL DOC GENERATION ───
+function exportLegal() {
+  const c = MOCK_CASE;
+  const today = new Date().toLocaleDateString('he-IL');
+  const rangeStart = fmt(c.joined_at);
+  const rangeEnd = fmt(c.events[c.events.length - 1].ts);
+
+  const doc = `
+    <div style="text-align:center; margin-bottom:24px;">
+      <div class="stamp">PRIVILEGED · LEGAL EVIDENCE</div>
+    </div>
+
+    <h1>תצהיר טכני — תיק לקוח <span class="mono" style="font-size:14px; color:#B89B5E;">${escapeHtml(c.case_id)}</span></h1>
+    <p style="color:rgba(10,10,10,.6); font-size:12px;">הופק: ${today} · גרסה 1.0 · Talush Ltd. · ע.פ 51-XXXXXXX</p>
+
+    <h2>1. פרטי המסמך</h2>
+    <p>מסמך זה הוא תצהיר טכני אוטומטי המתעד את רצף הפעולות, ההסכמות, וההתראות שניתנו ללקוח שמספרו <span class="mono">${escapeHtml(c.case_id)}</span> במערכת Talush. המסמך נועד לשמש כראיה במידת הצורך, ומיוצר ישירות ממאגר הביקורת המוגן (Audit Trail) של המערכת.</p>
+
+    <h2>2. הסבר תמציתי על המערכת</h2>
+    <p><strong>Talush</strong> היא פלטפורמה דיגיטלית לבדיקת תקינות תלושי שכר ביחס לחוזה העסקה ולחקיקה הרלוונטית במגזר הפרטי בישראל. המערכת מנגישה למשתמש מידע אינפורמטיבי בלבד, על בסיס הנתונים שהמשתמש בעצמו מסר. <strong>המערכת אינה מהווה תחליף לייעוץ משפטי, לרואה חשבון, או ליועץ מס.</strong></p>
+    <p>כל בדיקה מבוצעת מול גרסה ספציפית של מאגר חוקים פנימי (Laws DB), המעוגנת ב-Git ומשוחזרת לפי commit hash. גרסה זו נשמרת בארכיון קבוע במשך 7 שנים.</p>
+
+    <h2>3. מסגרת זמן</h2>
+    <table>
+      <tr><th>תחילת הקשר</th><td>${rangeStart}</td></tr>
+      <tr><th>פעולה אחרונה</th><td>${rangeEnd}</td></tr>
+      <tr><th>סך פעולות מתועדות</th><td>${c.events.length}</td></tr>
+      <tr><th>סך בדיקות שבוצעו</th><td>${c.total_checks}</td></tr>
+    </table>
+
+    <h2>4. הסכמות מתועדות</h2>
+    <p>הלקוח אישר במפורש, בעת ההרשמה ב-${fmt(c.joined_at)}, את שלושת המסמכים הבאים:</p>
+    <table>
+      <tr><th>מסמך</th><th>גרסה</th><th>תאריך אישור</th><th>IP</th><th>Fingerprint</th></tr>
+      ${c.consents.map(co => `<tr><td>${escapeHtml(co.type)}</td><td class="mono">${escapeHtml(co.version)}</td><td>${fmt(co.accepted_at)}</td><td class="mono">${escapeHtml(co.ip || '—')}</td><td class="mono">${escapeHtml(co.fp || '—')}</td></tr>`).join('')}
+    </table>
+    <p><strong>הצהרת המשתמש בעת ההסכמה:</strong> "אני מבין/ה שהמערכת מספקת מידע אינפורמטיבי בלבד, מבוסס על הנתונים שמסרתי, ואינה מהווה ייעוץ משפטי, חשבונאי או מקצועי. אחריותי לאמת כל ממצא מול בעל מקצוע מוסמך לפני נקיטת פעולה."</p>
+
+    <h2>5. רצף פעולות (Timeline)</h2>
+    <table>
+      <tr><th style="width:140px">חותמת זמן</th><th style="width:110px">סוג אירוע</th><th>תיאור</th></tr>
+      ${c.events.map(e => `<tr><td class="mono">${fmt(e.ts)}</td><td>${EVENT_LABELS[e.type]?.label || e.type}</td><td>${escapeHtml(e.details)}</td></tr>`).join('')}
+    </table>
+
+    <h2>6. גרסאות חוק שהוצגו ללקוח</h2>
+    <p>בכל בדיקה שמורה גרסת המאגר הספציפית שהיתה פעילה באותו רגע. הארכיב המלא זמין להמצאה לבית המשפט במידת הצורך:</p>
+    <table>
+      <tr><th>גרסה</th><th>commit hash</th><th>תאריך הצגה</th><th>קובץ ארכיון</th></tr>
+      ${c.laws_versions_seen.map(l => `<tr><td class="mono">${escapeHtml(l.version)}</td><td class="mono">${escapeHtml(l.commit)}</td><td>${fmt(l.shown_at)}</td><td class="mono">${escapeHtml(l.archive)}</td></tr>`).join('')}
+    </table>
+
+    <h2>7. התראות שנשלחו ללקוח (Email)</h2>
+    <table>
+      <tr><th>תאריך</th><th>נושא</th><th>נמסר?</th><th>נפתח?</th></tr>
+      ${c.emails_sent.map(em => `<tr><td>${fmt(em.ts)}</td><td>${escapeHtml(em.subject)}</td><td>${em.delivered?'✓':'✗'}</td><td>${em.opened?'✓':'✗'}</td></tr>`).join('')}
+    </table>
+    <p><strong>הסבר משפטי:</strong> בכל מקרה בו זוהה שינוי חקיקתי אשר עלול להשפיע על תוצאת בדיקה קודמת של הלקוח, המערכת שלחה התראה אוטומטית והציעה הערכה מחדש (re-evaluation). זמני המסירה ופתיחת המייל מתועדים ב-event log של ספק הדיוור.</p>
+
+    <h2>8. תקינות שלמות הנתונים</h2>
+    <p>כל אירוע במערכת נחתם בחתימה דיגיטלית באמצעות SHA-256 hash של המידע המקורי. שינוי כלשהו בנתונים יגרור אי-התאמה ב-hash chain ויזוהה מיידית.</p>
+    <p><strong>מצב תיק זה:</strong> <span style="color:#3d7a3d; font-weight:700;">✓ חתימה תקינה. שלמות הנתונים מאומתת.</span></p>
+
+    <h2>9. נספחים זמינים להמצאה</h2>
+    <ol>
+      <li>קובץ ZIP מלא של כל הראיות (signup_consent.json, snapshots, exported PDFs).</li>
+      <li>ארכיון Laws DB (כל הגרסאות שהוצגו ללקוח, tar.gz עם git commit hashes).</li>
+      <li>Email delivery log (יומן ספק דיוור — SendGrid event log).</li>
+      <li>UI screenshots — צילומי מסך של כל הודעה אינפורמטיבית שהוצגה למשתמש בכל גרסה.</li>
+      <li>Server access log — IP + User-Agent + timestamps של כל פעולה.</li>
+    </ol>
+
+    <h2>10. הצהרת אמת</h2>
+    <p>אני, נציג חברת Talush, מצהיר/ה כי תוכן מסמך זה הופק אוטומטית ממערכת ה-Audit Trail של החברה, ללא שינוי ידני, וכי הנתונים בו תואמים את התיעוד המקורי המאוחסן במאגרי החברה.</p>
+    <p style="margin-top:48px;">
+      ___________________________<br>
+      חתימה<br><br>
+      ___________________________<br>
+      שם · ת.ז. · תאריך
+    </p>
+
+    <p style="margin-top:48px; font-size:11px; color:rgba(10,10,10,.5); border-top:1px solid #B89B5E; padding-top:12px;">
+      מסמך זה הופק אוטומטית ב-${today} ע"י מערכת Talush Audit Trail v1.0. למידע נוסף על האותנטיות, ניתן לפנות ל-legal@talush.app עם case ID: <span class="mono">${escapeHtml(c.case_id)}</span>.
+    </p>
+  `;
+
+  $('#legal-doc-content').innerHTML = doc;
+  $('#legal-preview').classList.remove('hidden');
+  $('#legal-preview').scrollIntoView({ behavior: 'smooth' });
+}
+
+function closeLegal() {
+  $('#legal-preview').classList.add('hidden');
+}
+
+function exportZip() {
+  alert(`ייצוא תיק ZIP מלא:\n\n• tafsir_techni.pdf (התצהיר הטכני)\n• consents/*.json\n• laws_versions/*.tar.gz\n• ui_screenshots/*.png\n• email_logs.json\n• server_access.log\n• MANIFEST.txt + SHA256SUMS.txt\n\n(בייצור: יוצר ZIP מהשרת ונשלח למייל המנהל)`);
+}
+
+renderRecent();
+if (window.lucide) lucide.createIcons();
+</script>
+</body>
+</html>

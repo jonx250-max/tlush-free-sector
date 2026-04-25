@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>הדף לא נמצא · תלוש</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700&family=Frank+Ruhl+Libre:wght@300;400;700;900&display=swap" rel="stylesheet">
+<script>
+tailwind.config = {
+  theme: { extend: {
+    fontFamily: { sans: ['Assistant','sans-serif'], serif: ['"Frank Ruhl Libre"','serif'] },
+    colors: { cream:'#FDFBF7', sand:'#F4F1EB', charcoal:'#0a0a0a', gold:'#B89B5E' }
+  }}
+}
+</script>
+<style>
+  body { font-family: 'Assistant', sans-serif; background:#0a0a0a; color:#FDFBF7; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; overflow: hidden; position: relative; }
+
+  /* Floating glitched 404 numbers */
+  .glitch-bg {
+    position: absolute; inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.04;
+    font-family: 'Frank Ruhl Libre', serif;
+    font-size: 60vh;
+    font-weight: 900;
+    color: #B89B5E;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    letter-spacing: -0.05em;
+  }
+
+  .glitch-bg::before, .glitch-bg::after {
+    content: '404';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    color: #B89B5E;
+    opacity: 0.5;
+    mix-blend-mode: screen;
+  }
+  .glitch-bg::before { animation: glitch1 3s infinite linear alternate-reverse; color: rgba(184,155,94,0.4); }
+  .glitch-bg::after { animation: glitch2 4s infinite linear alternate-reverse; color: rgba(255,255,255,0.04); }
+  @keyframes glitch1 { 0%,100% { transform: translate(-50%, -50%); } 20% { transform: translate(calc(-50% + 4px), -50%); } 40% { transform: translate(calc(-50% - 3px), -50%); } 60% { transform: translate(-50%, calc(-50% + 2px)); } }
+  @keyframes glitch2 { 0%,100% { transform: translate(-50%, -50%); } 25% { transform: translate(calc(-50% - 5px), -50%); } 50% { transform: translate(calc(-50% + 4px), -50%); } 75% { transform: translate(-50%, calc(-50% - 2px)); } }
+
+  /* Tape */
+  .tape-line {
+    position: absolute; height: 1px; background: rgba(184,155,94,0.15);
+    width: 100%;
+  }
+  .tape-line::before {
+    content: ''; position: absolute; height: 100%; width: 80px;
+    background: linear-gradient(to left, transparent, #B89B5E, transparent);
+    animation: tapeMove 6s linear infinite;
+  }
+  @keyframes tapeMove { 0% { right: -80px; } 100% { right: 100%; } }
+
+  .quick-link {
+    display: flex; align-items: center; gap: 14px;
+    padding: 16px 20px;
+    border: 1px solid rgba(253,251,247,0.08);
+    background: rgba(253,251,247,0.02);
+    transition: all .3s;
+    text-decoration: none;
+    color: inherit;
+  }
+  .quick-link:hover {
+    border-color: #B89B5E;
+    background: rgba(184,155,94,0.05);
+    transform: translateY(-1px);
+  }
+
+  .home-btn {
+    background: #B89B5E;
+    color: #0a0a0a;
+    padding: 18px 36px;
+    font-weight: 600;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    font-size: 13px;
+    border: 1px solid #B89B5E;
+    transition: all .4s;
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .home-btn:hover { background: transparent; color: #B89B5E; }
+</style>
+<!-- Meta -->
+<meta name="theme-color" content="#0a0a0a">
+<meta name="description" content="29 בדיקות אוטומטיות לתלוש השכר שלכם במגזר הפרטי — חישוב נטו רב-שנתי, השוואה לחוזה, מרכז זכאויות. מקומי, פרטי, מאובטח.">
+<meta name="format-detection" content="telephone=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+
+<!-- Open Graph / Social -->
+<meta property="og:type" content="website">
+<meta property="og:locale" content="he_IL">
+<meta property="og:site_name" content="תלוש">
+<meta property="og:title" content="תלוש · בדיקת תלוש שכר במגזר הפרטי">
+<meta property="og:description" content="29 בדיקות אוטומטיות לתלוש השכר שלכם — מקומי, פרטי, ללא שמירת נתונים בשרת.">
+<meta property="og:image" content="icon-512.svg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="תלוש · בדיקת תלוש שכר במגזר הפרטי">
+<meta name="twitter:description" content="29 בדיקות אוטומטיות לתלוש השכר שלכם.">
+<meta name="twitter:image" content="icon-512.svg">
+
+<!-- Icons -->
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="apple-touch-icon.svg">
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="talush-a11y.css">
+<script src="talush-ui.js" defer></script>
+<script src="talush-error-boundary.js?v=1777126914727"></script>
+<script src="security-guard.js" defer></script>
+<script src="audit-logger.js" defer></script>
+</head>
+<body>
+<a href="#main-content" class="skip-link" style="position:absolute;top:-40px;right:0;background:#B89B5E;color:#0a0a0a;padding:10px 20px;z-index:99999;text-decoration:none;font-weight:600;font-size:13px;letter-spacing:0.15em;text-transform:uppercase;transition:top .2s;" onfocus="this.style.top='0'" onblur="this.style.top='-40px'">דלג לתוכן הראשי</a>
+<!-- Background glitched 404 -->
+<div class="glitch-bg">404</div>
+
+<!-- Decorative scan tapes -->
+<div class="tape-line" style="top: 25%;"></div>
+<div class="tape-line" style="top: 50%;"></div>
+<div class="tape-line" style="top: 75%;"></div>
+
+<!-- Logo top -->
+<a href="/" class="absolute top-8 right-8 z-10 flex items-center gap-3 text-gold hover:opacity-80 transition">
+  <div class="w-8 h-8 border border-gold rounded-full flex items-center justify-center">
+    <i data-lucide="receipt" class="w-4 h-4"></i>
+  </div>
+  <span class="font-serif font-black text-lg">תלוש</span>
+</a>
+
+<!-- Main content -->
+<div class="relative z-10 max-w-2xl w-full text-center">
+
+  <div class="text-gold text-xs tracking-[0.5em] uppercase mb-6">שגיאה 404</div>
+
+  <h1 class="font-serif text-5xl md:text-6xl font-black mb-6 leading-tight">
+    הדף הזה<br>
+    <span class="text-gold italic">לא נמצא בארכיון.</span>
+  </h1>
+
+  <p class="text-white/60 text-lg leading-relaxed mb-12 max-w-md mx-auto">
+    ייתכן שהקישור התיישן, הוקלד שגוי, או שהדף הוסר.<br>
+    כל הדפים הקיימים מחכים לכם בלוח הבקרה.
+  </p>
+
+  <!-- Primary CTA -->
+  <a href="/dashboard" class="home-btn mb-12">
+    <i data-lucide="arrow-left" class="w-4 h-4"></i>
+    חזרה לדשבורד
+  </a>
+
+  <!-- Quick links -->
+  <div class="border-t border-white/10 pt-8 mt-8">
+    <div class="text-white/40 text-xs tracking-[0.3em] uppercase mb-6">או עברו ישירות אל</div>
+    <div class="grid md:grid-cols-2 gap-3 text-right max-w-lg mx-auto">
+
+      <a href="/" class="quick-link">
+        <i data-lucide="home" class="w-5 h-5 text-gold flex-shrink-0"></i>
+        <div>
+          <div class="text-sm font-semibold">דף הבית</div>
+          <div class="text-xs text-white/40">המידע הציבורי</div>
+        </div>
+      </a>
+
+      <a href="/login" class="quick-link">
+        <i data-lucide="log-in" class="w-5 h-5 text-gold flex-shrink-0"></i>
+        <div>
+          <div class="text-sm font-semibold">כניסה</div>
+          <div class="text-xs text-white/40">לחשבון קיים</div>
+        </div>
+      </a>
+
+      <a href="/calculator" class="quick-link">
+        <i data-lucide="calculator" class="w-5 h-5 text-gold flex-shrink-0"></i>
+        <div>
+          <div class="text-sm font-semibold">מחשבון נטו</div>
+          <div class="text-xs text-white/40">ברוטו ↔ נטו, 2022-2026</div>
+        </div>
+      </a>
+
+      <a href="/rights" class="quick-link">
+        <i data-lucide="shield-check" class="w-5 h-5 text-gold flex-shrink-0"></i>
+        <div>
+          <div class="text-sm font-semibold">מרכז זכאויות</div>
+          <div class="text-xs text-white/40">18 זכאויות מותאמות</div>
+        </div>
+      </a>
+
+    </div>
+  </div>
+
+  <!-- Footer note -->
+  <p class="text-white/30 text-xs mt-10 leading-relaxed">
+    אם הגעתם לכאן מקישור ששלחו לכם — נשמח לשמוע.<br>
+    <a href="mailto:jonx250@gmail.com?subject=קישור שבור" class="text-gold hover:underline">jonx250@gmail.com</a>
+  </p>
+
+</div>
+
+<script>
+lucide.createIcons();
+</script>
+</body>
+</html>

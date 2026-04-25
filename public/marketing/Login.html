@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>כניסה · בדיקת תלוש שכר במגזר הפרטי</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600&family=Frank+Ruhl+Libre:wght@300;400;700;900&display=swap" rel="stylesheet">
+<script>
+tailwind.config = {
+  theme: { extend: {
+    fontFamily: { sans: ['Assistant','sans-serif'], serif: ['"Frank Ruhl Libre"','serif'] },
+    colors: { cream:'#FDFBF7', sand:'#F4F1EB', charcoal:'#0a0a0a', gold:'#B89B5E' }
+  }}
+}
+</script>
+<style>
+  body { font-family: 'Assistant', sans-serif; background:#0a0a0a; color:#FDFBF7; overflow-x:hidden; }
+  .noise-overlay{position:fixed;top:-50%;left:-50%;right:-50%;bottom:-50%;width:200%;height:200vh;pointer-events:none;z-index:1;opacity:.04;background-image:url('data:image/svg+xml,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="n"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23n)"/%3E%3C/svg%3E');animation:nm .2s steps(2) infinite}
+  @keyframes nm{0%{transform:translate(0,0)}50%{transform:translate(-5%,5%)}100%{transform:translate(0,0)}}
+  .video-overlay { background: linear-gradient(to left, rgba(10,10,10,0.3) 0%, rgba(10,10,10,0.85) 70%, rgba(10,10,10,1) 100%); }
+  .input-line { background: transparent; border: none; border-bottom: 1px solid rgba(253,251,247,0.2); color: #FDFBF7; padding: 14px 0; width: 100%; font-size: 17px; transition: border-color .4s; outline: none; direction: rtl; }
+  .input-line:focus { border-bottom-color: #B89B5E; }
+  .input-line::placeholder { color: rgba(253,251,247,0.3); }
+  .input-label { font-size: 11px; letter-spacing: .3em; text-transform: uppercase; color: rgba(253,251,247,0.4); margin-bottom: 8px; display: block; }
+  .gold-btn { background: #B89B5E; color: #0a0a0a; padding: 20px; font-weight: 600; letter-spacing: .2em; text-transform: uppercase; font-size: 13px; transition: all .4s; position: relative; overflow: hidden; border: 1px solid #B89B5E; cursor: pointer; }
+  .gold-btn:hover { background: transparent; color: #B89B5E; }
+  .social-btn { background: transparent; border: 1px solid rgba(253,251,247,0.15); padding: 16px; color: #FDFBF7; display: flex; align-items: center; justify-content: center; gap: 12px; transition: all .3s; cursor: pointer; }
+  .social-btn:hover { border-color: #B89B5E; color: #B89B5E; }
+  .checkbox-custom { appearance: none; width: 16px; height: 16px; border: 1px solid rgba(253,251,247,0.3); background: transparent; position: relative; cursor: pointer; flex-shrink: 0; }
+  .checkbox-custom:checked { background: #B89B5E; border-color: #B89B5E; }
+  .checkbox-custom:checked::after { content:'✓'; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:#0a0a0a; font-size:11px; font-weight:700; }
+
+  /* ===== Animated visual panel ===== */
+  .scan-line { stroke-dasharray: 8 4; animation: scanX 4.5s linear infinite; }
+  @keyframes scanX { 0% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: 100; } }
+
+  .check-dot {
+    position: absolute;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #B89B5E;
+    box-shadow: 0 0 0 0 rgba(184,155,94,0.6);
+    animation: dotPulse 3s ease-in-out infinite;
+  }
+  @keyframes dotPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(184,155,94,0.6); opacity: 0.85; }
+    50% { box-shadow: 0 0 0 14px rgba(184,155,94,0); opacity: 1; }
+  }
+
+  .vertical-scan {
+    position: absolute; top: 0; bottom: 0;
+    width: 1px;
+    background: linear-gradient(to bottom, transparent, rgba(184,155,94,0.5), transparent);
+    box-shadow: 0 0 20px rgba(184,155,94,0.4);
+    animation: vScan 7s ease-in-out infinite;
+  }
+  @keyframes vScan {
+    0%, 100% { right: 0%; opacity: 0; }
+    20% { opacity: 0.7; }
+    50% { right: 95%; opacity: 0.7; }
+    80% { opacity: 0.7; }
+  }
+
+  .payslip-stream {
+    position: absolute; inset: 0;
+    background:
+      repeating-linear-gradient(0deg,
+        rgba(184,155,94,0) 0px,
+        rgba(184,155,94,0) 28px,
+        rgba(184,155,94,0.5) 28px,
+        rgba(184,155,94,0.5) 29px,
+        rgba(184,155,94,0) 29px,
+        rgba(184,155,94,0) 60px,
+        rgba(253,251,247,0.25) 60px,
+        rgba(253,251,247,0.25) 61px,
+        rgba(184,155,94,0) 61px
+      );
+    animation: streamUp 35s linear infinite;
+    transform: skewY(-3deg) translateY(0);
+  }
+  @keyframes streamUp { 0% { transform: skewY(-3deg) translateY(0); } 100% { transform: skewY(-3deg) translateY(-1000px); } }
+
+  /* Decorative payslip number columns */
+  .payslip-stream::before, .payslip-stream::after {
+    content: '';
+    position: absolute; top: 0; bottom: 0;
+    width: 1px;
+    background: rgba(184,155,94,0.35);
+  }
+  .payslip-stream::before { left: 30%; }
+  .payslip-stream::after { left: 65%; }
+</style>
+<!-- Meta -->
+<meta name="theme-color" content="#0a0a0a">
+<meta name="description" content="29 בדיקות אוטומטיות לתלוש השכר שלכם במגזר הפרטי — חישוב נטו רב-שנתי, השוואה לחוזה, מרכז זכאויות. מקומי, פרטי, מאובטח.">
+<meta name="format-detection" content="telephone=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+
+<!-- Open Graph / Social -->
+<meta property="og:type" content="website">
+<meta property="og:locale" content="he_IL">
+<meta property="og:site_name" content="תלוש">
+<meta property="og:title" content="תלוש · בדיקת תלוש שכר במגזר הפרטי">
+<meta property="og:description" content="29 בדיקות אוטומטיות לתלוש השכר שלכם — מקומי, פרטי, ללא שמירת נתונים בשרת.">
+<meta property="og:image" content="icon-512.svg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="תלוש · בדיקת תלוש שכר במגזר הפרטי">
+<meta name="twitter:description" content="29 בדיקות אוטומטיות לתלוש השכר שלכם.">
+<meta name="twitter:image" content="icon-512.svg">
+
+<!-- Icons -->
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="apple-touch-icon.svg">
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="talush-a11y.css">
+<script src="talush-ui.js" defer></script>
+<script src="talush-error-boundary.js?v=1777126914727"></script>
+<script src="security-guard.js" defer></script>
+<script src="audit-logger.js" defer></script>
+</head>
+<body class="antialiased selection:bg-gold selection:text-white">
+<a href="#main-content" class="skip-link" style="position:absolute;top:-40px;right:0;background:#B89B5E;color:#0a0a0a;padding:10px 20px;z-index:99999;text-decoration:none;font-weight:600;font-size:13px;letter-spacing:0.15em;text-transform:uppercase;transition:top .2s;" onfocus="this.style.top='0'" onblur="this.style.top='-40px'">דלג לתוכן הראשי</a>
+<div class="noise-overlay"></div>
+
+<div class="min-h-screen grid md:grid-cols-2 relative">
+
+  <!-- LEFT PANEL: Animated visual -->
+  <div class="hidden md:block relative overflow-hidden bg-charcoal">
+    <!-- Animated background -->
+    <div class="absolute inset-0">
+      <!-- Layered gradient -->
+      <div class="absolute inset-0" style="background: radial-gradient(ellipse at 30% 30%, rgba(184,155,94,0.18) 0%, transparent 55%), radial-gradient(ellipse at 70% 70%, rgba(184,155,94,0.10) 0%, transparent 55%), linear-gradient(135deg, #0a0a0a 0%, #1a1612 50%, #0a0a0a 100%);"></div>
+
+      <!-- Animated payslip lines (paper streaming up) -->
+      <div class="absolute inset-0 overflow-hidden opacity-[0.18]">
+        <div class="payslip-stream" id="payslipStream"></div>
+      </div>
+
+      <!-- Floating data points -->
+      <svg class="absolute inset-0 w-full h-full opacity-30" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="goldLine" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#B89B5E" stop-opacity="0"/>
+            <stop offset="50%" stop-color="#B89B5E" stop-opacity="0.6"/>
+            <stop offset="100%" stop-color="#B89B5E" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <line x1="0" y1="22" x2="100" y2="22" stroke="url(#goldLine)" stroke-width="0.08" class="scan-line"/>
+        <line x1="0" y1="58" x2="100" y2="58" stroke="url(#goldLine)" stroke-width="0.08" class="scan-line" style="animation-delay:1.5s"/>
+        <line x1="0" y1="82" x2="100" y2="82" stroke="url(#goldLine)" stroke-width="0.08" class="scan-line" style="animation-delay:3s"/>
+      </svg>
+
+      <!-- Pulsing dots = "checks" -->
+      <div class="absolute inset-0 pointer-events-none">
+        <div class="check-dot" style="top:18%;left:22%;animation-delay:0s"></div>
+        <div class="check-dot" style="top:35%;left:78%;animation-delay:0.4s"></div>
+        <div class="check-dot" style="top:55%;left:18%;animation-delay:0.8s"></div>
+        <div class="check-dot" style="top:72%;left:65%;animation-delay:1.2s"></div>
+        <div class="check-dot" style="top:88%;left:35%;animation-delay:1.6s"></div>
+      </div>
+
+      <!-- Vertical scanning bar -->
+      <div class="vertical-scan"></div>
+    </div>
+
+    <!-- Overlay content -->
+    <div class="relative z-10 h-full flex flex-col justify-between p-12 xl:p-16">
+      <a href="/" class="text-white/70 hover:text-gold transition-colors text-sm tracking-[0.3em] uppercase flex items-center gap-2 w-fit">
+        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        חזרה לאתר
+      </a>
+      <div>
+        <!-- Animated stat ticker -->
+        <div class="mb-8 flex items-center gap-3 text-gold/70 text-[11px] tracking-[0.3em] uppercase font-mono">
+          <span class="w-1.5 h-1.5 bg-gold rounded-full animate-pulse"></span>
+          <span id="liveStat">29 בדיקות פעילות</span>
+        </div>
+        <div class="text-gold text-xs tracking-[0.4em] uppercase mb-6 border-b border-gold/30 pb-4 inline-block">כניסת משתמשים</div>
+        <h1 class="font-serif text-5xl xl:text-7xl font-black leading-[1.05] mb-8 text-white">
+          ברוכים השבים.<br/>
+          <span class="text-gold italic">לתלוש שלכם.</span>
+        </h1>
+        <p class="text-white/70 text-lg max-w-md leading-relaxed font-light">
+          המערכת היחידה למגזר הפרטי שמשווה אוטומטית בין חוזה ההעסקה לבין התלוש ומוצאת בדיוק היכן חסר לכם כסף.
+        </p>
+
+        <!-- Mini stats grid -->
+        <div class="grid grid-cols-3 gap-4 mt-10 max-w-md">
+          <div class="border-r border-white/10 pr-4">
+            <div class="text-gold font-serif text-3xl font-black">29</div>
+            <div class="text-[10px] tracking-widest uppercase text-white/40 mt-1 font-mono">בדיקות</div>
+          </div>
+          <div class="border-r border-white/10 pr-4">
+            <div class="text-gold font-serif text-3xl font-black">3</div>
+            <div class="text-[10px] tracking-widest uppercase text-white/40 mt-1 font-mono">מקורות</div>
+          </div>
+          <div>
+            <div class="text-gold font-serif text-3xl font-black">100%</div>
+            <div class="text-[10px] tracking-widest uppercase text-white/40 mt-1 font-mono">פרטי</div>
+          </div>
+        </div>
+      </div>
+      <div class="text-white/40 text-xs tracking-[0.3em] uppercase font-mono flex items-center gap-3">
+        <i data-lucide="shield-check" class="w-3.5 h-3.5 text-gold"></i>
+        Session secured · 256-bit encryption
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL: Form -->
+  <div class="flex items-center justify-center p-6 md:p-12 lg:p-16 min-h-screen bg-charcoal relative">
+    <!-- Mobile back link -->
+    <a href="/" class="lg:hidden absolute top-6 right-6 text-white/60 text-xs tracking-widest uppercase flex items-center gap-2">
+      <i data-lucide="arrow-right" class="w-4 h-4"></i> חזרה
+    </a>
+
+    <div class="w-full max-w-md">
+      <!-- Brand on mobile -->
+      <div class="lg:hidden text-center mb-12">
+        <div class="text-gold text-xs tracking-[0.4em] uppercase mb-4">כניסה</div>
+        <h1 class="font-serif text-4xl font-black text-white">ברוכים השבים.</h1>
+      </div>
+
+      <!-- Tabs -->
+      <div class="flex gap-8 mb-12 border-b border-white/10">
+        <div class="text-white pb-4 border-b-2 border-gold text-sm tracking-[0.3em] uppercase">כניסה</div>
+        <a href="/signup" class="text-white/40 hover:text-white pb-4 text-sm tracking-[0.3em] uppercase transition-colors">הרשמה</a>
+      </div>
+
+      <h2 class="font-serif text-3xl md:text-4xl font-bold text-white mb-2">היכנסו לחשבון</h2>
+      <p class="text-white/50 text-sm mb-10">המשיכו את מסע הבדיקה שלכם.</p>
+
+      <form class="space-y-7" id="loginForm">
+        <div>
+          <label class="input-label">כתובת אימייל</label>
+          <input type="email" class="input-line" placeholder="name@example.com" autocomplete="email" required>
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <label class="input-label mb-0">סיסמה</label>
+            <a href="/forgot-password" class="text-gold text-xs tracking-widest uppercase hover:underline">שכחתי</a>
+          </div>
+          <input type="password" class="input-line" placeholder="••••••••" autocomplete="current-password" required>
+        </div>
+
+        <label class="flex items-center gap-3 cursor-pointer pt-2">
+          <input type="checkbox" class="checkbox-custom">
+          <span class="text-white/70 text-sm">זכור אותי במכשיר זה</span>
+        </label>
+
+        <button type="submit" class="gold-btn w-full">כניסה למערכת</button>
+      </form>
+
+      <!-- Divider -->
+      <div class="flex items-center gap-4 my-10">
+        <div class="flex-1 h-px bg-white/10"></div>
+        <span class="text-white/40 text-xs tracking-widest uppercase">או</span>
+        <div class="flex-1 h-px bg-white/10"></div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-4">
+        <button class="social-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" opacity=".7"/><path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" opacity=".5"/><path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" opacity=".9"/></svg>
+          <span class="text-xs tracking-widest uppercase">Google</span>
+        </button>
+        <button class="social-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.05 20.28c-.98.95-2.05.88-3.08.41-1.09-.47-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.41C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
+          <span class="text-xs tracking-widest uppercase">Apple</span>
+        </button>
+      </div>
+
+      <p class="text-center text-white/50 text-sm mt-10">
+        אין לכם חשבון? <a href="/signup" class="text-gold hover:underline">הצטרפו עכשיו</a>
+      </p>
+
+      <!-- Security note -->
+      <div class="mt-10 pt-6 border-t border-white/10 flex items-center gap-3 text-white/40 text-xs">
+        <i data-lucide="shield-check" class="w-4 h-4 text-gold shrink-0"></i>
+        <span>הנתונים מעובדים מקומית בדפדפן. אין שרתים חיצוניים. ניתנים למחיקה בלחיצה אחת.</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+lucide.createIcons();
+
+// ===== Live ticker animation =====
+(function() {
+  const stats = [
+    '29 בדיקות פעילות',
+    'סנכרון פרופיל × חוזה × תלוש',
+    'מצב: מחובר · 256-bit',
+    'נקודות זיכוי · ב.ל. · פנסיה',
+    'מנוע חישוב 2022 — 2026',
+    'מערכת מאומתת · 100% פרטי',
+  ];
+  const el = document.getElementById('liveStat');
+  if (!el) return;
+  let i = 0;
+  setInterval(() => {
+    el.style.opacity = '0';
+    el.style.transition = 'opacity .35s';
+    setTimeout(() => {
+      i = (i + 1) % stats.length;
+      el.textContent = stats[i];
+      el.style.opacity = '1';
+    }, 350);
+  }, 2800);
+})();
+
+// === Login form with loading ===
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = e.target.querySelector('button[type="submit"]');
+  await Talush.withLoading(btn, 'מתחבר...', async () => {
+    await new Promise(r => setTimeout(r, 1100));
+  });
+  window.location.href = 'Dashboard.html';
+});
+</script>
+</body>
+</html>

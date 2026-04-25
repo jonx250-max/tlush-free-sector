@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>פרופיל מס · בדיקת תלוש שכר</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700&family=Frank+Ruhl+Libre:wght@300;400;700;900&display=swap" rel="stylesheet">
+<script>
+tailwind.config = {
+  theme: { extend: {
+    fontFamily: { sans: ['Assistant','sans-serif'], serif: ['"Frank Ruhl Libre"','serif'], mono: ['ui-monospace','monospace'] },
+    colors: { cream:'#FDFBF7', sand:'#F4F1EB', charcoal:'#0a0a0a', gold:'#B89B5E', gold2:'#9b8149' }
+  }}
+}
+</script>
+<style>
+  body { font-family: 'Assistant', sans-serif; background:#FDFBF7; color:#0a0a0a; }
+  .noise-overlay{position:fixed;top:-50%;left:-50%;width:200%;height:200vh;pointer-events:none;z-index:1;opacity:.025;background-image:url('data:image/svg+xml,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="n"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23n)"/%3E%3C/svg%3E')}
+
+  /* Header */
+  .head-bar { background:#0a0a0a; color:#FDFBF7; }
+  .gold-line { height:1px; background:linear-gradient(to right, transparent, rgba(184,155,94,0.5), transparent); }
+
+  /* Stepper */
+  .step { display:flex; align-items:center; gap:14px; padding:14px 18px; color:rgba(10,10,10,0.45); font-size:13px; border-right:2px solid transparent; transition: all .25s; cursor:pointer; white-space:nowrap; }
+  .step .num { font-family: ui-monospace, monospace; font-size:11px; color:rgba(10,10,10,0.35); letter-spacing:.15em; min-width:20px; }
+  .step:hover { color:#0a0a0a; }
+  .step.active { color:#0a0a0a; border-right-color:#B89B5E; background:rgba(184,155,94,0.07); }
+  .step.active .num { color:#B89B5E; font-weight:700; }
+  .step.done .num { color:#3d7a3d; }
+  .step.done .num::after { content:' ✓'; }
+  /* Mobile: horizontal scroll stepper */
+  @media (max-width: 1023px){
+    .stepper-nav { display:flex; flex-direction:row; overflow-x:auto; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; padding:6px 0 8px; gap:4px; border-top:1px solid rgba(10,10,10,0.1); border-bottom:1px solid rgba(10,10,10,0.1); }
+    .stepper-nav::-webkit-scrollbar { display:none; }
+    .stepper-nav .step { scroll-snap-align:start; padding:12px 14px; border-right:none; border-bottom:2px solid transparent; flex-shrink:0; }
+    .stepper-nav .step.active { border-right:none; border-bottom-color:#B89B5E; }
+  }
+
+  /* Form */
+  .field-label { display:block; font-family: ui-monospace, monospace; font-size:11px; letter-spacing:0.25em; text-transform:uppercase; color: rgba(10,10,10,0.55); margin-bottom:10px; }
+  .input-line { background:transparent; border:none; border-bottom:1.5px solid rgba(10,10,10,0.15); padding:13px 0; width:100%; font-size:17px; transition: border-color .3s; outline:none; direction:rtl; color:#0a0a0a; }
+  .input-line:focus { border-bottom-color:#B89B5E; }
+  .input-line::placeholder { color:rgba(10,10,10,0.3); }
+  select.input-line { -webkit-appearance: none; appearance: none; background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="%230a0a0a" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>'); background-repeat:no-repeat; background-position: left 4px center; padding-left:28px; cursor:pointer; }
+
+  /* Radio cards */
+  .opt-card { border:1px solid rgba(10,10,10,0.1); padding:16px 18px; cursor:pointer; transition: all .25s; background:#fff; display:flex; align-items:center; gap:12px; }
+  .opt-card:hover { border-color: rgba(184,155,94,0.5); }
+  .opt-card .dot { width:14px; height:14px; border:1.5px solid rgba(10,10,10,0.25); border-radius:50%; flex-shrink:0; transition: all .25s; }
+  .opt-card.selected { border-color:#B89B5E; background:rgba(184,155,94,0.06); }
+  .opt-card.selected .dot { border-color:#B89B5E; background:#B89B5E; box-shadow: inset 0 0 0 3px #fff; }
+  .opt-card .label { font-size:14px; font-weight:600; color:#0a0a0a; }
+  .opt-card .sub { font-size:11px; color:rgba(10,10,10,0.55); margin-top:2px; }
+
+  /* Counter */
+  .counter { display:flex; align-items:center; gap:0; border:1px solid rgba(10,10,10,0.15); width:fit-content; }
+  .counter button { width:42px; height:42px; background:#fff; color:#0a0a0a; font-size:18px; transition: background .2s; }
+  .counter button:hover { background:#F4F1EB; }
+  .counter button:disabled { color:rgba(10,10,10,0.25); cursor:not-allowed; }
+  .counter .val { width:60px; height:42px; display:flex; align-items:center; justify-content:center; font-family:'Frank Ruhl Libre', serif; font-size:24px; font-weight:700; border-left:1px solid rgba(10,10,10,0.1); border-right:1px solid rgba(10,10,10,0.1); }
+
+  /* Toggle (chips) */
+  .chip { padding:10px 18px; border:1px solid rgba(10,10,10,0.15); background:#fff; cursor:pointer; transition: all .25s; font-size:13px; color:rgba(10,10,10,0.7); display:inline-flex; align-items:center; gap:8px; }
+  .chip:hover { border-color: rgba(184,155,94,0.5); }
+  .chip.selected { border-color:#B89B5E; background:#0a0a0a; color:#FDFBF7; }
+  .chip.selected .check { background:#B89B5E; color:#0a0a0a; }
+  .chip .check { width:16px; height:16px; border-radius:50%; background:rgba(10,10,10,0.08); display:inline-flex; align-items:center; justify-content:center; font-size:10px; }
+
+  /* City special highlight */
+  .city-priority { background: rgba(61,122,61,0.06); border:1px solid rgba(61,122,61,0.25); border-right: 3px solid #3d7a3d; padding: 14px 18px; margin-top:14px; display:flex; align-items:flex-start; gap:12px; opacity:0; transform: translateY(-6px); transition: all .35s ease; pointer-events:none; }
+  .city-priority.show { opacity:1; transform:none; pointer-events:auto; }
+  .city-priority .label { font-family: ui-monospace, monospace; font-size:10px; letter-spacing:0.25em; text-transform:uppercase; color:#3d7a3d; font-weight:700; margin-bottom:4px; }
+  .city-priority p { font-size:13px; color:rgba(10,10,10,0.78); line-height:1.6; margin:0; }
+
+  /* Live calculator panel */
+  .calc-panel { background:#0a0a0a; color:#FDFBF7; padding: 32px 30px; position: sticky; top:24px; }
+  .calc-row { display:flex; justify-content:space-between; align-items:baseline; padding:12px 0; border-bottom:1px solid rgba(255,255,255,0.08); font-size:13px; color:rgba(255,255,255,0.65); }
+  .calc-row .pts { font-family:'Frank Ruhl Libre', serif; font-size:22px; font-weight:700; color:#FDFBF7; }
+  .calc-row.zero .pts { color: rgba(255,255,255,0.3); }
+  .calc-total { padding:18px 0 0; margin-top:14px; border-top:2px solid #B89B5E; }
+  .calc-total .pts-big { font-family:'Frank Ruhl Libre', serif; font-size:56px; font-weight:900; color:#B89B5E; line-height:1; }
+
+  /* Card */
+  .card { background:#fff; border:1px solid rgba(10,10,10,0.08); padding: 36px 40px; }
+
+  /* CTA */
+  .gold-btn { background:#B89B5E; color:#0a0a0a; padding: 18px 28px; font-weight:600; letter-spacing:.2em; text-transform:uppercase; font-size:12px; transition: all .35s; cursor: pointer; border:1px solid #B89B5E; }
+  .gold-btn:hover { background:#0a0a0a; color:#B89B5E; }
+  .ghost-btn { background: transparent; border: 1px solid rgba(10,10,10,0.2); color: #0a0a0a; padding: 18px 28px; font-weight:600; letter-spacing:.2em; text-transform:uppercase; font-size:12px; transition: all .25s; cursor:pointer; }
+  .ghost-btn:hover { border-color:#B89B5E; color:#B89B5E; }
+
+  /* Date input cleanup */
+  input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0); cursor: pointer; opacity:.5; }
+
+  /* Section reveal */
+  .reveal { opacity:0; transform: translateY(8px); animation: rv .5s cubic-bezier(.2,.6,.2,1) forwards; }
+  @keyframes rv { to { opacity:1; transform:none; } }
+  .reveal-1 { animation-delay: .05s; }
+  .reveal-2 { animation-delay: .15s; }
+  .reveal-3 { animation-delay: .25s; }
+  .reveal-4 { animation-delay: .35s; }
+
+  /* Auto-save flash */
+  #autoSaveFlash { position:fixed; bottom:24px; left:24px; z-index:60; background:#0a0a0a; color:#B89B5E; border:1px solid rgba(184,155,94,0.4); padding:10px 18px; font-size:12px; letter-spacing:0.15em; text-transform:uppercase; font-family:ui-monospace; opacity:0; transform:translateY(8px); transition: all .25s; pointer-events:none; }
+  #autoSaveFlash.show { opacity:1; transform:none; }
+
+  /* Skip-friendly */
+  .skip-bar { background: linear-gradient(90deg, rgba(184,155,94,0.06), rgba(184,155,94,0.02)); border:1px solid rgba(184,155,94,0.25); border-right:3px solid #B89B5E; padding:14px 18px; display:flex; align-items:center; gap:14px; margin-bottom:24px; }
+</style>
+<!-- Meta -->
+<meta name="theme-color" content="#0a0a0a">
+<meta name="description" content="29 בדיקות אוטומטיות לתלוש השכר שלכם במגזר הפרטי — חישוב נטו רב-שנתי, השוואה לחוזה, מרכז זכאויות. מקומי, פרטי, מאובטח.">
+<meta name="format-detection" content="telephone=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+
+<!-- Open Graph / Social -->
+<meta property="og:type" content="website">
+<meta property="og:locale" content="he_IL">
+<meta property="og:site_name" content="תלוש">
+<meta property="og:title" content="תלוש · בדיקת תלוש שכר במגזר הפרטי">
+<meta property="og:description" content="29 בדיקות אוטומטיות לתלוש השכר שלכם — מקומי, פרטי, ללא שמירת נתונים בשרת.">
+<meta property="og:image" content="icon-512.svg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="תלוש · בדיקת תלוש שכר במגזר הפרטי">
+<meta name="twitter:description" content="29 בדיקות אוטומטיות לתלוש השכר שלכם.">
+<meta name="twitter:image" content="icon-512.svg">
+
+<!-- Icons -->
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="apple-touch-icon.svg">
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="talush-a11y.css">
+<script src="talush-ui.js" defer></script>
+<script src="talush-error-boundary.js?v=1777126914727"></script>
+<script src="security-guard.js" defer></script>
+<script src="audit-logger.js" defer></script>
+</head>
+<body class="antialiased" data-screen-label="Tax Profile">
+<a href="#main-content" class="skip-link" style="position:absolute;top:-40px;right:0;background:#B89B5E;color:#0a0a0a;padding:10px 20px;z-index:99999;text-decoration:none;font-weight:600;font-size:13px;letter-spacing:0.15em;text-transform:uppercase;transition:top .2s;" onfocus="this.style.top='0'" onblur="this.style.top='-40px'">דלג לתוכן הראשי</a>
+<div class="noise-overlay"></div>
+
+<!-- HEADER -->
+<header class="head-bar relative">
+  <div class="absolute top-0 left-0 right-0 gold-line"></div>
+  <div class="max-w-7xl mx-auto px-6 lg:px-10 py-7 flex items-center justify-between">
+    <a href="/dashboard" class="flex items-center gap-3 text-white/70 hover:text-gold transition-colors text-xs tracking-[0.25em] uppercase">
+      <i data-lucide="arrow-right" class="w-4 h-4"></i>
+      חזרה ללוח
+    </a>
+    <div class="flex items-center gap-3">
+      <div class="text-[10px] tracking-[0.3em] uppercase text-white/45 font-mono">שלב 0 · חד-פעמי</div>
+      <span class="text-white/30">·</span>
+      <div class="font-serif font-black">פרופיל מס</div>
+    </div>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="head-bar relative overflow-hidden border-t border-white/10">
+  <div class="max-w-7xl mx-auto px-6 lg:px-10 py-16 md:py-20">
+    <div class="grid lg:grid-cols-[1fr_auto] items-end gap-10">
+      <div>
+        <div class="text-[11px] tracking-[0.3em] uppercase text-gold font-mono mb-5">▸ הקמת פרופיל אישי</div>
+        <h1 class="font-serif font-black leading-[0.95] tracking-tight mb-6 text-white" style="font-size: clamp(2.5rem, 6vw, 4.5rem);">
+          לפני שאנחנו בודקים<br/>
+          <span class="text-gold">את התלוש —</span><br/>
+          בוא נכיר אותך.
+        </h1>
+        <p class="text-white/70 text-lg leading-relaxed max-w-2xl font-light">
+          פרופיל המס מאפשר לנו לבדוק את ה-30% החסרים שלא ניתן לזהות מתלוש לבד: נקודות זיכוי, פטורי מס גיאוגרפיים, זיכויי לימודים, וזכאויות אישיות. <span class="text-gold">3 דקות עכשיו = אלפי שקלים בשנה.</span>
+        </p>
+      </div>
+      <div class="flex items-center gap-3 text-white/50 text-xs tracking-widest uppercase font-mono">
+        <i data-lucide="lock" class="w-3.5 h-3.5 text-gold"></i>
+        <span>מעובד מקומית</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BODY -->
+<div class="max-w-7xl mx-auto px-6 lg:px-10 py-12 md:py-16">
+  <div class="grid lg:grid-cols-[260px_1fr_320px] gap-10">
+
+    <!-- STEPPER -->
+    <aside class="self-start lg:sticky lg:top-6">
+      <div class="text-[10px] tracking-[0.3em] uppercase text-charcoal/45 font-mono mb-4 px-2">שלבים</div>
+      <nav class="stepper-nav border-y border-charcoal/10 py-2">
+        <a href="#step-1" class="step active" data-step="1"><span class="num">01</span><span>פרטים אישיים</span></a>
+        <a href="#step-2" class="step" data-step="2"><span class="num">02</span><span>מצב משפחתי</span></a>
+        <a href="#step-3" class="step" data-step="3"><span class="num">03</span><span>מקום מגורים</span></a>
+        <a href="#step-4" class="step" data-step="4"><span class="num">04</span><span>השכלה ותעסוקה</span></a>
+        <a href="#step-5" class="step" data-step="5"><span class="num">05</span><span>זכאויות מיוחדות</span></a>
+        <a href="#step-6" class="step" data-step="6"><span class="num">06</span><span>סיכום ושמירה</span></a>
+      </nav>
+
+      <div class="mt-8 px-2">
+        <div class="text-[10px] tracking-[0.3em] uppercase text-charcoal/45 font-mono mb-2">משך מילוי</div>
+        <div class="font-serif text-2xl font-black text-charcoal">~3 דקות</div>
+        <p class="text-xs text-charcoal/55 mt-2 leading-relaxed">תוכל להשהות ולהמשיך מאוחר יותר. הנתונים נשמרים אוטומטית.</p>
+      </div>
+    </aside>
+
+    <!-- FORM -->
+    <main>
+
+      <!-- SKIP BAR -->
+      <div class="skip-bar reveal">
+        <i data-lucide="zap" class="w-4 h-4 text-gold shrink-0"></i>
+        <div class="flex-1 text-sm">
+          <strong class="text-charcoal">שמירה אוטומטית פעילה.</strong>
+          <span class="text-charcoal/65">מלא מה שתרצה, השאר את היתר ריק. ניתן להמשיך מאוחר יותר — הכל נשמר במכשיר שלך.</span>
+        </div>
+        <a href="/dashboard" class="text-xs tracking-[0.2em] uppercase text-charcoal/60 hover:text-gold whitespace-nowrap font-semibold">דלג לעת עתה ←</a>
+      </div>
+
+      <!-- STEP 1: Personal -->
+      <section id="step-1" class="card mb-8 reveal reveal-1">
+        <div class="flex items-baseline justify-between mb-2">
+          <div class="text-[10px] tracking-[0.3em] uppercase text-gold font-mono">▸ שלב 01</div>
+          <div class="text-[10px] tracking-widest uppercase text-charcoal/40 font-mono">פרטים אישיים</div>
+        </div>
+        <h2 class="font-serif text-3xl font-black text-charcoal mb-2 leading-tight">קצת על עצמך.</h2>
+        <p class="text-charcoal/60 text-sm mb-8 max-w-md">פרטים בסיסיים שמאפשרים לנו לחשב נקודות זיכוי בסיסיות וזכאויות לפי גיל.</p>
+
+        <div class="grid md:grid-cols-2 gap-x-10 gap-y-7">
+          <div>
+            <label class="field-label">שם פרטי</label>
+            <input type="text" class="input-line" placeholder="לדוגמה: יונתן" id="firstName" />
+          </div>
+          <div>
+            <label class="field-label">שם משפחה</label>
+            <input type="text" class="input-line" placeholder="לדוגמה: כהן" id="lastName" />
+          </div>
+          <div>
+            <label class="field-label">תאריך לידה</label>
+            <input type="date" class="input-line" id="birthDate" />
+            <div class="text-[11px] text-charcoal/45 mt-2" id="ageHint">קובע נקודות זיכוי לפי גיל ו-זכאות לפנסיונר.</div>
+          </div>
+          <div>
+            <label class="field-label">מגדר</label>
+            <select class="input-line" id="gender">
+              <option value="">בחר...</option>
+              <option value="m">זכר</option>
+              <option value="f">נקבה (+0.5 נקודות זיכוי)</option>
+              <option value="o">אחר / מעדיף לא לציין</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- STEP 2: Family -->
+      <section id="step-2" class="card mb-8 reveal reveal-2">
+        <div class="flex items-baseline justify-between mb-2">
+          <div class="text-[10px] tracking-[0.3em] uppercase text-gold font-mono">▸ שלב 02</div>
+          <div class="text-[10px] tracking-widest uppercase text-charcoal/40 font-mono">מצב משפחתי</div>
+        </div>
+        <h2 class="font-serif text-3xl font-black text-charcoal mb-2 leading-tight">המשפחה שלך.</h2>
+        <p class="text-charcoal/60 text-sm mb-8 max-w-md">כל ילד = נקודות זיכוי. ילד עד גיל 6 שווה כפול. גם משפחה חד-הורית מקבלת נקודה נוספת.</p>
+
+        <div class="mb-8">
+          <label class="field-label mb-3">סטטוס</label>
+          <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div class="opt-card" data-status="single"><div class="dot"></div><div><div class="label">רווק/ה</div></div></div>
+            <div class="opt-card" data-status="married"><div class="dot"></div><div><div class="label">נשוי/ה</div></div></div>
+            <div class="opt-card" data-status="divorced"><div class="dot"></div><div><div class="label">גרוש/ה</div><div class="sub">+ אופציה: משלם מזונות</div></div></div>
+            <div class="opt-card" data-status="single-parent"><div class="dot"></div><div><div class="label">חד-הורי/ת</div><div class="sub">+1 נקודה</div></div></div>
+            <div class="opt-card" data-status="widow"><div class="dot"></div><div><div class="label">אלמן/ה</div></div></div>
+            <div class="opt-card" data-status="cohabit"><div class="dot"></div><div><div class="label">ידועים בציבור</div></div></div>
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-10">
+          <div>
+            <label class="field-label mb-3">ילדים מתחת לגיל 6</label>
+            <div class="counter">
+              <button data-counter="kids-young" data-delta="-1">−</button>
+              <div class="val" id="val-kids-young">0</div>
+              <button data-counter="kids-young" data-delta="1">+</button>
+            </div>
+            <div class="text-[11px] text-charcoal/45 mt-3">+1 נקודה לכל ילד</div>
+          </div>
+          <div>
+            <label class="field-label mb-3">ילדים בגילאי 6—18</label>
+            <div class="counter">
+              <button data-counter="kids-old" data-delta="-1">−</button>
+              <div class="val" id="val-kids-old">0</div>
+              <button data-counter="kids-old" data-delta="1">+</button>
+            </div>
+            <div class="text-[11px] text-charcoal/45 mt-3">+0.5 נקודות לכל ילד</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- STEP 3: Location -->
+      <section id="step-3" class="card mb-8 reveal reveal-3">
+        <div class="flex items-baseline justify-between mb-2">
+          <div class="text-[10px] tracking-[0.3em] uppercase text-gold font-mono">▸ שלב 03</div>
+          <div class="text-[10px] tracking-widest uppercase text-charcoal/40 font-mono">מקום מגורים</div>
+        </div>
+        <h2 class="font-serif text-3xl font-black text-charcoal mb-2 leading-tight">איפה אתה גר?</h2>
+        <p class="text-charcoal/60 text-sm mb-8 max-w-xl">תושבי אזורי עדיפות לאומית זכאים לפטור של עד 11% ממס הכנסה. זה אחד המקומות שבהם אנשים מפסידים הכי הרבה כסף — בלי לדעת.</p>
+
+        <div class="grid md:grid-cols-2 gap-x-10 gap-y-7">
+          <div class="md:col-span-2">
+            <label class="field-label">עיר / יישוב</label>
+            <select class="input-line" id="city">
+              <option value="">בחר עיר...</option>
+              <optgroup label="אזור עדיפות א׳ — פטור 11%">
+                <option value="sderot" data-pct="11">שדרות</option>
+                <option value="ofakim" data-pct="11">אופקים</option>
+                <option value="netivot" data-pct="11">נתיבות</option>
+                <option value="kiryat-shmona" data-pct="11">קריית שמונה</option>
+                <option value="dimona" data-pct="11">דימונה</option>
+                <option value="yeruham" data-pct="11">ירוחם</option>
+                <option value="mitzpe-ramon" data-pct="11">מצפה רמון</option>
+              </optgroup>
+              <optgroup label="אזור עדיפות ב׳ — פטור 7%">
+                <option value="ashkelon" data-pct="7">אשקלון</option>
+                <option value="beersheva" data-pct="7">באר שבע</option>
+                <option value="eilat" data-pct="7">אילת</option>
+                <option value="acre" data-pct="7">עכו</option>
+                <option value="nahariya" data-pct="7">נהריה</option>
+                <option value="safed" data-pct="7">צפת</option>
+                <option value="tiberias" data-pct="7">טבריה</option>
+              </optgroup>
+              <optgroup label="ערים מרכזיות — ללא פטור">
+                <option value="tlv">תל אביב—יפו</option>
+                <option value="jlm">ירושלים</option>
+                <option value="haifa">חיפה</option>
+                <option value="rishon">ראשון לציון</option>
+                <option value="petah">פתח תקווה</option>
+                <option value="netanya">נתניה</option>
+                <option value="bb">בני ברק</option>
+                <option value="rh">רמת גן</option>
+                <option value="hi">חולון</option>
+                <option value="other">אחר / לא ברשימה</option>
+              </optgroup>
+            </select>
+          </div>
+
+          <div>
+            <label class="field-label">תאריך מעבר ליישוב</label>
+            <input type="date" class="input-line" id="moveDate" />
+            <div class="text-[11px] text-charcoal/45 mt-2">פטור גיאוגרפי דורש מגורים רצוף לפחות 12 חודשים.</div>
+          </div>
+
+          <div>
+            <label class="field-label">עיר עבודה</label>
+            <select class="input-line" id="workCity">
+              <option value="">לא רלוונטי / מהבית</option>
+              <option>תל אביב—יפו</option>
+              <option>ירושלים</option>
+              <option>חיפה</option>
+              <option>באר שבע</option>
+              <option>אחר</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="city-priority" id="cityAlert">
+          <i data-lucide="check-circle-2" class="w-5 h-5 text-[#3d7a3d] shrink-0 mt-0.5"></i>
+          <div>
+            <div class="label">פטור מזוהה</div>
+            <p id="cityAlertText">—</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- STEP 4: Education / Employment -->
+      <section id="step-4" class="card mb-8 reveal reveal-4">
+        <div class="flex items-baseline justify-between mb-2">
+          <div class="text-[10px] tracking-[0.3em] uppercase text-gold font-mono">▸ שלב 04</div>
+          <div class="text-[10px] tracking-widest uppercase text-charcoal/40 font-mono">השכלה ותעסוקה</div>
+        </div>
+        <h2 class="font-serif text-3xl font-black text-charcoal mb-2 leading-tight">לימודים והכשרה.</h2>
+        <p class="text-charcoal/60 text-sm mb-8 max-w-xl">בעלי תואר אקדמי או הסבה מקצועית מקבלים נקודות זיכוי זמניות (3 שנים) — שווה כ-870₪ עד 2,900₪ בשנה.</p>
+
+        <div class="mb-8">
+          <label class="field-label mb-3">השכלה גבוהה</label>
+          <div class="grid sm:grid-cols-2 gap-3">
+            <div class="opt-card" data-edu="none"><div class="dot"></div><div><div class="label">ללא תואר אקדמי</div></div></div>
+            <div class="opt-card" data-edu="bachelor"><div class="dot"></div><div><div class="label">תואר ראשון</div><div class="sub">+1 נקודה ל-3 שנים</div></div></div>
+            <div class="opt-card" data-edu="master"><div class="dot"></div><div><div class="label">תואר שני</div><div class="sub">+0.5 נקודות ל-2 שנים</div></div></div>
+            <div class="opt-card" data-edu="phd"><div class="dot"></div><div><div class="label">דוקטורט / הסבה רפואית</div><div class="sub">+1 נקודה ל-5 שנים</div></div></div>
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-x-10 gap-y-7">
+          <div>
+            <label class="field-label">תאריך סיום הלימודים</label>
+            <input type="date" class="input-line" id="eduEnd" />
+            <div class="text-[11px] text-charcoal/45 mt-2">הזיכוי תקף עד 3 שנים מתאריך הסיום.</div>
+          </div>
+          <div>
+            <label class="field-label">תחום</label>
+            <input type="text" class="input-line" placeholder="לדוגמה: הנדסת תוכנה" id="eduField" />
+          </div>
+        </div>
+      </section>
+
+      <!-- STEP 5: Special Eligibility -->
+      <section id="step-5" class="card mb-8 reveal reveal-4">
+        <div class="flex items-baseline justify-between mb-2">
+          <div class="text-[10px] tracking-[0.3em] uppercase text-gold font-mono">▸ שלב 05</div>
+          <div class="text-[10px] tracking-widest uppercase text-charcoal/40 font-mono">זכאויות מיוחדות</div>
+        </div>
+        <h2 class="font-serif text-3xl font-black text-charcoal mb-2 leading-tight">זכאויות נוספות.</h2>
+        <p class="text-charcoal/60 text-sm mb-8 max-w-xl">סטטוסים מיוחדים שמזכים בנקודות זיכוי גבוהות. סמן את כל הרלוונטי לך.</p>
+
+        <div class="flex flex-wrap gap-3 mb-8">
+          <div class="chip" data-special="oleh"><span class="check">+</span>עולה חדש (3 שנים)</div>
+          <div class="chip" data-special="returning"><span class="check">+</span>תושב חוזר</div>
+          <div class="chip" data-special="discharged"><span class="check">+</span>חייל משוחרר</div>
+          <div class="chip" data-special="disabled"><span class="check">+</span>נכה ≥75%</div>
+          <div class="chip" data-special="alimony"><span class="check">+</span>משלם מזונות</div>
+          <div class="chip" data-special="parent-special"><span class="check">+</span>הורה לילד עם צרכים מיוחדים</div>
+          <div class="chip" data-special="senior"><span class="check">+</span>גיל 60+</div>
+          <div class="chip" data-special="kibbutz"><span class="check">+</span>חבר קיבוץ / מושב שיתופי</div>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-x-10 gap-y-7">
+          <div>
+            <label class="field-label">תרומות שנתיות (סעיף 46)</label>
+            <input type="number" class="input-line" placeholder="₪" id="donations" min="0" />
+            <div class="text-[11px] text-charcoal/45 mt-2">זיכוי של 35% מסך התרומות לעמותות מוכרות.</div>
+          </div>
+          <div>
+            <label class="field-label">הפקדה לקופ"ג / קה"ש מעל התקרה</label>
+            <input type="number" class="input-line" placeholder="₪ לחודש" id="extraPension" min="0" />
+            <div class="text-[11px] text-charcoal/45 mt-2">זיכוי של 35% על הסכום שמעבר להפרשת המעסיק.</div>
+          </div>
+
+          <div>
+            <label class="field-label">שכר ברוטו צפוי לפי החוזה</label>
+            <input type="number" class="input-line" placeholder="₪ לחודש" id="expectedSalary" min="0" />
+            <div class="text-[11px] text-charcoal/45 mt-2">משמש למטריצת סנכרון בין פרופיל ↔ חוזה ↔ תלוש.</div>
+          </div>
+
+          <div>
+            <label class="field-label">שם המעסיק (אופציונלי)</label>
+            <input type="text" class="input-line" placeholder="לזיהוי בתלוש" id="employerName" />
+            <div class="text-[11px] text-charcoal/45 mt-2">לוודא שהתלוש מהמעסיק הנכון.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- STEP 6: Summary -->
+      <section id="step-6" class="card reveal reveal-4 bg-gradient-to-br from-charcoal to-[#1a1a1a] text-cream">
+        <div class="flex items-baseline justify-between mb-2">
+          <div class="text-[10px] tracking-[0.3em] uppercase text-gold font-mono">▸ שלב 06</div>
+          <div class="text-[10px] tracking-widest uppercase text-white/40 font-mono">סיכום</div>
+        </div>
+        <h2 class="font-serif text-3xl font-black text-cream mb-2 leading-tight">הפרופיל שלך מוכן.</h2>
+        <p class="text-white/65 text-sm mb-8 max-w-xl">סקור את הסיכום, ואשר את השמירה. תוכל לעדכן בכל עת מ-<a href="/dashboard" class="text-gold underline">לוח הבקרה ← פרופיל מס</a>.</p>
+
+        <div class="grid md:grid-cols-3 gap-5 mb-10">
+          <div class="bg-white/5 border border-white/10 p-6">
+            <div class="text-[10px] tracking-[0.25em] uppercase text-white/45 font-mono mb-2">נקודות זיכוי בשנה</div>
+            <div class="font-serif text-5xl font-black text-gold leading-none" id="sumPoints">0.0</div>
+            <div class="text-xs text-white/50 mt-3">בערך מנוקדה שווה 242₪ בחודש</div>
+          </div>
+          <div class="bg-white/5 border border-white/10 p-6">
+            <div class="text-[10px] tracking-[0.25em] uppercase text-white/45 font-mono mb-2">פטור גיאוגרפי</div>
+            <div class="font-serif text-5xl font-black text-cream leading-none" id="sumGeo">0%</div>
+            <div class="text-xs text-white/50 mt-3" id="sumGeoCity">לא רלוונטי</div>
+          </div>
+          <div class="bg-gold/15 border border-gold/40 p-6">
+            <div class="text-[10px] tracking-[0.25em] uppercase text-gold font-mono mb-2">חיסכון משוער / שנה</div>
+            <div class="font-serif text-5xl font-black text-gold leading-none" id="sumSavings">₪0</div>
+            <div class="text-xs text-gold/80 mt-3">בהשוואה לחישוב ללא פרופיל</div>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap gap-4">
+          <button class="gold-btn flex items-center gap-3" id="saveBtn">
+            <i data-lucide="check" class="w-4 h-4"></i>
+            שמור פרופיל ועבור ללוח
+          </button>
+          <button class="ghost-btn !border-white/30 !text-white hover:!border-gold hover:!text-gold flex items-center gap-3" id="restartBtn">
+            <i data-lucide="refresh-ccw" class="w-4 h-4"></i>
+            התחל מחדש
+          </button>
+        </div>
+
+        <div class="mt-8 pt-6 border-t border-white/10 flex items-start gap-3 text-xs text-white/55 leading-relaxed">
+          <i data-lucide="lock" class="w-3.5 h-3.5 text-gold shrink-0 mt-0.5"></i>
+          <span>הפרופיל מאוחסן ב-localStorage של הדפדפן שלך — נשאר על המכשיר, לא נשלח לשרת, לא נצפה ע״י אף אחד מלבדך. מחיקה: הגדרות החשבון או ניקוי היסטוריית הדפדפן.</span>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- LIVE CALCULATOR -->
+    <aside class="hidden lg:block">
+      <div class="calc-panel">
+        <div class="text-[10px] tracking-[0.3em] uppercase text-gold font-mono mb-2">▸ מחשבון חי</div>
+        <h3 class="font-serif text-2xl font-black mb-1 leading-tight">מה מגיע לך</h3>
+        <p class="text-white/55 text-xs mb-6">מתעדכן אוטומטית בזמן שאתה ממלא</p>
+
+        <div class="calc-row" id="row-base">
+          <span>נקודות בסיס (תושב)</span>
+          <span class="pts">2.25</span>
+        </div>
+        <div class="calc-row zero" id="row-gender">
+          <span>בונוס מגדר</span>
+          <span class="pts">0.0</span>
+        </div>
+        <div class="calc-row zero" id="row-status">
+          <span>סטטוס משפחתי</span>
+          <span class="pts">0.0</span>
+        </div>
+        <div class="calc-row zero" id="row-kids">
+          <span>נקודות ילדים</span>
+          <span class="pts">0.0</span>
+        </div>
+        <div class="calc-row zero" id="row-edu">
+          <span>זיכוי השכלה</span>
+          <span class="pts">0.0</span>
+        </div>
+        <div class="calc-row zero" id="row-special">
+          <span>זכאויות מיוחדות</span>
+          <span class="pts">0.0</span>
+        </div>
+
+        <div class="calc-total">
+          <div class="text-[10px] tracking-[0.3em] uppercase text-white/45 font-mono mb-1">סה״כ נקודות</div>
+          <div class="pts-big" id="liveTotal">2.25</div>
+          <div class="text-xs text-white/55 mt-3" id="liveValue">≈ ₪544 / חודש · ₪6,534 / שנה</div>
+        </div>
+
+        <div class="mt-6 pt-6 border-t border-white/10">
+          <div class="flex justify-between items-baseline">
+            <span class="text-xs text-white/55">פטור עירוני</span>
+            <span class="font-serif font-bold text-lg" id="livePct">—</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- Footer note -->
+  <div class="mt-16 pt-10 border-t border-charcoal/10 text-xs text-charcoal/50 flex flex-col md:flex-row gap-4 justify-between items-center">
+    <div class="flex items-center gap-2">
+      <i data-lucide="info" class="w-4 h-4 text-gold"></i>
+      <span>החישוב הוא אומדן בלבד. לחישוב מדויק — היוועץ עם חשב שכר.</span>
+    </div>
+    <a href="/legal#disclaimer" class="hover:text-gold transition-colors">קרא על מגבלות החישוב ←</a>
+  </div>
+
+</div>
+
+<div id="autoSaveFlash">✓ נשמר במכשיר שלך</div>
+
+<script>
+lucide.createIcons();
+
+// ============ STATE ============
+const state = {
+  gender: '',
+  status: '',
+  kidsYoung: 0,
+  kidsOld: 0,
+  edu: 'none',
+  special: new Set(),
+  cityPct: 0,
+  cityName: '',
+};
+
+const POINT_VALUE = 242; // ₪ per point per month (2026)
+
+// ============ HELPERS ============
+function setRow(rowId, pts, label) {
+  const row = document.getElementById(rowId);
+  if (!row) return;
+  const span = row.querySelector('.pts');
+  span.textContent = pts.toFixed(2);
+  row.classList.toggle('zero', pts === 0);
+  if (label) row.querySelector('span:first-child').textContent = label;
+}
+
+// ============ CALCULATION ============
+function calcAll() {
+  const base = 2.25;
+  const genderPts = state.gender === 'f' ? 0.5 : 0;
+
+  let statusPts = 0;
+  if (state.status === 'single-parent') statusPts = 1;
+
+  const kidsPts = state.kidsYoung * 1 + state.kidsOld * 0.5;
+
+  const eduPts = state.edu === 'bachelor' ? 1 : state.edu === 'master' ? 0.5 : state.edu === 'phd' ? 1 : 0;
+
+  let specialPts = 0;
+  if (state.special.has('oleh')) specialPts += 3;
+  if (state.special.has('returning')) specialPts += 1.5;
+  if (state.special.has('discharged')) specialPts += 1;
+  if (state.special.has('disabled')) specialPts += 2;
+  if (state.special.has('alimony')) specialPts += 1;
+  if (state.special.has('parent-special')) specialPts += 2;
+  if (state.special.has('senior')) specialPts += 0.5;
+  if (state.special.has('kibbutz')) specialPts += 0.25;
+
+  const total = base + genderPts + statusPts + kidsPts + eduPts + specialPts;
+
+  setRow('row-gender', genderPts);
+  setRow('row-status', statusPts);
+  setRow('row-kids', kidsPts);
+  setRow('row-edu', eduPts);
+  setRow('row-special', specialPts);
+
+  document.getElementById('liveTotal').textContent = total.toFixed(2);
+  const monthly = Math.round(total * POINT_VALUE);
+  const yearly = monthly * 12;
+  document.getElementById('liveValue').textContent = `≈ ₪${monthly.toLocaleString('he')} / חודש · ₪${yearly.toLocaleString('he')} / שנה`;
+  document.getElementById('livePct').textContent = state.cityPct ? `${state.cityPct}%` : '—';
+
+  // Summary cards
+  document.getElementById('sumPoints').textContent = total.toFixed(2);
+  document.getElementById('sumGeo').textContent = state.cityPct ? `${state.cityPct}%` : '0%';
+  document.getElementById('sumGeoCity').textContent = state.cityName || 'לא רלוונטי';
+  // Geo savings rough estimate: 7-11% of average tax bill ~24,000/yr
+  const baseSavings = yearly;
+  const geoSavings = Math.round((state.cityPct / 100) * 24000);
+  document.getElementById('sumSavings').textContent = `₪${(baseSavings + geoSavings).toLocaleString('he')}`;
+}
+
+// ============ INIT FORM HANDLERS ============
+
+// Gender
+document.getElementById('gender').addEventListener('change', e => {
+  state.gender = e.target.value;
+  calcAll();
+});
+
+// Status (radio cards)
+document.querySelectorAll('[data-status]').forEach(card => {
+  card.addEventListener('click', () => {
+    document.querySelectorAll('[data-status]').forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+    state.status = card.dataset.status;
+    calcAll();
+  });
+});
+
+// Counters
+document.querySelectorAll('[data-counter]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const key = btn.dataset.counter;
+    const delta = parseInt(btn.dataset.delta);
+    const stateKey = key === 'kids-young' ? 'kidsYoung' : 'kidsOld';
+    state[stateKey] = Math.max(0, state[stateKey] + delta);
+    document.getElementById('val-' + key).textContent = state[stateKey];
+    calcAll();
+  });
+});
+
+// Education
+document.querySelectorAll('[data-edu]').forEach(card => {
+  card.addEventListener('click', () => {
+    document.querySelectorAll('[data-edu]').forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+    state.edu = card.dataset.edu;
+    calcAll();
+  });
+});
+// default
+document.querySelector('[data-edu="none"]').classList.add('selected');
+
+// Special chips (multi)
+document.querySelectorAll('[data-special]').forEach(chip => {
+  chip.addEventListener('click', () => {
+    chip.classList.toggle('selected');
+    if (chip.classList.contains('selected')) {
+      state.special.add(chip.dataset.special);
+      chip.querySelector('.check').textContent = '✓';
+    } else {
+      state.special.delete(chip.dataset.special);
+      chip.querySelector('.check').textContent = '+';
+    }
+    calcAll();
+  });
+});
+
+// City
+document.getElementById('city').addEventListener('change', e => {
+  const opt = e.target.options[e.target.selectedIndex];
+  const pct = parseInt(opt.dataset.pct) || 0;
+  state.cityPct = pct;
+  state.cityName = pct ? opt.textContent : '';
+  const alert = document.getElementById('cityAlert');
+  const txt = document.getElementById('cityAlertText');
+  if (pct) {
+    alert.classList.add('show');
+    txt.innerHTML = `<strong>${opt.textContent}</strong> משויכת ל${pct === 11 ? 'אזור עדיפות א׳' : 'אזור עדיפות ב׳'} — אתה זכאי ל<strong>פטור של ${pct}%</strong> ממס הכנסה. נכלול את זה אוטומטית בכל בדיקת תלוש.`;
+  } else {
+    alert.classList.remove('show');
+  }
+  calcAll();
+});
+
+// Age hint
+document.getElementById('birthDate').addEventListener('change', e => {
+  const v = e.target.value;
+  if (!v) return;
+  const age = Math.floor((Date.now() - new Date(v).getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+  const hint = document.getElementById('ageHint');
+  if (age >= 60) hint.textContent = `גיל ${age} · זכאי לחישוב מס מופחת לפנסיונרים.`;
+  else if (age >= 18) hint.textContent = `גיל ${age} · נקודות זיכוי תושב מלאות.`;
+  else hint.textContent = `גיל ${age} · יש לוודא כשירות לתלוש שכר.`;
+});
+
+// Stepper active state — track scroll
+const stepLinks = document.querySelectorAll('.step');
+const stepSections = document.querySelectorAll('section[id^="step-"]');
+const io = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      const id = e.target.id.replace('step-', '');
+      stepLinks.forEach(l => l.classList.toggle('active', l.dataset.step === id));
+    }
+  });
+}, { rootMargin: '-40% 0px -50% 0px' });
+stepSections.forEach(s => io.observe(s));
+
+// ============ PERSISTENCE ============
+const PROFILE_KEY = 'taxProfile_v1';
+
+function saveProfile(silent) {
+  try {
+    const payload = {
+      ...state,
+      special: [...state.special],
+      // Free-form text fields
+      firstName: document.getElementById('firstName').value,
+      lastName: document.getElementById('lastName').value,
+      birthDate: document.getElementById('birthDate').value,
+      city: document.getElementById('city').value,
+      cityName: state.cityName,
+      cityPct: state.cityPct,
+      moveDate: document.getElementById('moveDate').value,
+      workCity: document.getElementById('workCity').value,
+      eduEnd: document.getElementById('eduEnd').value,
+      eduField: document.getElementById('eduField').value,
+      donations: document.getElementById('donations').value,
+      extraPension: document.getElementById('extraPension').value,
+      expectedSalary: document.getElementById('expectedSalary').value,
+      employerName: document.getElementById('employerName').value,
+      _completedAt: Date.now(),
+      _version: 1,
+    };
+    localStorage.setItem(PROFILE_KEY, JSON.stringify(payload));
+    if (!silent) {
+      const flash = document.getElementById('autoSaveFlash');
+      if (flash) { flash.classList.add('show'); setTimeout(() => flash.classList.remove('show'), 1600); }
+    }
+  } catch(_) {}
+}
+
+function loadProfile() {
+  try {
+    const raw = localStorage.getItem(PROFILE_KEY);
+    if (!raw) return false;
+    const p = JSON.parse(raw);
+    state.gender = p.gender || '';
+    state.status = p.status || '';
+    state.kidsYoung = p.kidsYoung || 0;
+    state.kidsOld = p.kidsOld || 0;
+    state.edu = p.edu || 'none';
+    state.special = new Set(p.special || []);
+    state.cityPct = p.cityPct || 0;
+    state.cityName = p.cityName || '';
+    // Restore form fields
+    if (p.firstName) document.getElementById('firstName').value = p.firstName;
+    if (p.lastName) document.getElementById('lastName').value = p.lastName;
+    if (p.birthDate) document.getElementById('birthDate').value = p.birthDate;
+    if (p.gender) document.getElementById('gender').value = p.gender;
+    if (p.city) document.getElementById('city').value = p.city;
+    if (p.moveDate) document.getElementById('moveDate').value = p.moveDate;
+    if (p.workCity) document.getElementById('workCity').value = p.workCity;
+    if (p.eduEnd) document.getElementById('eduEnd').value = p.eduEnd;
+    if (p.eduField) document.getElementById('eduField').value = p.eduField;
+    if (p.donations) document.getElementById('donations').value = p.donations;
+    if (p.extraPension) document.getElementById('extraPension').value = p.extraPension;
+    if (p.expectedSalary) document.getElementById('expectedSalary').value = p.expectedSalary;
+    if (p.employerName) document.getElementById('employerName').value = p.employerName;
+    document.getElementById('val-kids-young').textContent = state.kidsYoung;
+    document.getElementById('val-kids-old').textContent = state.kidsOld;
+    // Restore visual selections
+    document.querySelectorAll('[data-status]').forEach(c => c.classList.toggle('selected', c.dataset.status === state.status));
+    document.querySelectorAll('[data-edu]').forEach(c => c.classList.toggle('selected', c.dataset.edu === state.edu));
+    document.querySelectorAll('[data-special]').forEach(c => {
+      const on = state.special.has(c.dataset.special);
+      c.classList.toggle('selected', on);
+      c.querySelector('.check').textContent = on ? '✓' : '+';
+    });
+    return true;
+  } catch(_) { return false; }
+}
+
+// Auto-save on every change (debounced)
+let saveTimer;
+function scheduleSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => saveProfile(false), 500);
+}
+
+// Hook auto-save into all interactions
+['change','input'].forEach(evt => {
+  document.addEventListener(evt, e => {
+    if (e.target.closest('#step-1, #step-2, #step-3, #step-4, #step-5')) scheduleSave();
+  });
+});
+
+document.getElementById('saveBtn').addEventListener('click', async (e) => {
+  const btn = e.currentTarget;
+  await Talush.withLoading(btn, 'שומר פרופיל...', async () => {
+    saveProfile(true);
+    await new Promise(r => setTimeout(r, 900));
+  }, 'פרופיל המס נשמר. מעבר ללוח הבקרה...');
+  setTimeout(() => { window.location.href = 'Dashboard.html'; }, 1000);
+});
+
+// Load on init
+loadProfile();
+
+document.getElementById('restartBtn').addEventListener('click', async () => {
+  if (await Talush.confirm('להתחיל מחדש?', 'כל הנתונים שמילאת ימחקו ולא ניתן לשחזר אותם.', 'מחק והתחל', 'ביטול')) {
+    location.reload();
+  }
+});
+
+// Initial calc
+calcAll();
+</script>
+</body>
+</html>

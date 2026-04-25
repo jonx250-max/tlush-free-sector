@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0a0a0a">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.svg">
+<link rel="manifest" href="manifest.json">
+<title>Admin · מסך אישור עדכוני חוקים</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700&family=Frank+Ruhl+Libre:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script>
+tailwind.config = { theme: { extend: {
+  fontFamily: { sans:['Assistant','sans-serif'], serif:['"Frank Ruhl Libre"','serif'], mono:['"JetBrains Mono"','monospace'] },
+  colors: { cream:'#FDFBF7', sand:'#F4F1EB', charcoal:'#0a0a0a', gold:'#B89B5E', gold2:'#9b8149', alarm:'#a83232', good:'#3d7a3d' }
+}}}
+</script>
+<style>
+  body { font-family:'Assistant',sans-serif; background:#FDFBF7; color:#0a0a0a; }
+  .mono { font-family:'JetBrains Mono',monospace; }
+  .pill { display:inline-flex; align-items:center; gap:6px; padding:4px 10px; font-size:10px; letter-spacing:.12em; text-transform:uppercase; font-weight:700; border:1px solid; border-radius:1px; }
+  .pill-pending { color:#a65d2e; border-color:rgba(166,93,46,.4); background:rgba(166,93,46,.05); }
+  .pill-retro { color:#a83232; border-color:rgba(168,50,50,.4); background:rgba(168,50,50,.06); }
+  .pill-auto { color:#3d7a3d; border-color:rgba(61,122,61,.3); background:rgba(61,122,61,.04); }
+  .pill-gold { color:#B89B5E; border-color:rgba(184,155,94,.4); background:rgba(184,155,94,.05); }
+  .conf-bar { height:6px; background:rgba(10,10,10,.06); border-radius:1px; overflow:hidden; }
+  .conf-fill { height:100%; transition:width .4s; }
+  .card { background:#fff; border:1px solid rgba(10,10,10,.08); }
+  .row:hover { background:#F4F1EB; }
+  details > summary { list-style:none; cursor:pointer; }
+  details > summary::-webkit-details-marker { display:none; }
+  .json-view { font-family:'JetBrains Mono',monospace; font-size:11px; line-height:1.7; background:#0a0a0a; color:#FDFBF7; padding:16px; border-radius:2px; overflow-x:auto; white-space:pre-wrap; word-break:break-word; }
+  .json-view .key { color:#B89B5E; }
+  .json-view .str { color:#88c0a4; }
+  .json-view .num { color:#e8c897; }
+  .json-view .bool { color:#d28b8b; }
+  .nav-tab { padding:14px 20px; border-bottom:2px solid transparent; color:rgba(10,10,10,.55); font-size:13px; font-weight:600; letter-spacing:.05em; transition:all .3s; cursor:pointer; }
+  .nav-tab:hover { color:#0a0a0a; }
+  .nav-tab.active { color:#B89B5E; border-bottom-color:#B89B5E; }
+  .badge-num { display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:22px; padding:0 7px; background:#0a0a0a; color:#FDFBF7; font-size:11px; font-weight:700; border-radius:11px; }
+  .quote { border-right:2px solid #B89B5E; padding:8px 14px; background:rgba(184,155,94,.05); font-style:italic; color:rgba(10,10,10,.75); }
+  .skip-link { position:absolute; top:-40px; right:0; background:#0a0a0a; color:#FDFBF7; padding:8px 16px; z-index:100; }
+  .skip-link:focus { top:0; }
+</style>
+<script src="security-guard.js" defer></script>
+<script src="audit-logger.js" defer></script>
+</head>
+<body>
+<a href="#main" class="skip-link">דלג לתוכן</a>
+
+<!-- Top bar -->
+<header class="bg-charcoal text-cream sticky top-0 z-40">
+  <div class="max-w-[1400px] mx-auto px-6 lg:px-10 h-14 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="text-[10px] tracking-[0.3em] text-gold">TALUSH · ADMIN</div>
+      <span class="text-cream/30">·</span>
+      <div class="text-sm">מסך אישור עדכוני חוקים</div>
+    </div>
+    <div class="flex items-center gap-5 text-[12px] text-cream/65">
+      <span class="mono" id="now-stamp">—</span>
+      <span class="hidden sm:inline">מנהל: <span class="text-gold">root@talush</span></span>
+      <a href="/audit" class="hover:text-gold">🛡️ Audit Trail</a>
+      <a href="/dashboard" class="hover:text-cream">חזרה לדשבורד →</a>
+    </div>
+  </div>
+</header>
+
+<main id="main" class="max-w-[1400px] mx-auto px-6 lg:px-10 py-8">
+
+  <!-- Title -->
+  <div class="mb-8">
+    <div class="text-[10px] tracking-[0.3em] text-gold mb-2">LAW UPDATE PIPELINE</div>
+    <h1 class="font-serif text-3xl lg:text-4xl mb-2">תור אישור שינויים</h1>
+    <p class="text-charcoal/60 text-sm leading-relaxed max-w-2xl">
+      כאן מופיעים שינויים שזוהו אוטומטית במקורות הרשמיים אך דורשים אישור אנושי לפני מיזוג. כל שינוי מוצג עם רמת ביטחון, ציטוט ישיר מהמקור, וה-patch המוצע לקובץ ה-JSON.
+    </p>
+  </div>
+
+  <!-- KPI Strip -->
+  <div class="grid grid-cols-2 lg:grid-cols-5 gap-px bg-charcoal/8 border border-charcoal/8 mb-8">
+    <div class="bg-white p-5">
+      <div class="text-[10px] tracking-[0.2em] text-charcoal/50 mb-2">ממתינים לאישור</div>
+      <div class="font-serif text-3xl"><span id="kpi-pending">—</span></div>
+    </div>
+    <div class="bg-white p-5">
+      <div class="text-[10px] tracking-[0.2em] text-charcoal/50 mb-2">רטרואקטיביים</div>
+      <div class="font-serif text-3xl text-alarm"><span id="kpi-retro">—</span></div>
+    </div>
+    <div class="bg-white p-5">
+      <div class="text-[10px] tracking-[0.2em] text-charcoal/50 mb-2">מוזגו אוטומטית (24ש)</div>
+      <div class="font-serif text-3xl text-good"><span id="kpi-auto">—</span></div>
+    </div>
+    <div class="bg-white p-5">
+      <div class="text-[10px] tracking-[0.2em] text-charcoal/50 mb-2">סך חוקים פעילים</div>
+      <div class="font-serif text-3xl"><span id="kpi-total">—</span></div>
+    </div>
+    <div class="bg-white p-5">
+      <div class="text-[10px] tracking-[0.2em] text-charcoal/50 mb-2">סריקה אחרונה</div>
+      <div class="font-serif text-lg mono" id="kpi-last">—</div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <nav class="flex border-b border-charcoal/8 mb-6 overflow-x-auto">
+    <button class="nav-tab active" data-tab="pending">ממתינים <span class="badge-num mr-1" id="tab-pending-count">0</span></button>
+    <button class="nav-tab" data-tab="approved">אושרו לאחרונה</button>
+    <button class="nav-tab" data-tab="rejected">נדחו</button>
+    <button class="nav-tab" data-tab="changelog">Changelog</button>
+    <button class="nav-tab" data-tab="abuse">🛡️ אבטחה</button>
+  </nav>
+
+  <!-- TAB: pending -->
+  <section id="tab-pending" class="tab-panel">
+    <div id="pending-list" class="space-y-4"></div>
+    <div id="pending-empty" class="hidden card p-10 text-center">
+      <i data-lucide="check-circle-2" class="w-10 h-10 text-good mx-auto mb-3"></i>
+      <div class="font-serif text-xl mb-1">אין שינויים ממתינים</div>
+      <div class="text-sm text-charcoal/60">המערכת תציג כאן כל שינוי שזוהה במקורות הרשמיים ודורש אישור.</div>
+    </div>
+  </section>
+
+  <!-- TAB: approved -->
+  <section id="tab-approved" class="tab-panel hidden">
+    <div id="approved-list" class="space-y-3"></div>
+  </section>
+
+  <!-- TAB: rejected -->
+  <section id="tab-rejected" class="tab-panel hidden">
+    <div id="rejected-list" class="space-y-3"></div>
+  </section>
+
+  <!-- TAB: changelog -->
+  <section id="tab-changelog" class="tab-panel hidden">
+    <div id="changelog-list" class="space-y-3"></div>
+  </section>
+
+  <!-- TAB: abuse / security -->
+  <section id="tab-abuse" class="tab-panel hidden">
+    <div class="card p-6 mb-4">
+      <div class="text-[10px] tracking-[0.3em] text-gold mb-2">GEO-BLOCKING + ANTI-ABUSE</div>
+      <h2 class="font-serif text-2xl mb-3">שכבת הגנה מפני שימוש לרעה</h2>
+      <p class="text-sm text-charcoal/70 leading-relaxed mb-4">
+        מערכת זו חוסמת גישה ממדינות שאינן ישראל ומונעת ניצול של בדיקות חינם דרך VPN, Tor, או יצירת חשבונות מרובים.
+      </p>
+
+      <div class="grid lg:grid-cols-2 gap-px bg-charcoal/8 border border-charcoal/8">
+        <div class="bg-white p-5">
+          <div class="text-[10px] tracking-[0.2em] text-charcoal/50 mb-2">חסימות גיאוגרפיות (24ש)</div>
+          <div class="font-serif text-3xl text-alarm" id="sec-geo">—</div>
+          <div class="text-[11px] text-charcoal/50 mt-1">IP מחוץ לישראל</div>
+        </div>
+        <div class="bg-white p-5">
+          <div class="text-[10px] tracking-[0.2em] text-charcoal/50 mb-2">VPN/Proxy זוהו (24ש)</div>
+          <div class="font-serif text-3xl text-alarm" id="sec-vpn">—</div>
+          <div class="text-[11px] text-charcoal/50 mt-1">datacenter ASN / Tor exit nodes</div>
+        </div>
+        <div class="bg-white p-5">
+          <div class="text-[10px] tracking-[0.2em] text-charcoal/50 mb-2">חשבונות זהים (fingerprint)</div>
+          <div class="font-serif text-3xl text-alarm" id="sec-dup">—</div>
+          <div class="text-[11px] text-charcoal/50 mt-1">device-id חוזר / multi-account</div>
+        </div>
+        <div class="bg-white p-5">
+          <div class="text-[10px] tracking-[0.2em] text-charcoal/50 mb-2">ניסיונות תלוש מזויף</div>
+          <div class="font-serif text-3xl text-alarm" id="sec-fake">—</div>
+          <div class="text-[11px] text-charcoal/50 mt-1">PDF ללא חתימה דיגיטלית / OCR-mismatch</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent blocked attempts -->
+    <div class="card p-6 mb-4">
+      <h3 class="font-serif text-lg mb-3">ניסיונות אחרונים שנחסמו</h3>
+      <div id="abuse-log" class="space-y-2 text-sm"></div>
+    </div>
+
+    <!-- Policy panel -->
+    <div class="card p-6">
+      <h3 class="font-serif text-lg mb-4">מדיניות אכיפה (קובץ <span class="mono text-gold">security/policy.json</span>)</h3>
+      <div class="grid lg:grid-cols-2 gap-4 text-sm">
+        <div>
+          <div class="text-[10px] tracking-[0.2em] text-charcoal/50 mb-2">חסימה גיאוגרפית</div>
+          <ul class="space-y-1.5 text-charcoal/75">
+            <li>✓ אישור: ישראל בלבד (IL)</li>
+            <li>✓ הודעה למשתמש מחוץ ל-IL: "השירות זמין רק לתושבי ישראל"</li>
+            <li>✓ Bypass רק עם invite-token (ייעוץ ישראלי בחו"ל)</li>
+          </ul>
+        </div>
+        <div>
+          <div class="text-[10px] tracking-[0.2em] text-charcoal/50 mb-2">VPN/Datacenter</div>
+          <ul class="space-y-1.5 text-charcoal/75">
+            <li>✓ ASN check מול MaxMind/IPQualityScore</li>
+            <li>✓ Tor exit nodes — חסימה מוחלטת</li>
+            <li>✓ Datacenter ASN — דרישת אימות SMS</li>
+          </ul>
+        </div>
+        <div>
+          <div class="text-[10px] tracking-[0.2em] text-charcoal/50 mb-2">Anti multi-account</div>
+          <ul class="space-y-1.5 text-charcoal/75">
+            <li>✓ Device fingerprint (FingerprintJS)</li>
+            <li>✓ הגבלה: בדיקה חינמית אחת לכל ת.ז.</li>
+            <li>✓ דרישת אימות SMS לחשבון שני מאותו fingerprint</li>
+          </ul>
+        </div>
+        <div>
+          <div class="text-[10px] tracking-[0.2em] text-charcoal/50 mb-2">Rate limiting</div>
+          <ul class="space-y-1.5 text-charcoal/75">
+            <li>✓ העלאת PDF: עד 3 לדקה לכל IP</li>
+            <li>✓ צ'אט בוט: עד 30 שאילתות לשעה</li>
+            <li>✓ חתימת PDF: עד 5 בדקה</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="border-t border-charcoal/8 mt-12 py-6 text-center text-xs text-charcoal/45">
+  Talush Admin · v1.0 · <span class="mono">talush-bot @ <span id="commit-hash">—</span></span>
+</footer>
+
+<!-- ============================================================ -->
+<!-- DATA + RENDER -->
+<!-- ============================================================ -->
+<script>
+// ─── MOCK DATA (replace with fetch('data/laws/_pending_review.json') in prod)
+const MOCK = {
+  pending: [
+    {
+      id: 'pending-min-wage-jul26',
+      detected_at: '2026-12-08T04:12:00Z',
+      candidate: {
+        url: 'https://www.gov.il/he',
+        title: 'עדכון שכר מינימום ביולי 2026',
+        source: 'labor_ministry',
+        fetched_at: '2026-12-08T04:11:33Z',
+        content_hash: 'a3f8b2c1d9e4'
+      },
+      change_type: 'minimum_wage_update',
+      affected_law_id: 'minimum-wage-2026',
+      confidence: 0.88,
+      is_retroactive: false,
+      retroactive_from: null,
+      needs_human_review: true,
+      review_reason: 'Confidence below auto-merge threshold (0.92)',
+      summary_he: 'משרד העבודה פרסם עדכון: שכר מינימום יעלה ל-6,400 ש"ח החל מ-1.7.2026. שכר שעה: 33.10 ש"ח.',
+      source_quote: 'החל מ-1 ביולי 2026 יעמוד שכר המינימום החודשי על 6,400 ש"ח, ושכר השעה — 33.10 ש"ח.',
+      suggested_patch: {
+        operation: 'update',
+        target_path: 'data/laws/labor/minimum-wage-2026.json',
+        json_patch: [
+          { op: 'replace', path: '/rules/value/monthly', value: 6400 },
+          { op: 'replace', path: '/rules/value/hourly', value: 33.10 },
+          { op: 'replace', path: '/effective_from', value: '2026-07-01' }
+        ]
+      }
+    },
+    {
+      id: 'pending-reservist-retro-2025',
+      detected_at: '2026-12-09T03:55:00Z',
+      candidate: {
+        url: 'https://www.gov.il/he',
+        title: 'תיקון רטרואקטיבי — נקודות זיכוי למילואים 2025',
+        source: 'rashut_hamisim',
+        fetched_at: '2026-12-09T03:54:18Z',
+        content_hash: 'b7e1f4a9c2d8'
+      },
+      change_type: 'retroactive_correction',
+      affected_law_id: 'credit-points-reservist-2026',
+      confidence: 0.94,
+      is_retroactive: true,
+      retroactive_from: '2025-01-01',
+      needs_human_review: true,
+      review_reason: 'Retroactive change — always requires human review',
+      summary_he: 'תיקון לחוק חיילי מילואים: 30+ ימי שירות → 2.5 נקודות (במקום 2). תקף מינואר 2025 — דרושה הערכה מחדש לכל המשתמשים שעמדו בקריטריון.',
+      source_quote: 'הוראת השעה מתוקנת: חייל מילואים שביצע 30 ימי שירות ויותר זכאי ל-2.5 נקודות זיכוי, רטרואקטיבית מ-1 בינואר 2025.',
+      suggested_patch: {
+        operation: 'update',
+        target_path: 'data/laws/reserves/credit-points-reservist.json',
+        json_patch: [
+          { op: 'replace', path: '/rules/value/tier_30_plus_days', value: 2.5 },
+          { op: 'replace', path: '/retroactive', value: true },
+          { op: 'replace', path: '/retroactive_from', value: '2025-01-01' }
+        ]
+      }
+    },
+    {
+      id: 'pending-credit-pt-value-2027',
+      detected_at: '2026-12-09T04:30:00Z',
+      candidate: {
+        url: 'https://www.kolzchut.org.il/he',
+        title: 'ערך נקודת זיכוי לשנת 2027',
+        source: 'rashut_hamisim',
+        fetched_at: '2026-12-09T04:29:50Z',
+        content_hash: 'c9d3e8b2a1f4'
+      },
+      change_type: 'credit_point_value_update',
+      affected_law_id: null,
+      confidence: 0.79,
+      is_retroactive: false,
+      retroactive_from: null,
+      needs_human_review: true,
+      review_reason: 'Affects multiple laws — needs targeting decision',
+      summary_he: 'רשות המסים פרסמה: ערך נקודת זיכוי ב-2027 יעמוד על 251 ש"ח (מ-242 ש"ח). השפעה על כל חוקי נקודות הזיכוי במאגר.',
+      source_quote: 'בהתאם לעדכון המדד, ערך נקודת הזיכוי לשנת 2027 הוא 251 ש"ח לחודש.',
+      suggested_patch: {
+        operation: 'update',
+        target_path: null,
+        json_patch: null
+      }
+    }
+  ],
+  recently_approved: [
+    {
+      id: 'approved-overtime-clarification',
+      approved_at: '2026-12-07T09:15:00Z',
+      summary_he: 'הבהרה לשעות נוספות בשבת — אין שינוי בנוסחה.',
+      affected_law_id: 'overtime-rates-2026',
+      change_type: 'clarification',
+      confidence: 0.91,
+      reviewer: 'root@talush'
+    }
+  ],
+  recently_rejected: [
+    {
+      id: 'rejected-fake-news-2026-12-05',
+      rejected_at: '2026-12-05T11:40:00Z',
+      summary_he: 'ידיעה לא רשמית מאתר חדשות על "נקודת זיכוי לבעלי כלבים" — לא קיים בחקיקה.',
+      reason: 'No primary source. Likely satirical/fake news.',
+      reviewer: 'root@talush'
+    }
+  ]
+};
+
+const CHANGELOG_MOCK = [
+  { timestamp: '2026-12-09T04:00:00Z', type: 'auto_merge', summary: '0 laws auto-merged · 3 sent to review', author: 'talush-bot' },
+  { timestamp: '2026-12-08T04:00:00Z', type: 'auto_merge', summary: '1 law auto-merged · pension cap update', author: 'talush-bot' },
+  { timestamp: '2026-12-07T09:15:00Z', type: 'manual_merge', summary: 'overtime clarification approved', author: 'root@talush' },
+  { timestamp: '2026-12-01T06:00:00Z', type: 'initial_seed', summary: '10 critical laws seeded', author: 'system' }
+];
+
+const ABUSE_LOG_MOCK = [
+  { time: '2026-12-09T05:48:00Z', type: 'GEO_BLOCK', country: 'US', ip: '203.0.113.42', action: 'blocked', reason: 'IP outside Israel' },
+  { time: '2026-12-09T05:30:00Z', type: 'VPN_DETECTED', country: 'NL', ip: '198.51.100.7', action: 'sms_required', reason: 'NordVPN datacenter ASN' },
+  { time: '2026-12-09T04:55:00Z', type: 'MULTI_ACCOUNT', country: 'IL', ip: '82.166.x.x', action: 'sms_required', reason: 'Same fingerprint, 3rd account' },
+  { time: '2026-12-09T03:20:00Z', type: 'TOR_EXIT', country: 'DE', ip: '185.220.x.x', action: 'blocked', reason: 'Known Tor exit node' },
+  { time: '2026-12-08T22:10:00Z', type: 'FAKE_PAYSLIP', country: 'IL', ip: '82.166.x.x', action: 'blocked', reason: 'PDF lacks digital signature + OCR mismatch' }
+];
+
+const SECURITY_KPIS = { geo: 47, vpn: 12, dup: 8, fake: 3 };
+
+// ─── UTILITIES ───
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => [...r.querySelectorAll(s)];
+const fmtTime = (iso) => {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleString('he-IL', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+};
+const fmtDate = (iso) => new Date(iso).toLocaleDateString('he-IL');
+const escapeHtml = (s) => String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+
+function syntaxHighlight(json) {
+  return escapeHtml(JSON.stringify(json, null, 2))
+    .replace(/(&quot;[^&]*?&quot;)(:)/g, '<span class="key">$1</span>$2')
+    .replace(/: (&quot;[^&]*?&quot;)/g, ': <span class="str">$1</span>')
+    .replace(/: (-?\d+\.?\d*)/g, ': <span class="num">$1</span>')
+    .replace(/: (true|false|null)/g, ': <span class="bool">$1</span>');
+}
+
+function confColor(c) {
+  if (c >= 0.92) return '#3d7a3d';
+  if (c >= 0.85) return '#B89B5E';
+  return '#a65d2e';
+}
+
+// ─── RENDER PENDING ───
+function renderPending() {
+  const list = $('#pending-list');
+  const empty = $('#pending-empty');
+  list.innerHTML = '';
+
+  if (!MOCK.pending.length) { empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+
+  MOCK.pending.forEach(item => {
+    const retroBadge = item.is_retroactive ? '<span class="pill pill-retro"><i data-lucide="alert-triangle" class="w-3 h-3"></i>רטרואקטיבי</span>' : '';
+    const confPct = Math.round(item.confidence * 100);
+    const card = document.createElement('article');
+    card.className = 'card p-5 lg:p-6';
+    card.innerHTML = `
+      <div class="flex flex-col lg:flex-row lg:items-start gap-4 mb-4">
+        <div class="flex-1">
+          <div class="flex flex-wrap items-center gap-2 mb-2">
+            <span class="pill pill-pending">ממתין</span>
+            ${retroBadge}
+            <span class="pill pill-gold">${escapeHtml(item.change_type)}</span>
+            <span class="text-[11px] text-charcoal/45 mono">${item.id}</span>
+          </div>
+          <h3 class="font-serif text-xl mb-1">${escapeHtml(item.candidate.title)}</h3>
+          <div class="text-[12px] text-charcoal/55 flex flex-wrap gap-3 mb-3">
+            <span><i data-lucide="globe" class="w-3 h-3 inline"></i> ${escapeHtml(item.candidate.source)}</span>
+            <span><i data-lucide="clock" class="w-3 h-3 inline"></i> ${fmtTime(item.detected_at)}</span>
+            ${item.affected_law_id ? `<span><i data-lucide="link-2" class="w-3 h-3 inline"></i> <span class="mono text-gold">${escapeHtml(item.affected_law_id)}</span></span>` : '<span class="text-alarm">⚠ לא משויך לחוק קיים</span>'}
+          </div>
+          <p class="text-sm text-charcoal/85 leading-relaxed mb-3">${escapeHtml(item.summary_he)}</p>
+          <div class="quote text-sm mb-3">"${escapeHtml(item.source_quote)}"</div>
+        </div>
+        <div class="lg:w-44 flex-shrink-0">
+          <div class="text-[10px] tracking-[0.15em] text-charcoal/50 mb-2">ביטחון AI</div>
+          <div class="font-serif text-2xl mb-1" style="color:${confColor(item.confidence)}">${confPct}%</div>
+          <div class="conf-bar"><div class="conf-fill" style="width:${confPct}%; background:${confColor(item.confidence)}"></div></div>
+          <div class="text-[11px] text-charcoal/50 mt-2 leading-snug">${escapeHtml(item.review_reason)}</div>
+        </div>
+      </div>
+
+      <details class="mb-4">
+        <summary class="text-[12px] text-gold hover:text-gold2 inline-flex items-center gap-1.5 mb-2">
+          <i data-lucide="code-2" class="w-3.5 h-3.5"></i>
+          הצג patch מוצע (${item.suggested_patch.json_patch?.length || 0} שינויים)
+        </summary>
+        <div class="json-view mt-2">${item.suggested_patch.target_path ? syntaxHighlight(item.suggested_patch) : '<span class="text-alarm">⚠ אין יעד אוטומטי — דורש החלטה ידנית</span>'}</div>
+      </details>
+
+      <div class="flex flex-col sm:flex-row gap-2 pt-4 border-t border-charcoal/8">
+        <button onclick="approve('${item.id}')" class="flex-1 px-4 py-2.5 bg-charcoal text-cream text-sm font-semibold hover:bg-gold transition flex items-center justify-center gap-2">
+          <i data-lucide="check" class="w-4 h-4"></i> אשר ומזג
+        </button>
+        <button onclick="reject('${item.id}')" class="flex-1 sm:flex-none px-4 py-2.5 border border-charcoal/15 text-sm hover:bg-charcoal/5 transition flex items-center justify-center gap-2">
+          <i data-lucide="x" class="w-4 h-4"></i> דחה
+        </button>
+        <a href="${escapeHtml(item.candidate.url)}" target="_blank" rel="noopener" class="flex-1 sm:flex-none px-4 py-2.5 border border-charcoal/15 text-sm hover:bg-charcoal/5 transition flex items-center justify-center gap-2">
+          <i data-lucide="external-link" class="w-4 h-4"></i> פתח מקור
+        </a>
+        <button onclick="openSnapshot('${item.candidate.content_hash}')" class="flex-1 sm:flex-none px-4 py-2.5 border border-charcoal/15 text-sm hover:bg-charcoal/5 transition flex items-center justify-center gap-2">
+          <i data-lucide="file-text" class="w-4 h-4"></i> snapshot
+        </button>
+      </div>
+    `;
+    list.appendChild(card);
+  });
+}
+
+function renderApproved() {
+  $('#approved-list').innerHTML = MOCK.recently_approved.map(item => `
+    <div class="card p-4 flex flex-col lg:flex-row lg:items-center gap-3">
+      <span class="pill pill-auto">אושר</span>
+      <div class="flex-1">
+        <div class="text-sm font-semibold">${escapeHtml(item.summary_he)}</div>
+        <div class="text-[11px] text-charcoal/50 mono mt-1">${escapeHtml(item.affected_law_id || '—')} · ${fmtTime(item.approved_at)} · על ידי ${escapeHtml(item.reviewer)}</div>
+      </div>
+      <span class="text-xs text-good">${Math.round(item.confidence*100)}%</span>
+    </div>
+  `).join('') || '<div class="text-center text-charcoal/45 py-10">אין אישורים אחרונים</div>';
+}
+
+function renderRejected() {
+  $('#rejected-list').innerHTML = MOCK.recently_rejected.map(item => `
+    <div class="card p-4">
+      <div class="flex items-center gap-2 mb-1.5">
+        <span class="pill" style="color:#a83232; border-color:rgba(168,50,50,.4); background:rgba(168,50,50,.05)">נדחה</span>
+        <span class="text-[11px] text-charcoal/50 mono">${fmtTime(item.rejected_at)}</span>
+      </div>
+      <div class="text-sm font-semibold mb-1">${escapeHtml(item.summary_he)}</div>
+      <div class="text-[12px] text-charcoal/60">סיבת דחייה: ${escapeHtml(item.reason)} · על ידי ${escapeHtml(item.reviewer)}</div>
+    </div>
+  `).join('') || '<div class="text-center text-charcoal/45 py-10">אין דחיות אחרונות</div>';
+}
+
+function renderChangelog() {
+  $('#changelog-list').innerHTML = CHANGELOG_MOCK.map(e => `
+    <div class="card p-4 flex items-start gap-4">
+      <div class="text-[11px] text-charcoal/50 mono flex-shrink-0 w-32">${fmtTime(e.timestamp)}</div>
+      <div class="flex-1">
+        <div class="flex items-center gap-2 mb-1">
+          <span class="pill ${e.type==='auto_merge'?'pill-auto':e.type==='manual_merge'?'pill-gold':'pill-pending'}">${escapeHtml(e.type)}</span>
+        </div>
+        <div class="text-sm">${escapeHtml(e.summary)}</div>
+        <div class="text-[11px] text-charcoal/45 mt-1">${escapeHtml(e.author)}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderAbuse() {
+  $('#sec-geo').textContent = SECURITY_KPIS.geo;
+  $('#sec-vpn').textContent = SECURITY_KPIS.vpn;
+  $('#sec-dup').textContent = SECURITY_KPIS.dup;
+  $('#sec-fake').textContent = SECURITY_KPIS.fake;
+
+  const typeColors = {
+    GEO_BLOCK: 'pill-retro',
+    VPN_DETECTED: 'pill-pending',
+    TOR_EXIT: 'pill-retro',
+    MULTI_ACCOUNT: 'pill-pending',
+    FAKE_PAYSLIP: 'pill-retro'
+  };
+  $('#abuse-log').innerHTML = ABUSE_LOG_MOCK.map(e => `
+    <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 p-3 border border-charcoal/8 row">
+      <span class="text-[11px] mono text-charcoal/50 w-24 flex-shrink-0">${fmtTime(e.time)}</span>
+      <span class="pill ${typeColors[e.type] || 'pill-pending'}">${e.type}</span>
+      <span class="mono text-[12px]">${escapeHtml(e.country)} · ${escapeHtml(e.ip)}</span>
+      <span class="text-[12px] text-charcoal/65 flex-1">${escapeHtml(e.reason)}</span>
+      <span class="text-[11px] font-bold ${e.action==='blocked'?'text-alarm':'text-gold'}">${e.action==='blocked'?'נחסם':'דרש SMS'}</span>
+    </div>
+  `).join('');
+}
+
+// ─── ACTIONS ───
+function approve(id) {
+  const item = MOCK.pending.find(p => p.id === id);
+  if (!item) return;
+  if (!confirm(`לאשר ולמזג: "${item.summary_he}"?\n\nפעולה זו תפעיל patch על קובץ JSON ותגרום ל-commit ב-Git.`)) return;
+  // In production: POST /api/admin/approve {id}
+  MOCK.pending = MOCK.pending.filter(p => p.id !== id);
+  MOCK.recently_approved.unshift({
+    id: id.replace('pending-', 'approved-'),
+    approved_at: new Date().toISOString(),
+    summary_he: item.summary_he,
+    affected_law_id: item.affected_law_id,
+    change_type: item.change_type,
+    confidence: item.confidence,
+    reviewer: 'root@talush'
+  });
+  refreshAll();
+  toast(`✓ אושר ומוזג: ${item.affected_law_id || 'חוק חדש'}`);
+}
+
+function reject(id) {
+  const reason = prompt('סיבת הדחייה (לתיעוד):');
+  if (!reason) return;
+  const item = MOCK.pending.find(p => p.id === id);
+  if (!item) return;
+  MOCK.pending = MOCK.pending.filter(p => p.id !== id);
+  MOCK.recently_rejected.unshift({
+    id: id.replace('pending-', 'rejected-'),
+    rejected_at: new Date().toISOString(),
+    summary_he: item.summary_he,
+    reason,
+    reviewer: 'root@talush'
+  });
+  refreshAll();
+  toast(`✗ נדחה: ${item.summary_he.slice(0, 50)}...`);
+}
+
+function openSnapshot(hash) {
+  alert(`Snapshot: ${hash}\n(בייצור: יפתח את ה-HTML המקורי שנשמר ב-scrapes/raw/)`);
+}
+
+function toast(msg) {
+  const t = document.createElement('div');
+  t.className = 'fixed bottom-6 right-6 bg-charcoal text-cream px-5 py-3 text-sm shadow-2xl z-50 animate-pulse';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+// ─── KPIs + REFRESH ───
+function refreshKPIs() {
+  $('#kpi-pending').textContent = MOCK.pending.length;
+  $('#kpi-retro').textContent = MOCK.pending.filter(p => p.is_retroactive).length;
+  $('#kpi-auto').textContent = '1';  // from changelog
+  $('#kpi-total').textContent = '10';
+  $('#kpi-last').textContent = fmtTime('2026-12-09T04:00:00Z');
+  $('#tab-pending-count').textContent = MOCK.pending.length;
+  $('#commit-hash').textContent = 'a3f8b2c';
+  $('#now-stamp').textContent = new Date().toLocaleString('he-IL', { hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit' });
+}
+
+function refreshAll() {
+  refreshKPIs();
+  renderPending();
+  renderApproved();
+  renderRejected();
+  renderChangelog();
+  renderAbuse();
+  if (window.lucide) lucide.createIcons();
+}
+
+// ─── TABS ───
+$$('.nav-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    $$('.nav-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    $$('.tab-panel').forEach(p => p.classList.add('hidden'));
+    $('#tab-' + tab.dataset.tab).classList.remove('hidden');
+    if (window.lucide) lucide.createIcons();
+  });
+});
+
+// ─── INIT ───
+refreshAll();
+setInterval(() => $('#now-stamp').textContent = new Date().toLocaleString('he-IL', { hour:'2-digit', minute:'2-digit', day:'2-digit', month:'2-digit' }), 60000);
+</script>
+</body>
+</html>

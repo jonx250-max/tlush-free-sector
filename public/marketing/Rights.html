@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>מרכז זכאויות · בדיקת תלוש שכר</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700&family=Frank+Ruhl+Libre:wght@300;400;700;900&display=swap" rel="stylesheet">
+<script>
+tailwind.config = {
+  theme: { extend: {
+    fontFamily: { sans: ['Assistant','sans-serif'], serif: ['"Frank Ruhl Libre"','serif'], mono: ['ui-monospace','monospace'] },
+    colors: { cream:'#FDFBF7', sand:'#F4F1EB', charcoal:'#0a0a0a', gold:'#B89B5E', gold2:'#9b8149' }
+  }}
+}
+</script>
+<style>
+  body { font-family:'Assistant',sans-serif; background:#FDFBF7; color:#0a0a0a; }
+  .head-bar { background:#0a0a0a; color:#FDFBF7; }
+  .gold-line { height:1px; background:linear-gradient(to right, transparent, rgba(184,155,94,0.5), transparent); }
+
+  /* Card */
+  .right-card {
+    background:#fff;
+    border:1px solid rgba(10,10,10,0.08);
+    padding:32px;
+    transition: all .3s;
+    position:relative;
+  }
+  .right-card.eligible { border-right:3px solid #B89B5E; background:#fff; }
+  .right-card.eligible:hover { box-shadow: 0 8px 32px rgba(184,155,94,0.15); transform: translateY(-2px); }
+  .right-card.maybe { border-right:3px solid #B89B5E; opacity:0.95; }
+  .right-card.maybe:hover { opacity:1; }
+  .right-card.not { opacity:0.45; border-right:3px solid rgba(10,10,10,0.1); }
+  .right-card.not:hover { opacity:0.7; }
+
+  .badge {
+    position:absolute;
+    top:24px; left:24px;
+    font-family: ui-monospace, monospace;
+    font-size:9px;
+    letter-spacing:0.2em;
+    text-transform:uppercase;
+    padding:4px 10px;
+    background:#0a0a0a;
+    color:#B89B5E;
+  }
+  .badge.eligible { background:#B89B5E; color:#0a0a0a; }
+  .badge.maybe { background:#fff; color:#0a0a0a; border:1px solid rgba(10,10,10,0.2); }
+  .badge.not { background:#f4f1eb; color:rgba(10,10,10,0.4); }
+
+  /* Filter chips */
+  .filter-chip {
+    padding: 8px 16px;
+    background: transparent;
+    border: 1px solid rgba(10,10,10,0.15);
+    cursor: pointer;
+    font-size: 13px;
+    transition: all .2s;
+    font-family: ui-monospace, monospace;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    font-size: 11px;
+    color: rgba(10,10,10,0.6);
+  }
+  .filter-chip:hover { border-color:#B89B5E; color:#0a0a0a; }
+  .filter-chip.active { background:#0a0a0a; color:#B89B5E; border-color:#0a0a0a; }
+
+  .reveal { opacity:0; transform: translateY(8px); animation: rev .6s forwards; }
+  @keyframes rev { to { opacity:1; transform:none; } }
+
+  /* Hero meter */
+  .meter-bar { height:3px; background:rgba(255,255,255,0.08); position:relative; overflow:hidden; }
+  .meter-fill { height:100%; background:#B89B5E; transition: width 1.2s cubic-bezier(.4,0,.2,1); }
+
+  .stat-num { font-family: 'Frank Ruhl Libre', serif; font-weight:900; line-height:0.9; }
+
+  /* Profile bar */
+  .profile-bar {
+    background:#0a0a0a;
+    color:#FDFBF7;
+    padding:18px 28px;
+    border-right:3px solid #B89B5E;
+    display:flex;
+    align-items:center;
+    gap:20px;
+  }
+
+  /* Detail expand */
+  .right-detail { display:none; padding-top:24px; margin-top:24px; border-top:1px solid rgba(10,10,10,0.08); }
+  .right-card.expanded .right-detail { display:block; }
+  .right-card.expanded .expand-icon { transform: rotate(180deg); }
+  .expand-icon { transition: transform .3s; }
+
+  /* Tag */
+  .tag {
+    display: inline-block;
+    font-family: ui-monospace, monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    background: #f4f1eb;
+    color: rgba(10,10,10,0.55);
+    margin-left: 6px;
+  }
+
+  /* Action button */
+  .action-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: #0a0a0a;
+    color: #B89B5E;
+    font-family: ui-monospace, monospace;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: all .2s;
+  }
+  .action-link:hover { background: #B89B5E; color: #0a0a0a; }
+  .action-link.outline { background: transparent; color: #0a0a0a; border:1px solid rgba(10,10,10,0.2); }
+  .action-link.outline:hover { background: #0a0a0a; color:#B89B5E; border-color:#0a0a0a; }
+
+  /* Hero gold underline */
+  .gold-mark { background: linear-gradient(transparent 65%, rgba(184,155,94,0.35) 65%); }
+
+  .noise-overlay { position:fixed; inset:0; pointer-events:none; opacity:0.025; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); z-index:1; }
+</style>
+<!-- Meta -->
+<meta name="theme-color" content="#0a0a0a">
+<meta name="description" content="29 בדיקות אוטומטיות לתלוש השכר שלכם במגזר הפרטי — חישוב נטו רב-שנתי, השוואה לחוזה, מרכז זכאויות. מקומי, פרטי, מאובטח.">
+<meta name="format-detection" content="telephone=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+
+<!-- Open Graph / Social -->
+<meta property="og:type" content="website">
+<meta property="og:locale" content="he_IL">
+<meta property="og:site_name" content="תלוש">
+<meta property="og:title" content="תלוש · בדיקת תלוש שכר במגזר הפרטי">
+<meta property="og:description" content="29 בדיקות אוטומטיות לתלוש השכר שלכם — מקומי, פרטי, ללא שמירת נתונים בשרת.">
+<meta property="og:image" content="icon-512.svg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="תלוש · בדיקת תלוש שכר במגזר הפרטי">
+<meta name="twitter:description" content="29 בדיקות אוטומטיות לתלוש השכר שלכם.">
+<meta name="twitter:image" content="icon-512.svg">
+
+<!-- Icons -->
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="apple-touch-icon.svg">
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="talush-a11y.css">
+<script src="talush-ui.js" defer></script>
+<script src="talush-error-boundary.js?v=1777126914727"></script>
+<script src="security-guard.js" defer></script>
+<script src="audit-logger.js" defer></script>
+</head>
+<body class="antialiased" data-screen-label="Rights Center">
+<a href="#main-content" class="skip-link" style="position:absolute;top:-40px;right:0;background:#B89B5E;color:#0a0a0a;padding:10px 20px;z-index:99999;text-decoration:none;font-weight:600;font-size:13px;letter-spacing:0.15em;text-transform:uppercase;transition:top .2s;" onfocus="this.style.top='0'" onblur="this.style.top='-40px'">דלג לתוכן הראשי</a>
+<div class="noise-overlay"></div>
+
+<!-- Header -->
+<header class="head-bar">
+  <div class="max-w-[1280px] mx-auto px-5 md:px-8 py-4 flex items-center justify-between">
+    <a href="/dashboard" class="flex items-center gap-3 text-white/60 hover:text-gold transition text-sm">
+      <i data-lucide="arrow-right" class="w-4 h-4"></i>
+      <span class="font-mono tracking-widest text-[11px] uppercase">חזרה לדשבורד</span>
+    </a>
+    <div class="flex items-center gap-2">
+      <span class="text-gold font-mono text-xs tracking-[0.3em] uppercase">תלוש</span>
+      <span class="text-white/40">·</span>
+      <span class="text-white text-xs font-mono tracking-widest uppercase">מרכז זכאויות</span>
+    </div>
+  </div>
+</header>
+
+<!-- Hero -->
+<section class="head-bar relative overflow-hidden">
+  <div class="absolute inset-0 opacity-30">
+    <svg class="absolute -right-20 -top-20 w-[500px] h-[500px]" viewBox="0 0 200 200">
+      <circle cx="100" cy="100" r="80" fill="none" stroke="#B89B5E" stroke-width="0.3"/>
+      <circle cx="100" cy="100" r="60" fill="none" stroke="#B89B5E" stroke-width="0.3"/>
+      <circle cx="100" cy="100" r="40" fill="none" stroke="#B89B5E" stroke-width="0.3"/>
+    </svg>
+  </div>
+  <div class="max-w-[1280px] mx-auto px-5 md:px-8 py-16 relative">
+    <div class="text-[11px] tracking-[0.3em] uppercase text-gold font-mono mb-5">▸ זכאויות מותאמות</div>
+    <h1 class="font-serif font-black leading-[0.95] tracking-tight mb-5 text-white" style="font-size: clamp(2.4rem, 5.5vw, 4.2rem);">
+      כל הזכאויות<br/>
+      ש<span class="gold-mark">מגיעות לך</span>.
+    </h1>
+    <p class="text-white/70 text-lg max-w-2xl mb-10 leading-relaxed">
+      18 זכאויות מס, ביטוח לאומי וזכויות עובדים — מסוננות אוטומטית לפי הפרופיל שלך. כל זכאות מקושרת ישירות למקור הרשמי.
+    </p>
+
+    <!-- Eligibility meter -->
+    <div class="border-t border-white/10 pt-8 max-w-3xl">
+      <div class="flex items-baseline justify-between mb-3">
+        <div class="text-[10px] tracking-[0.3em] uppercase text-gold font-mono">▸ סיכום הזכאויות שלך</div>
+        <div id="meterText" class="text-white/55 text-xs font-mono"></div>
+      </div>
+      <div class="meter-bar">
+        <div class="meter-fill" id="meterFill" style="width:0%"></div>
+      </div>
+      <div class="grid grid-cols-3 gap-8 mt-8">
+        <div>
+          <div class="stat-num text-gold" id="statEligible" style="font-size:clamp(2.2rem,4vw,3.2rem);">0</div>
+          <div class="text-[10px] tracking-[0.25em] uppercase text-white/50 font-mono mt-2">זכאי בוודאות</div>
+        </div>
+        <div>
+          <div class="stat-num text-white" id="statMaybe" style="font-size:clamp(2.2rem,4vw,3.2rem);">0</div>
+          <div class="text-[10px] tracking-[0.25em] uppercase text-white/50 font-mono mt-2">לבדוק</div>
+        </div>
+        <div>
+          <div class="stat-num text-white/30" id="statTotal" style="font-size:clamp(2.2rem,4vw,3.2rem);">18</div>
+          <div class="text-[10px] tracking-[0.25em] uppercase text-white/50 font-mono mt-2">סה״כ במאגר</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="gold-line"></div>
+
+<!-- Profile bar -->
+<div class="max-w-[1280px] mx-auto px-5 md:px-8 mt-10">
+  <div id="profileBar" class="profile-bar reveal hidden">
+    <i data-lucide="user-check" class="w-5 h-5 text-gold shrink-0"></i>
+    <div class="flex-1 text-sm">
+      <span class="text-white/50 font-mono text-[10px] tracking-widest uppercase block mb-1">פרופיל פעיל</span>
+      <span id="profileSummary" class="text-white"></span>
+    </div>
+    <a href="/tax-profile" class="text-[10px] tracking-widest uppercase text-gold hover:text-white whitespace-nowrap font-mono">עדכן פרופיל →</a>
+  </div>
+
+  <div id="noProfileBar" class="hidden border border-charcoal/15 bg-sand p-6 reveal">
+    <div class="flex items-start gap-4">
+      <i data-lucide="info" class="w-5 h-5 text-gold shrink-0 mt-1"></i>
+      <div class="flex-1">
+        <h3 class="font-serif text-lg font-black mb-1">אין פרופיל מס פעיל</h3>
+        <p class="text-charcoal/65 text-sm mb-3">מילוי הפרופיל יסנן את הזכאויות הרלוונטיות אליך. בלעדיו תראה את כל המאגר ללא התאמה אישית.</p>
+        <a href="/tax-profile" class="action-link">
+          <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
+          מלא פרופיל מס
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Filters -->
+<section class="max-w-[1280px] mx-auto px-5 md:px-8 mt-12">
+  <div class="flex flex-wrap items-center gap-3 mb-2">
+    <span class="text-[10px] tracking-[0.3em] uppercase text-charcoal/50 font-mono ml-2">סנן:</span>
+    <button class="filter-chip active" data-filter="all">כל הזכאויות</button>
+    <button class="filter-chip" data-filter="eligible">זכאי בוודאות</button>
+    <button class="filter-chip" data-filter="maybe">לבדוק</button>
+    <span class="w-px h-5 bg-charcoal/15 mx-2"></span>
+    <button class="filter-chip" data-filter="tax">מס הכנסה</button>
+    <button class="filter-chip" data-filter="ni">ביטוח לאומי</button>
+    <button class="filter-chip" data-filter="employment">זכויות עובד</button>
+    <button class="filter-chip" data-filter="family">משפחה</button>
+  </div>
+</section>
+
+<!-- Rights grid -->
+<main class="max-w-[1280px] mx-auto px-5 md:px-8 py-10">
+  <div id="rightsGrid" class="grid lg:grid-cols-2 gap-6"></div>
+  <div id="emptyState" class="hidden text-center py-20">
+    <i data-lucide="inbox" class="w-12 h-12 text-charcoal/25 mx-auto mb-4"></i>
+    <p class="text-charcoal/50 font-mono text-sm tracking-widest uppercase">לא נמצאו זכאויות בסינון זה</p>
+  </div>
+</main>
+
+<!-- Disclaimer -->
+<section class="max-w-[1280px] mx-auto px-5 md:px-8 pb-20">
+  <div class="bg-sand p-8 border-r-2 border-gold">
+    <div class="flex items-start gap-4">
+      <i data-lucide="alert-triangle" class="w-5 h-5 text-gold shrink-0 mt-1"></i>
+      <div class="text-sm text-charcoal/70 leading-relaxed">
+        <strong class="text-charcoal block mb-1 font-serif text-base">חשוב לדעת</strong>
+        מרכז הזכאויות הוא מדריך אינפורמטיבי בלבד. הזכאות בפועל נקבעת ע״י הרשות המוסמכת (רשות המיסים, ביטוח לאומי, מעסיק) על בסיס המסמכים שתגיש.
+        אנו לא מגישים בקשות בשמך, לא מייצגים אותך מול רשויות, ולא נושאים באחריות לדחיית בקשה.
+        <a href="/legal#disclaimer" class="text-gold hover:underline mr-1">פרטים בכתב הוויתור המשפטי</a>.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="head-bar mt-auto">
+  <div class="max-w-[1280px] mx-auto px-5 md:px-8 py-10 grid md:grid-cols-3 gap-8 text-sm">
+    <div>
+      <div class="text-gold font-mono text-[10px] tracking-[0.3em] uppercase mb-3">▸ ניווט</div>
+      <div class="space-y-2 text-white/65">
+        <a href="/dashboard" class="block hover:text-gold transition">דשבורד</a>
+        <a href="/tax-profile" class="block hover:text-gold transition">פרופיל מס</a>
+        <a href="/calculator" class="block hover:text-gold transition">מחשבון ברוטו↔נטו</a>
+        <a href="/rights" class="block hover:text-gold transition">מרכז זכאויות</a>
+      </div>
+    </div>
+    <div>
+      <div class="text-gold font-mono text-[10px] tracking-[0.3em] uppercase mb-3">▸ משפטי</div>
+      <div class="space-y-2 text-white/65">
+        <a href="/legal#terms" class="block hover:text-gold transition">תנאי שימוש</a>
+        <a href="/legal#privacy" class="block hover:text-gold transition">פרטיות</a>
+        <a href="/legal#disclaimer" class="block hover:text-gold transition">ויתור משפטי</a>
+      </div>
+    </div>
+    <div>
+      <div class="text-gold font-mono text-[10px] tracking-[0.3em] uppercase mb-3">▸ מקורות</div>
+      <div class="space-y-2 text-white/65">
+        <a href="https://www.kolzchut.org.il/" target="_blank" rel="noopener" class="block hover:text-gold transition">כל-זכות.org.il</a>
+        <a href="https://www.gov.il/he/departments/israel_tax_authority" target="_blank" rel="noopener" class="block hover:text-gold transition">רשות המיסים</a>
+        <a href="https://www.btl.gov.il/" target="_blank" rel="noopener" class="block hover:text-gold transition">ביטוח לאומי</a>
+      </div>
+    </div>
+  </div>
+  <div class="border-t border-white/10">
+    <div class="max-w-[1280px] mx-auto px-5 md:px-8 py-5 text-white/40 text-xs font-mono tracking-wider">© תלוש · בדיקת תלוש שכר</div>
+  </div>
+</footer>
+
+<script>
+lucide.createIcons();
+
+// Load profile
+let profile = null;
+try {
+  const raw = localStorage.getItem('taxProfile_v1');
+  if (raw) profile = JSON.parse(raw);
+} catch(_) {}
+
+// ============ RIGHTS DATABASE ============
+// Each right has: id, title, category (tax/ni/employment/family), description,
+// eligibility (function returning 'eligible' | 'maybe' | 'not'),
+// estimatedValue (text), deadline (text), source (URL), howTo (text)
+
+const RIGHTS = [
+  // ============ TAX (מס הכנסה) ============
+  {
+    id: 'r-points-base',
+    title: 'נקודות זיכוי בסיסיות',
+    category: 'tax',
+    badge: 'מס הכנסה',
+    description: 'כל תושב ישראל זכאי ל-2.25 נקודות זיכוי כברירת מחדל. אישה מקבלת חצי נקודה נוספת אוטומטית.',
+    estimatedValue: '₪6,534-7,260 לשנה',
+    eligibility: () => 'eligible',
+    howTo: 'מתקבל אוטומטית בתלוש דרך טופס 101 שמולאים אצל המעסיק.',
+    source: 'https://www.kolzchut.org.il/he/נקודות_זיכוי_ממס_הכנסה',
+    sourceLabel: 'כל-זכות',
+  },
+  {
+    id: 'r-points-children',
+    title: 'נקודות זיכוי על ילדים',
+    category: 'tax',
+    badge: 'מס הכנסה',
+    description: 'הורה לילדים מקבל נקודה אחת לכל ילד עד גיל 5, וחצי נקודה לילדים בגילאי 6-17. הורה יחיד מקבל תוספת.',
+    estimatedValue: '₪2,904 לשנה לכל נקודה',
+    eligibility: () => {
+      if (!profile) return 'maybe';
+      const hasKids = (profile.kidsYoung || 0) + (profile.kidsOld || 0) > 0;
+      return hasKids ? 'eligible' : 'not';
+    },
+    eligibilityNote: () => {
+      if (!profile) return null;
+      const young = profile.kidsYoung || 0;
+      const old = profile.kidsOld || 0;
+      if (young + old === 0) return 'אין ילדים בפרופיל';
+      const pts = young * 1 + old * 0.5;
+      return `${young} ילדים עד 5 + ${old} ילדים 6-17 = ${pts} נקודות`;
+    },
+    howTo: 'מסמן בטופס 101 את הילדים, מצרף תעודות לידה. הזיכוי מתעדכן בתלוש בחודש הבא.',
+    source: 'https://www.kolzchut.org.il/he/נקודות_זיכוי_להורים',
+    sourceLabel: 'כל-זכות',
+  },
+  {
+    id: 'r-points-singleparent',
+    title: 'נקודות זיכוי הורה יחיד',
+    category: 'tax',
+    badge: 'מס הכנסה',
+    description: 'הורה יחיד עם משמורת על הילדים זכאי ל-1 נקודת זיכוי נוספת מעבר לרגיל. ייתכנו נקודות נוספות לפי גיל הילדים.',
+    estimatedValue: '₪2,904 לשנה',
+    eligibility: () => {
+      if (!profile) return 'maybe';
+      return profile.status === 'single-parent' ? 'eligible' : 'not';
+    },
+    howTo: 'הצהרה בטופס 101 + פסק דין/הסכם משמורת. אפשר גם דרך הוראת ביצוע 1/2018 ברשות המיסים.',
+    source: 'https://www.kolzchut.org.il/he/הורה_יחיד',
+    sourceLabel: 'כל-זכות',
+  },
+  {
+    id: 'r-points-edu',
+    title: 'נקודות זיכוי על תואר אקדמי',
+    category: 'tax',
+    badge: 'מס הכנסה',
+    description: 'בוגר תואר ראשון או דוקטורט מקבל נקודה אחת למשך שנה אחת. בוגר תואר שני מקבל חצי נקודה למשך שנה אחת.',
+    estimatedValue: '₪1,452-2,904 לשנה',
+    deadline: 'בשנה שלאחר סיום התואר בלבד',
+    eligibility: () => {
+      if (!profile) return 'maybe';
+      return ['bachelor','master','phd'].includes(profile.edu) ? 'eligible' : 'not';
+    },
+    eligibilityNote: () => {
+      if (!profile?.edu) return null;
+      const map = { bachelor: 'תואר ראשון — 1 נקודה', master: 'תואר שני — 0.5 נקודה', phd: 'דוקטורט — 1 נקודה' };
+      return map[profile.edu] || null;
+    },
+    howTo: 'מסמן בטופס 101 + מצרף תעודת סיום + תאריך הענקת התואר. אפשר לתבוע רטרואקטיבית עד 6 שנים.',
+    source: 'https://www.kolzchut.org.il/he/נקודת_זיכוי_לבוגר_תואר_אקדמי',
+    sourceLabel: 'כל-זכות',
+  },
+  {
+    id: 'r-points-discharged',
+    title: 'נקודות זיכוי לחייל משוחרר',
+    category: 'tax',
+    badge: 'מס הכנסה',
+    description: 'משוחרר ששירת ≥23 חודשים (גברים) או ≥22 חודשים (נשים) מקבל 2 נקודות זיכוי לשנה. שירות קצר יותר — נקודה אחת.',
+    estimatedValue: 'עד ₪5,808 לשנה',
+    deadline: 'עד 36 חודשים מיום השחרור',
+    eligibility: () => {
+      if (!profile) return 'maybe';
+      return profile.special?.includes('discharged') ? 'eligible' : 'not';
+    },
+    howTo: 'מסמן בטופס 101 + מצרף תעודת שחרור + תקופת השירות.',
+    source: 'https://www.kolzchut.org.il/he/נקודות_זיכוי_לחייל_משוחרר',
+    sourceLabel: 'כל-זכות',
+  },
+  {
+    id: 'r-points-oleh',
+    title: 'נקודות זיכוי לעולה חדש',
+    category: 'tax',
+    badge: 'מס הכנסה',
+    description: 'עולה חדש מקבל 1/4 נקודה ל-18 חודשים, 1/6 נקודה ל-12 חודשים נוספים, ו-1/12 נקודה ל-12 חודשים אחרונים. סה״כ 42 חודשים.',
+    estimatedValue: 'עד ₪9,000+ במצטבר',
+    eligibility: () => {
+      if (!profile) return 'maybe';
+      return profile.special?.includes('oleh') ? 'eligible' : 'not';
+    },
+    howTo: 'מסמן בטופס 101 + תעודת עולה. גם פטור ממס על הכנסות מחו״ל ל-10 שנים בנפרד.',
+    source: 'https://www.kolzchut.org.il/he/הקלות_מס_לעולה_חדש',
+    sourceLabel: 'כל-זכות',
+  },
+  {
+    id: 'r-zikui-pension',
+    title: 'זיכוי על הפקדות לפנסיה / ביטוח חיים',
+    category: 'tax',
+    badge: 'מס הכנסה',
+    description: 'הפקדות עצמאיות לקופת גמל, פנסיה או ביטוח חיים מזכות ב-35% החזר מס (זיכוי) — עד תקרה.',
+    estimatedValue: 'עד ₪3,360 לשנה',
+    deadline: 'עד 6 שנים אחורה — דרך החזר מס',
+    eligibility: () => 'maybe',
+    howTo: 'הגשת טופס 135 או החזר מס שנתי + אישורי הפקדה מהקופה. לעצמאיים — דרך הדוח השנתי.',
+    source: 'https://www.kolzchut.org.il/he/זיכוי_מס_בגין_הפקדות_לקרן_פנסיה',
+    sourceLabel: 'כל-זכות',
+  },
+  {
+    id: 'r-zikui-donations',
+    title: 'זיכוי על תרומות למוסד מוכר',
+    category: 'tax',
+    badge: 'מס הכנסה',
+    description: 'תרומות למוסד ציבורי מוכר לפי סעיף 46 — זיכוי של 35% מסכום התרומה (לעובד שכיר) או 40% לחברות.',
+    estimatedValue: '35% מסכום התרומה',
+    deadline: 'עד 6 שנים אחורה',
+    eligibility: () => {
+      if (!profile?.donations) return 'maybe';
+      const amt = +profile.donations || 0;
+      return amt > 200 ? 'eligible' : 'not';
+    },
+    eligibilityNote: () => {
+      if (!profile?.donations) return null;
+      const amt = +profile.donations || 0;
+      if (amt < 200) return 'מינימום ₪200 לקבלת זיכוי';
+      const back = Math.round(amt * 0.35);
+      return `דווח על ₪${amt.toLocaleString('he')} → החזר משוער: ₪${back.toLocaleString('he')}`;
+    },
+    howTo: 'הגשת בקשה להחזר מס שנתי + קבלות תרומה לפי סעיף 46. גם דרך טופס 116 לעובד שכיר.',
+    source: 'https://www.kolzchut.org.il/he/זיכוי_ממס_בעד_תרומות',
+    sourceLabel: 'כל-זכות',
+  },
+  {
+    id: 'r-geo-exempt',
+    title: 'הנחת מס ליישוב מזכה',
+    category: 'tax',
+    badge: 'מס הכנסה',
+    description: 'תושבי יישובי ספר, גליל, עוטף עזה, ערבה ויהודה ושומרון זכאים להנחה במס הכנסה — בין 7%-18% מסכום המס.',
+    estimatedValue: 'אלפי ₪ בשנה',
+    eligibility: () => {
+      if (!profile) return 'maybe';
+      return profile.cityPct > 0 ? 'eligible' : 'not';
+    },
+    eligibilityNote: () => {
+      if (!profile?.cityName) return null;
+      return `${profile.cityName} — הנחה של ${profile.cityPct}%`;
+    },
+    howTo: 'מסמן בטופס 101 + אישור תושבות מהמועצה (תוך 90 יום מהמעבר). יש לעדכן בתלוש כל שנה.',
+    source: 'https://www.kolzchut.org.il/he/הנחה_ממס_הכנסה_לתושבי_יישובים_מזכים',
+    sourceLabel: 'כל-זכות',
+  },
+  {
+    id: 'r-zikui-disability',
+    title: 'פטור ממס לנכה ≥75%',
+    category: 'tax',
+    badge: 'מס הכנסה',
+    description: 'נכה רפואי בשיעור ≥75% (או ≥90% לפי חישוב מיוחד) זכאי לפטור מלא ממס הכנסה — עד תקרה גבוהה.',
+    estimatedValue: 'פטור עד ₪650,160 לשנה',
+    eligibility: () => {
+      if (!profile) return 'maybe';
+      return profile.special?.includes('disabled') ? 'eligible' : 'not';
+    },
+    howTo: 'בקשה לוועדה רפואית של מס הכנסה + מסמכים רפואיים. מומלץ דרך עו״ד מס.',
+    source: 'https://www.kolzchut.org.il/he/פטור_ממס_הכנסה_לנכה',
+    sourceLabel: 'כל-זכות',
+  },
+
+  // ============ NATIONAL INSURANCE ============
+  {
+    id: 'r-ni-childcare',
+    title: 'קצבת ילדים',
+    category: 'family',
+    badge: 'ביטוח לאומי',
+    description: 'משולמת אוטומטית להורה (בד״כ האם) על כל ילד עד גיל 18. הסכומים עולים מהילד השני.',
+    estimatedValue: '₪174-₪384 לחודש לכל ילד',
+    eligibility: () => {
+      if (!profile) return 'maybe';
+      const hasKids = (profile.kidsYoung || 0) + (profile.kidsOld || 0) > 0;
+      return hasKids ? 'eligible' : 'not';
+    },
+    howTo: 'אוטומטי עם רישום הילד בביטוח לאומי. אם לא משולם — לפנות ישירות ל-ב.ל.',
+    source: 'https://www.btl.gov.il/benefits/Children/Pages/default.aspx',
+    sourceLabel: 'ביטוח לאומי',
+  },
+  {
+    id: 'r-ni-maternity',
+    title: 'דמי לידה',
+    category: 'family',
+    badge: 'ביטוח לאומי',
+    description: 'אישה עובדת ששילמה דמי ביטוח לאומי 6 מ-14 חודשים אחרונים זכאית לתשלום שכר מלא ל-15 שבועות (לפי תקרת ב.ל.).',
+    estimatedValue: '15 שבועות שכר מלא',
+    eligibility: () => {
+      if (!profile) return 'maybe';
+      return profile.gender === 'f' ? 'maybe' : 'not';
+    },
+    howTo: 'הגשה אונליין באתר ב.ל. או בסניף — לפני הלידה. נדרש אישור רופא + פרטי מעסיק.',
+    source: 'https://www.btl.gov.il/benefits/Maternity/Pages/default.aspx',
+    sourceLabel: 'ביטוח לאומי',
+  },
+  {
+    id: 'r-ni-unemployment',
+    title: 'דמי אבטלה',
+    category: 'employment',
+    badge: 'ביטוח לאומי',
+    description: 'מי שעבד ≥12 חודשים ב-18 החודשים שלפני האבטלה זכאי לדמי אבטלה ל-50-175 ימים, לפי גיל וותק.',
+    estimatedValue: 'עד 80% מהשכר הקודם',
+    eligibility: () => 'maybe',
+    howTo: 'רישום בלשכת התעסוקה + הגשת תביעה לב.ל. — שניהם בתוך 12 חודשים. דרישה: התייצבות שבועית.',
+    source: 'https://www.btl.gov.il/benefits/Unemployment/Pages/default.aspx',
+    sourceLabel: 'ביטוח לאומי',
+  },
+  {
+    id: 'r-ni-reserves',
+    title: 'תגמול מילואים',
+    category: 'employment',
+    badge: 'ביטוח לאומי',
+    description: 'משרת מילואים מקבל תגמול מב.ל. בגובה השכר היומי הרגיל שלו, ע״פ ממוצע 3 חודשים אחרונים.',
+    estimatedValue: '100% מהשכר היומי',
+    eligibility: () => 'maybe',
+    howTo: 'אוטומטי דרך המעסיק (טופס 3010) — אם לא הגיע, פנייה ישירה לב.ל. עם אישור 3010.',
+    source: 'https://www.btl.gov.il/benefits/Miluim/Pages/default.aspx',
+    sourceLabel: 'ביטוח לאומי',
+  },
+  {
+    id: 'r-ni-injured',
+    title: 'דמי פגיעה בעבודה',
+    category: 'employment',
+    badge: 'ביטוח לאומי',
+    description: 'נפגע תאונת עבודה זכאי לתשלום של 75% מהשכר למשך 90 יום ראשונים, מהיום הרביעי. גם פיצוי על אובדן תפקוד.',
+    estimatedValue: '75% מהשכר עד 90 יום',
+    eligibility: () => 'maybe',
+    howTo: 'הודעה למעסיק + פנייה לרופא קופ״ח עם טופס בל/250. הגשת תביעה לב.ל. תוך 12 חודשים.',
+    source: 'https://www.btl.gov.il/benefits/Work_Injury/Pages/default.aspx',
+    sourceLabel: 'ביטוח לאומי',
+  },
+
+  // ============ EMPLOYMENT RIGHTS ============
+  {
+    id: 'r-emp-vacation',
+    title: 'ימי חופשה שנתית',
+    category: 'employment',
+    badge: 'זכויות עובד',
+    description: 'כל עובד זכאי לפחות ל-12 ימי חופשה בשנה (5 ימי עבודה בשבוע). ב-5 שנות וותק — 17 ימים. ב-7+ — 20-26.',
+    estimatedValue: '12-26 ימים בשנה',
+    eligibility: () => 'eligible',
+    howTo: 'בדוק שמופיע בתלוש (יתרה ופדיון). אם המעסיק לא נתן — דרישה דרך עו״ד עבודה או ועדת עבודה.',
+    source: 'https://www.kolzchut.org.il/he/חופשה_שנתית',
+    sourceLabel: 'כל-זכות',
+  },
+  {
+    id: 'r-emp-sick',
+    title: 'ימי מחלה',
+    category: 'employment',
+    badge: 'זכויות עובד',
+    description: 'עובד צובר 1.5 ימי מחלה לחודש (עד 90 ימים מצטברים). יום ראשון ללא תשלום, ימים 2-3 ב-50%, ימים 4+ במלואם.',
+    estimatedValue: '18 ימים בשנה לצבירה',
+    eligibility: () => 'eligible',
+    howTo: 'הצגת אישור רופא עד יום העבודה הבא. בדוק יתרת ימי מחלה בתלוש.',
+    source: 'https://www.kolzchut.org.il/he/דמי_מחלה',
+    sourceLabel: 'כל-זכות',
+  },
+  {
+    id: 'r-emp-pension',
+    title: 'הפרשה לפנסיה — חובת המעסיק',
+    category: 'employment',
+    badge: 'זכויות עובד',
+    description: 'מעסיק חייב להפריש לפנסיה לפי שיעור מינימלי: 6.5% מהשכר (חלק עובד 6%, פיצויים 8.33%). חוסר הפרשה = עבירה פלילית.',
+    estimatedValue: '20.83% מהשכר לחיסכון',
+    eligibility: () => 'eligible',
+    howTo: 'בדוק בתלוש שמסומן "פנסיה" עם שיעורי הפרשה. אם חסר — דרישה למעסיק או ל-משרד הכלכלה.',
+    source: 'https://www.kolzchut.org.il/he/הפקדות_מעסיק_לקרן_פנסיה',
+    sourceLabel: 'כל-זכות',
+  },
+];
+
+// ============ ELIGIBILITY EVALUATION ============
+function evaluateAll() {
+  return RIGHTS.map(r => ({
+    ...r,
+    status: r.eligibility(),
+    note: r.eligibilityNote ? r.eligibilityNote() : null,
+  }));
+}
+
+// ============ RENDER ============
+let evaluated = [];
+let currentFilter = 'all';
+
+function renderProfileBar() {
+  const bar = document.getElementById('profileBar');
+  const noBar = document.getElementById('noProfileBar');
+
+  if (!profile) {
+    bar.classList.add('hidden');
+    noBar.classList.remove('hidden');
+    return;
+  }
+
+  bar.classList.remove('hidden');
+  noBar.classList.add('hidden');
+
+  const parts = [];
+  if (profile.firstName) parts.push(profile.firstName);
+  if (profile.gender === 'f') parts.push('אישה');
+  else if (profile.gender === 'm') parts.push('גבר');
+  if (profile.status === 'married') parts.push('נשוי/אה');
+  else if (profile.status === 'single-parent') parts.push('הורה יחיד');
+  else if (profile.status === 'single') parts.push('רווק/ה');
+  const kids = (profile.kidsYoung || 0) + (profile.kidsOld || 0);
+  if (kids > 0) parts.push(`${kids} ילדים`);
+  if (profile.cityName) parts.push(profile.cityName);
+  if (profile.special?.length) {
+    const map = { oleh:'עולה חדש', returning:'תושב חוזר', discharged:'משוחרר', disabled:'נכה', alimony:'מזונות', 'parent-special':'ילד מיוחד', senior:'60+', kibbutz:'קיבוץ' };
+    profile.special.forEach(s => { if (map[s]) parts.push(map[s]); });
+  }
+
+  document.getElementById('profileSummary').textContent = parts.length ? parts.join(' · ') : 'פרופיל ריק — הזכאויות מוצגות כללית';
+}
+
+function renderStats() {
+  const eligible = evaluated.filter(r => r.status === 'eligible').length;
+  const maybe = evaluated.filter(r => r.status === 'maybe').length;
+  const total = evaluated.length;
+
+  document.getElementById('statEligible').textContent = eligible;
+  document.getElementById('statMaybe').textContent = maybe;
+  document.getElementById('statTotal').textContent = total;
+
+  const pct = ((eligible + maybe * 0.5) / total) * 100;
+  setTimeout(() => {
+    document.getElementById('meterFill').style.width = pct + '%';
+  }, 200);
+
+  document.getElementById('meterText').textContent = `${eligible}/${total} זכאי בוודאות`;
+}
+
+function statusLabel(s) {
+  if (s === 'eligible') return { text: '✓ זכאי', cls: 'eligible' };
+  if (s === 'maybe') return { text: '? לבדוק', cls: 'maybe' };
+  return { text: '— לא רלוונטי', cls: 'not' };
+}
+
+function renderGrid() {
+  const grid = document.getElementById('rightsGrid');
+  const empty = document.getElementById('emptyState');
+
+  let filtered = evaluated;
+
+  if (currentFilter === 'eligible') {
+    filtered = evaluated.filter(r => r.status === 'eligible');
+  } else if (currentFilter === 'maybe') {
+    filtered = evaluated.filter(r => r.status === 'maybe');
+  } else if (['tax', 'ni', 'employment', 'family'].includes(currentFilter)) {
+    filtered = evaluated.filter(r => r.category === currentFilter);
+  }
+
+  // Sort: eligible first, then maybe, then not
+  const order = { eligible: 0, maybe: 1, not: 2 };
+  filtered.sort((a, b) => order[a.status] - order[b.status]);
+
+  if (!filtered.length) {
+    grid.innerHTML = '';
+    empty.classList.remove('hidden');
+    return;
+  }
+  empty.classList.add('hidden');
+
+  grid.innerHTML = filtered.map(r => {
+    const lbl = statusLabel(r.status);
+    return `
+      <div class="right-card ${lbl.cls} reveal" data-id="${r.id}">
+        <div class="badge ${lbl.cls}">${lbl.text}</div>
+        <div class="mb-3">
+          <span class="tag">${r.badge}</span>
+        </div>
+        <h3 class="font-serif text-xl font-black mb-2 leading-tight pl-20">${r.title}</h3>
+        <p class="text-charcoal/60 text-sm leading-relaxed mb-4">${r.description}</p>
+
+        ${r.note ? `<div class="bg-sand p-3 mb-4 text-xs text-charcoal/75 border-r-2 border-gold"><span class="font-mono text-[10px] tracking-widest uppercase text-gold ml-2">לפי הפרופיל:</span>${r.note}</div>` : ''}
+
+        <div class="grid grid-cols-2 gap-4 pt-4 border-t border-charcoal/8 text-xs">
+          <div>
+            <div class="font-mono text-[10px] tracking-widest uppercase text-charcoal/40 mb-1">שווי משוער</div>
+            <div class="font-serif text-base font-bold text-charcoal">${r.estimatedValue || '—'}</div>
+          </div>
+          <div>
+            <div class="font-mono text-[10px] tracking-widest uppercase text-charcoal/40 mb-1">תקופת תביעה</div>
+            <div class="font-serif text-base text-charcoal">${r.deadline || 'ללא הגבלה'}</div>
+          </div>
+        </div>
+
+        <div class="right-detail">
+          <div class="font-mono text-[10px] tracking-widest uppercase text-gold mb-2">▸ איך תובעים</div>
+          <p class="text-charcoal/75 text-sm leading-relaxed mb-4">${r.howTo}</p>
+          <div class="flex flex-wrap gap-2">
+            <a href="${r.source}" target="_blank" rel="noopener" class="action-link">
+              <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+              ${r.sourceLabel}
+            </a>
+            <a href="https://www.kolzchut.org.il/" target="_blank" rel="noopener" class="action-link outline">
+              <i data-lucide="search" class="w-3.5 h-3.5"></i>
+              חפש בכל-זכות
+            </a>
+          </div>
+        </div>
+
+        <button class="mt-5 flex items-center justify-between w-full text-right text-xs font-mono tracking-widest uppercase text-gold hover:text-charcoal transition pt-3 border-t border-charcoal/5" onclick="toggleCard('${r.id}')">
+          <span class="expand-toggle-text">פרטים והנחיות תביעה</span>
+          <i data-lucide="chevron-down" class="w-4 h-4 expand-icon"></i>
+        </button>
+      </div>
+    `;
+  }).join('');
+
+  lucide.createIcons();
+}
+
+window.toggleCard = function(id) {
+  const card = document.querySelector(`[data-id="${id}"]`);
+  if (!card) return;
+  card.classList.toggle('expanded');
+  const txt = card.querySelector('.expand-toggle-text');
+  if (txt) txt.textContent = card.classList.contains('expanded') ? 'הסתר' : 'פרטים והנחיות תביעה';
+};
+
+document.querySelectorAll('.filter-chip').forEach(c => {
+  c.addEventListener('click', () => {
+    document.querySelectorAll('.filter-chip').forEach(x => x.classList.remove('active'));
+    c.classList.add('active');
+    currentFilter = c.dataset.filter;
+    renderGrid();
+  });
+});
+
+// Init
+evaluated = evaluateAll();
+renderProfileBar();
+renderStats();
+renderGrid();
+</script>
+</body>
+</html>

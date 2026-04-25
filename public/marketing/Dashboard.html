@@ -1,0 +1,1561 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>לוח הבקרה · בדיקת תלוש שכר במגזר הפרטי</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="recovery.js"></script>
+<script src="uploader.js"></script>
+<script src="freemium-guard.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700&family=Frank+Ruhl+Libre:wght@300;400;700;900&display=swap" rel="stylesheet">
+<script>
+tailwind.config = {
+  theme: { extend: {
+    fontFamily: { sans: ['Assistant','sans-serif'], serif: ['"Frank Ruhl Libre"','serif'], mono: ['ui-monospace','monospace'] },
+    colors: { cream:'#FDFBF7', sand:'#F4F1EB', charcoal:'#0a0a0a', gold:'#B89B5E', gold2:'#9b8149' }
+  }}
+}
+</script>
+<style>
+  body { font-family: 'Assistant', sans-serif; background:#FDFBF7; color:#0a0a0a; }
+  .noise-overlay{position:fixed;top:-50%;left:-50%;width:200%;height:200vh;pointer-events:none;z-index:1;opacity:.025;background-image:url('data:image/svg+xml,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="n"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23n)"/%3E%3C/svg%3E')}
+
+  /* Sidebar — desktop default: sticky right column */
+  .sidebar {
+    background:#0a0a0a;
+    color:#FDFBF7;
+    width: 256px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+  }
+  /* Mobile: turns into off-canvas drawer */
+  @media (max-width: 1023px) {
+    .sidebar {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 280px;
+      height: 100vh;
+      z-index: 70;
+      transform: translateX(100%);
+      transition: transform .3s ease-out;
+      box-shadow: -4px 0 20px rgba(0,0,0,0.4);
+    }
+    .sidebar.open { transform: translateX(0); }
+  }
+  .nav-item { display:flex; align-items:center; gap:14px; padding:14px 20px; color:rgba(253,251,247,0.55); font-size:14px; transition:all .3s; border-right:2px solid transparent; }
+  .nav-item:hover { color:#FDFBF7; background:rgba(255,255,255,0.03); }
+  .nav-item.active { color:#B89B5E; border-right-color:#B89B5E; background:rgba(184,155,94,0.05); }
+  .nav-item .icon { width:18px; height:18px; }
+
+  /* Cards */
+  .card { background:#fff; border:1px solid rgba(10,10,10,0.08); transition:all .4s; }
+  .card:hover { border-color:rgba(184,155,94,0.3); }
+  .card-dark { background:#0a0a0a; color:#FDFBF7; }
+
+  /* Status pills */
+  .pill { display:inline-flex; align-items:center; gap:6px; padding:5px 12px; font-size:10px; letter-spacing:0.15em; text-transform:uppercase; font-weight:600; border:1px solid; border-radius:1px; }
+  .pill-gold { color:#B89B5E; border-color:rgba(184,155,94,0.4); background:rgba(184,155,94,0.05); }
+  .pill-ok { color:#3d7a3d; border-color:rgba(61,122,61,0.25); background:rgba(61,122,61,0.04); }
+  .pill-warn { color:#a65d2e; border-color:rgba(166,93,46,0.3); background:rgba(166,93,46,0.04); }
+  .pill-muted { color:rgba(10,10,10,0.5); border-color:rgba(10,10,10,0.15); }
+
+  /* Hero counter line */
+  .gold-line { height:1px; background:linear-gradient(to right, transparent, rgba(184,155,94,0.4), transparent); }
+
+  /* Table row hover */
+  .row-hover:hover { background:#F4F1EB; }
+
+  /* Sparkline container */
+  .spark-bar { width: 4px; background: rgba(184,155,94,0.25); border-radius: 1px; transition: background .3s; }
+  .spark-bar.hot { background: #B89B5E; }
+
+  /* Ambient glow */
+  .glow-dot { position:absolute; width:6px; height:6px; border-radius:50%; background:#B89B5E; box-shadow:0 0 12px #B89B5E; animation:pulse 2.4s infinite; }
+  @keyframes pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:.5; transform:scale(1.4); } }
+
+  /* Check grid item */
+  .check-tile { background:#fff; border:1px solid rgba(10,10,10,0.08); padding:20px; transition:all .3s; cursor:pointer; position:relative; }
+  .check-tile:hover { border-color:rgba(184,155,94,0.4); transform:translateY(-2px); box-shadow:0 10px 30px -10px rgba(10,10,10,0.1); }
+  .check-tile.flagged { background:#0a0a0a; color:#FDFBF7; border-color:#B89B5E; }
+  .check-tile.ok::before { content:''; position:absolute; top:0; left:0; width:3px; height:100%; background:#3d7a3d; opacity:.4; }
+  .check-tile.flagged::before { content:''; position:absolute; top:0; left:0; width:3px; height:100%; background:#B89B5E; }
+
+  /* Upload zone */
+  .upload-zone { background:#fff; border:1.5px dashed rgba(10,10,10,0.15); transition:all .3s; }
+  .upload-zone:hover { border-color:#B89B5E; background:rgba(184,155,94,0.02); }
+
+  /* Progress ring */
+  .progress-ring { transform:rotate(-90deg); }
+
+  /* Fade-in */
+  .fade-up { opacity:0; transform:translateY(12px); animation:fu .8s cubic-bezier(.2,.6,.2,1) forwards; }
+  @keyframes fu { to { opacity:1; transform:none; } }
+
+  /* ===== Pricing ===== */
+  .freemium-banner { background: linear-gradient(90deg, rgba(184,155,94,0.08), rgba(61,122,61,0.06)); border: 1px solid rgba(184,155,94,0.35); border-right: 3px solid #B89B5E; }
+  .price-card { background:#fff; border:1px solid rgba(10,10,10,0.1); padding:36px 32px; transition: all .35s cubic-bezier(.2,.6,.2,1); position:relative; display:flex; flex-direction:column; }
+  .price-card:hover { transform: translateY(-4px); border-color: rgba(184,155,94,0.5); box-shadow: 0 24px 48px -20px rgba(10,10,10,0.18); }
+  .price-card.featured { background:#0a0a0a; color:#FDFBF7; border-color:#0a0a0a; transform: scale(1.04); box-shadow: 0 30px 60px -25px rgba(10,10,10,0.35); }
+  .price-card.featured:hover { transform: scale(1.04) translateY(-4px); }
+  .price-card .ribbon { position:absolute; top:-1px; right:32px; background:#B89B5E; color:#0a0a0a; font-size:10px; letter-spacing:0.25em; text-transform:uppercase; font-weight:700; padding:8px 18px; }
+  .price-btn { display:block; text-align:center; padding:16px; font-size:11px; letter-spacing:0.25em; text-transform:uppercase; font-weight:600; transition: all .25s; margin-top:auto; }
+  .price-btn-light { background:#0a0a0a; color:#FDFBF7; }
+  .price-btn-light:hover { background:#B89B5E; color:#0a0a0a; }
+  .price-btn-gold { background:#B89B5E; color:#0a0a0a; }
+  .price-btn-gold:hover { background:#FDFBF7; }
+
+  /* Depth & Volume cards (matrix pricing) */
+  .depth-card, .vol-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #FDFBF7;
+    padding: 20px;
+    text-align: right;
+    cursor: pointer;
+    transition: all .2s;
+    position: relative;
+  }
+  .depth-card:hover, .vol-card:hover { background: rgba(184,155,94,0.08); border-color: rgba(184,155,94,0.35); }
+  .depth-card.active, .vol-card.active {
+    background: rgba(184,155,94,0.15);
+    border-color: #B89B5E;
+    box-shadow: inset 0 0 0 1px #B89B5E;
+  }
+  .depth-card.active .depth-check, .vol-card.active .depth-check {
+    background: #B89B5E;
+  }
+  .depth-check {
+    width: 16px; height: 16px;
+    border: 1.5px solid rgba(255,255,255,0.3);
+    display: inline-block;
+    transition: all .2s;
+    position: relative;
+  }
+  .depth-card.active .depth-check::after, .vol-card.active .depth-check::after {
+    content: '✓';
+    position: absolute;
+    inset: 0;
+    color: #0a0a0a;
+    font-weight: 700;
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .vol-card { text-align: center; padding: 16px 12px; }
+
+  /* ===== Legal consent ===== */
+  .consent-box { background: rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.12); padding: 18px 22px; }
+  .consent-checkbox { appearance:none; -webkit-appearance:none; width:20px; height:20px; min-width:20px; border:1.5px solid rgba(255,255,255,0.5); background:transparent; cursor:pointer; position:relative; transition: all .2s; margin-top:3px; }
+  .consent-checkbox:hover { border-color:#B89B5E; }
+  .consent-checkbox:checked { background:#B89B5E; border-color:#B89B5E; }
+  .consent-checkbox:checked::after { content:''; position:absolute; top:2px; left:5px; width:5px; height:10px; border:solid #0a0a0a; border-width:0 2px 2px 0; transform:rotate(45deg); }
+  .consent-link { color:#B89B5E; text-decoration:underline; text-underline-offset:3px; cursor:pointer; transition: color .2s; }
+  .consent-link:hover { color:#FDFBF7; }
+  .cta-locked { opacity:.35; pointer-events:none; filter:grayscale(.6); }
+  .cta-unlocked { animation: ctaPulse .9s cubic-bezier(.2,.6,.2,1); }
+  @keyframes ctaPulse { 0% { transform: scale(1); } 40% { transform: scale(1.04); box-shadow: 0 0 0 8px rgba(184,155,94,0.25); } 100% { transform: scale(1); } }
+
+  /* ===== Terms modal ===== */
+  .modal-overlay { position:fixed; inset:0; background:rgba(10,10,10,0.75); backdrop-filter: blur(6px); z-index:100; display:none; align-items:center; justify-content:center; padding:24px; }
+  .modal-overlay.open { display:flex; animation: fadeIn .3s ease both; }
+  @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+  .modal-card { background:#FDFBF7; max-width:760px; width:100%; max-height:85vh; display:flex; flex-direction:column; border-top:3px solid #B89B5E; }
+  .modal-body { overflow-y:auto; padding: 32px 40px; }
+  .modal-body h4 { font-family:'Frank Ruhl Libre',serif; font-weight:700; font-size:18px; margin-top:24px; margin-bottom:8px; color:#0a0a0a; }
+  .modal-body h4:first-child { margin-top:0; }
+  .modal-body p { color: rgba(10,10,10,0.72); line-height:1.75; font-size:14px; margin-bottom:8px; }
+</style>
+<!-- Meta -->
+<meta name="theme-color" content="#0a0a0a">
+<meta name="description" content="29 בדיקות אוטומטיות לתלוש השכר שלכם במגזר הפרטי — חישוב נטו רב-שנתי, השוואה לחוזה, מרכז זכאויות. מקומי, פרטי, מאובטח.">
+<meta name="format-detection" content="telephone=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+
+<!-- Open Graph / Social -->
+<meta property="og:type" content="website">
+<meta property="og:locale" content="he_IL">
+<meta property="og:site_name" content="תלוש">
+<meta property="og:title" content="תלוש · בדיקת תלוש שכר במגזר הפרטי">
+<meta property="og:description" content="29 בדיקות אוטומטיות לתלוש השכר שלכם — מקומי, פרטי, ללא שמירת נתונים בשרת.">
+<meta property="og:image" content="icon-512.svg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="תלוש · בדיקת תלוש שכר במגזר הפרטי">
+<meta name="twitter:description" content="29 בדיקות אוטומטיות לתלוש השכר שלכם.">
+<meta name="twitter:image" content="icon-512.svg">
+
+<!-- Icons -->
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="apple-touch-icon.svg">
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="talush-a11y.css">
+<script src="talush-ui.js" defer></script>
+<script src="talush-error-boundary.js?v=1777126914727"></script>
+<script src="talush-data-export.js" defer></script>
+<script src="security-guard.js" defer></script>
+<script src="audit-logger.js" defer></script>
+</head>
+<body class="antialiased" data-screen-label="Dashboard">
+<a href="#main-content" class="skip-link" style="position:absolute;top:-40px;right:0;background:#B89B5E;color:#0a0a0a;padding:10px 20px;z-index:99999;text-decoration:none;font-weight:600;font-size:13px;letter-spacing:0.15em;text-transform:uppercase;transition:top .2s;" onfocus="this.style.top='0'" onblur="this.style.top='-40px'">דלג לתוכן הראשי</a>
+<div class="noise-overlay"></div>
+
+<div class="flex min-h-screen">
+
+  <!-- MOBILE DRAWER OVERLAY -->
+  <div id="mobile-drawer-overlay" onclick="closeMobileDrawer()" class="fixed inset-0 bg-black/60 z-[60] hidden lg:hidden"></div>
+
+  <!-- SIDEBAR (desktop sticky / mobile drawer) -->
+  <aside id="main-sidebar" class="sidebar">
+    <div class="p-6 border-b border-white/10 flex items-start justify-between">
+      <div>
+        <div class="font-serif font-black text-xl leading-tight">בדיקת<br/>תלוש שכר</div>
+        <div class="text-gold text-[10px] tracking-[0.3em] uppercase mt-2">מגזר פרטי · v2.4</div>
+      </div>
+      <button onclick="closeMobileDrawer()" class="lg:hidden text-white/60 hover:text-gold transition" aria-label="סגור">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+    </div>
+
+    <nav class="flex-1 py-6">
+      <a href="/dashboard" class="nav-item active">
+        <i data-lucide="layout-dashboard" class="icon"></i>
+        <span>סקירה כללית</span>
+      </a>
+      <a href="#payslips" class="nav-item">
+        <i data-lucide="file-text" class="icon"></i>
+        <span>התלושים שלי</span>
+        <span class="text-[10px] text-gold mr-auto">12</span>
+      </a>
+      <a href="#syncMatrix" class="nav-item">
+        <i data-lucide="file-signature" class="icon"></i>
+        <span>חוזה העסקה</span>
+      </a>
+      <a href="#gaps" class="nav-item">
+        <i data-lucide="alert-triangle" class="icon"></i>
+        <span>פערים פעילים</span>
+        <span class="text-[10px] text-gold mr-auto">3</span>
+      </a>
+      <a href="/calculator" class="nav-item">
+        <i data-lucide="calculator" class="icon"></i>
+        <span>מחשבון נטו</span>
+      </a>
+      <a href="/rights" class="nav-item">
+        <i data-lucide="badge-check" class="icon"></i>
+        <span>מרכז זכאויות</span>
+        <span class="text-[10px] text-gold mr-auto">18</span>
+      </a>
+      <a href="/tax-profile" class="nav-item">
+        <i data-lucide="user-cog" class="icon"></i>
+        <span>פרופיל מס</span>
+        <span class="text-[10px] text-gold mr-auto">חדש</span>
+      </a>
+      <a href="/legal#privacy" class="nav-item">
+        <i data-lucide="shield-check" class="icon"></i>
+        <span>אבטחה ופרטיות</span>
+      </a>
+      <button onclick="handleDashExport(this)" class="nav-item w-full text-right" style="background:none;border:none;cursor:pointer">
+        <i data-lucide="download-cloud" class="icon"></i>
+        <span>הורדת התיק שלי</span>
+      </button>
+    </nav>
+
+    <div class="p-5 border-t border-white/10">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-10 h-10 rounded-full bg-gold/20 border border-gold/40 flex items-center justify-center font-serif font-bold text-gold">י</div>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-semibold truncate">ישראל ישראלי</div>
+          <div class="text-[11px] text-white/40 truncate">הייטק · שעתי</div>
+        </div>
+      </div>
+      <a href="/" class="text-[10px] tracking-widest uppercase text-white/40 hover:text-gold transition-colors flex items-center gap-2">
+        <i data-lucide="log-out" class="w-3 h-3"></i> התנתק
+      </a>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="flex-1 min-w-0 relative">
+
+    <!-- TOP BAR -->
+    <div class="sticky top-0 z-40 bg-cream/85 backdrop-blur-md border-b border-charcoal/10">
+      <div class="flex items-center justify-between px-6 lg:px-10 h-20">
+        <div class="flex items-center gap-4">
+          <button onclick="openMobileDrawer()" class="lg:hidden text-charcoal hover:text-gold transition" aria-label="פתח תפריט"><i data-lucide="menu" class="w-6 h-6"></i></button>
+          <div>
+            <div class="text-[11px] tracking-[0.3em] uppercase text-charcoal/50 font-mono">Session #4827</div>
+            <div class="text-sm font-semibold text-charcoal">סקירה כללית · דצמבר 2026</div>
+          </div>
+        </div>
+        <div class="flex items-center gap-5">
+          <div class="hidden md:flex items-center gap-2 text-xs tracking-widest uppercase text-charcoal/50">
+            <span class="glow-dot relative" style="position:static; display:inline-block;"></span>
+            מעובד מקומית
+          </div>
+          <button class="text-charcoal/70 hover:text-charcoal" aria-label="חיפוש"><i data-lucide="search" class="w-5 h-5"></i></button>
+          <button class="text-charcoal/70 hover:text-charcoal relative" aria-label="התראות">
+            <i data-lucide="bell" class="w-5 h-5"></i>
+            <span class="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-gold"></span>
+          </button>
+          <button type="button" onclick="document.querySelector('[data-talush-uploader]')?.scrollIntoView({behavior:'smooth',block:'center'});" class="bg-charcoal text-cream px-6 py-3 text-xs tracking-widest uppercase hover:bg-gold transition-colors">העלה תלוש חדש</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="px-6 lg:px-10 py-10 max-w-7xl">
+
+      <!-- ============== PRICING ============== -->
+      <section class="mb-12 fade-up" style="animation-delay:.02s" id="pricing">
+        <!-- Section header -->
+        <div class="flex items-end justify-between mb-6 flex-wrap gap-4">
+          <div>
+            <div class="text-[11px] tracking-[0.3em] uppercase text-gold mb-2 font-mono">▸ תמחור</div>
+            <h2 class="font-serif text-3xl md:text-4xl font-black text-charcoal leading-tight">בחר את המסלול שמתאים לך</h2>
+          </div>
+          <div class="flex items-center gap-2 text-xs text-charcoal/60">
+            <i data-lucide="shield-check" class="w-3.5 h-3.5 text-gold"></i>
+            <span>תשלום חד-פעמי · ללא מנוי · ללא חיוב מתמשך</span>
+          </div>
+        </div>
+
+        <!-- Freemium banner — אקטיבי עם CTA -->
+        <div class="freemium-banner p-5 md:p-6 mb-7 flex items-start gap-4 flex-wrap" id="freemiumBanner">
+          <div class="shrink-0 w-10 h-10 rounded-full bg-gold/15 border border-gold/40 flex items-center justify-center">
+            <i data-lucide="gift" class="w-4 h-4 text-gold"></i>
+          </div>
+          <div class="flex-1 min-w-[260px]">
+            <div class="font-serif font-bold text-charcoal text-base mb-1">הבדיקה הראשונה — חינם.</div>
+            <p class="text-sm text-charcoal/75 leading-relaxed">
+              העלה תלוש אחד, השווה את התוצאות שלנו לבדיקה האישית שלך, וראה אם זיהינו את אותם פערים. אין צורך בכרטיס אשראי.
+            </p>
+          </div>
+          <button type="button" id="startFreeCheckBtn" class="shrink-0 bg-charcoal text-cream px-6 py-3.5 text-xs tracking-[0.25em] uppercase font-mono font-semibold hover:bg-gold hover:text-charcoal transition-colors flex items-center gap-2 group" aria-label="התחל בדיקה ראשונה חינם">
+            <i data-lucide="upload" class="w-4 h-4 group-hover:-translate-y-0.5 transition-transform"></i>
+            התחל בדיקה חינם
+          </button>
+        </div>
+
+        <!-- Pricing matrix: Volume × Depth -->
+        <div data-pricing-section class="bg-charcoal text-cream p-7 md:p-9 mb-8" style="background-image: radial-gradient(circle at 90% 0%, rgba(184,155,94,0.18), transparent 60%);">
+          <div class="flex items-baseline justify-between mb-2 flex-wrap gap-3">
+            <div>
+              <div class="text-[10px] tracking-[0.3em] uppercase text-gold font-mono mb-2">▸ צעד 1 / 2 · בחר עומק בדיקה</div>
+              <h3 class="font-serif text-2xl md:text-3xl font-black text-cream leading-tight">איזה רמת ניתוח אתה צריך?</h3>
+            </div>
+            <div class="text-xs text-white/50 max-w-md leading-relaxed">לא כל אחד צריך הכל. בחר את העומק שמתאים לך — תלוש בודד יכול להיות גם פרימיום מלא.</div>
+          </div>
+
+          <div class="grid md:grid-cols-3 gap-4 mt-7">
+            <button class="depth-card" data-depth="basic">
+              <div class="flex items-baseline justify-between mb-3">
+                <span class="text-[10px] tracking-widest uppercase font-mono opacity-60">בסיסי</span>
+                <span class="depth-check"></span>
+              </div>
+              <div class="font-serif text-xl font-black mb-1">Basic</div>
+              <div class="text-xs opacity-65 mb-4 leading-relaxed">29 בדיקות ציות בסיסיות + דוח PDF</div>
+              <div class="text-[10px] uppercase tracking-widest font-mono opacity-50">14 בדיקות פעילות</div>
+            </button>
+
+            <button class="depth-card active" data-depth="pro">
+              <div class="flex items-baseline justify-between mb-3">
+                <span class="text-[10px] tracking-widest uppercase font-mono">מומלץ</span>
+                <span class="depth-check"></span>
+              </div>
+              <div class="font-serif text-xl font-black mb-1">Pro</div>
+              <div class="text-xs opacity-75 mb-4 leading-relaxed">+ פרופיל מס + 5 בדיקות מותאמות + מטריצת סנכרון</div>
+              <div class="text-[10px] uppercase tracking-widest font-mono opacity-60">29 בדיקות מלאות</div>
+            </button>
+
+            <button class="depth-card" data-depth="premium">
+              <div class="flex items-baseline justify-between mb-3">
+                <span class="text-[10px] tracking-widest uppercase font-mono opacity-60">מקיף</span>
+                <span class="depth-check"></span>
+              </div>
+              <div class="font-serif text-xl font-black mb-1">Premium</div>
+              <div class="text-xs opacity-65 mb-4 leading-relaxed">+ מכתב דרישה + מרכז זכאויות + עוזר חכם (Bot)</div>
+              <div class="text-[10px] uppercase tracking-widest font-mono opacity-50">29 + 18 זכאויות</div>
+            </button>
+          </div>
+
+          <div class="border-t border-white/10 pt-7 mt-8">
+            <div class="text-[10px] tracking-[0.3em] uppercase text-gold font-mono mb-2">▸ צעד 2 / 2 · בחר כמות תלושים</div>
+            <h3 class="font-serif text-2xl md:text-3xl font-black text-cream leading-tight mb-5">כמה חודשים אתה רוצה לבדוק?</h3>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <button class="vol-card" data-vol="1">
+                <div class="font-serif text-3xl font-black mb-1">1</div>
+                <div class="text-[10px] tracking-widest uppercase font-mono opacity-60">חודש בודד</div>
+              </button>
+              <button class="vol-card active" data-vol="3">
+                <div class="font-serif text-3xl font-black mb-1">3</div>
+                <div class="text-[10px] tracking-widest uppercase font-mono opacity-70">רבעון · חיסכון 10%</div>
+              </button>
+              <button class="vol-card" data-vol="6">
+                <div class="font-serif text-3xl font-black mb-1">6</div>
+                <div class="text-[10px] tracking-widest uppercase font-mono opacity-70">חצי שנה · חיסכון 17%</div>
+              </button>
+              <button class="vol-card" data-vol="12">
+                <div class="font-serif text-3xl font-black mb-1">12</div>
+                <div class="text-[10px] tracking-widest uppercase font-mono opacity-70">שנה · חיסכון 25%</div>
+              </button>
+            </div>
+          </div>
+
+          <!-- Live summary -->
+          <div class="border-t border-white/10 pt-7 mt-8 grid md:grid-cols-[1fr_auto] items-end gap-6">
+            <div>
+              <div class="text-[10px] tracking-[0.3em] uppercase text-gold font-mono mb-2">▸ ההזמנה שלך</div>
+              <div class="font-serif text-xl md:text-2xl font-black text-cream leading-tight" id="orderSummary">3 תלושים · עומק Pro</div>
+              <div class="text-xs text-white/55 mt-2 leading-relaxed" id="orderDetail">29 בדיקות לכל תלוש · השוואה בין חודשים · מטריצת סנכרון פרופיל-חוזה-תלוש</div>
+            </div>
+            <div class="text-left md:text-right">
+              <div class="flex items-baseline gap-2 justify-end">
+                <span class="font-serif text-5xl md:text-6xl font-black text-gold leading-none" id="orderPrice">26.90</span>
+                <span class="font-serif text-2xl text-white/60">₪</span>
+              </div>
+              <div class="text-[10px] tracking-widest uppercase text-white/45 mt-2 font-mono" id="orderPerUnit">8.97 ₪ לתלוש</div>
+            </div>
+          </div>
+
+          <button type="button" onclick="paymentFlow(this)" class="block w-full text-center bg-gold text-charcoal px-8 py-4 mt-7 text-xs tracking-[0.3em] uppercase font-bold hover:bg-cream transition-colors">
+            המשך לתשלום →
+          </button>
+
+          <p class="text-[11px] text-white/40 mt-4 text-center leading-relaxed">
+            תלוש ראשון בחינם · ניתן לעדכן תוכנית בכל עת · החזר מלא תוך 14 יום
+          </p>
+        </div>
+
+        <!-- Trust strip -->
+        <div class="flex items-center justify-center gap-8 mt-8 text-[10px] tracking-[0.25em] uppercase text-charcoal/45 font-mono flex-wrap">
+          <span class="flex items-center gap-2"><i data-lucide="lock" class="w-3 h-3 text-gold"></i>תשלום מאובטח SSL</span>
+          <span class="flex items-center gap-2"><i data-lucide="rotate-ccw" class="w-3 h-3 text-gold"></i>החזר מלא תוך 14 יום</span>
+          <span class="flex items-center gap-2"><i data-lucide="server-off" class="w-3 h-3 text-gold"></i>ללא שמירת נתונים</span>
+        </div>
+      </section>
+
+      <!-- HERO: Money recovered -->
+      <div class="card-dark p-8 md:p-12 mb-10 relative overflow-hidden fade-up" style="animation-delay:.05s">
+        <div class="absolute top-0 left-0 right-0 gold-line"></div>
+        <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-10 relative z-10">
+          <div>
+            <div class="flex items-center gap-3 mb-5">
+              <span class="pill pill-gold"><span class="w-1.5 h-1.5 bg-gold rounded-full"></span>סה״כ פער שנצבר</span>
+              <span class="text-white/40 text-xs tracking-widest uppercase">עודכן לפני 2 שעות</span>
+            </div>
+            <div class="flex items-baseline gap-3">
+              <div class="font-serif font-black text-gold leading-none" style="font-size:clamp(4rem,10vw,8rem);">₪2,394</div>
+              <div class="text-white/60 text-lg">.50</div>
+            </div>
+            <p class="text-white/70 mt-6 max-w-xl text-lg font-light leading-relaxed">
+              בהתבסס על 12 תלושים סרוקים מול חוזה ההעסקה שלך. סכום זה כולל שעות נוספות, הפרשות פנסיה חסרות ופדיון חופשה.
+            </p>
+          </div>
+          <div class="flex flex-col gap-3 min-w-[280px]">
+
+            <!-- Primary action: legally-loaded -->
+            <button type="button" id="generate-letter" onclick="generateLetterFlow(this)" class="bg-gold text-charcoal px-8 py-4 text-xs tracking-[0.2em] uppercase font-semibold text-center hover:bg-white transition-colors">הפק מכתב דרישה</button>
+
+            <!-- Inline legal note (only for the legally-significant action) -->
+            <p class="text-[10.5px] leading-[1.7] text-white/55 px-1" style="direction:rtl">
+              <i data-lucide="info" class="w-3 h-3 inline-block align-[-2px] ml-1 text-gold"></i>
+              מכתב דרישה הוא מסמך משפטי. בלחיצה אתה מאשר שקראת את <a href="/legal#disclaimer" target="_blank" class="text-gold underline underline-offset-2 hover:text-cream">כתב הוויתור</a> והבנת שהאחריות על השימוש בו היא שלך בלבד.
+            </p>
+
+            <!-- Secondary action: no friction -->
+            <button type="button" onclick="exportPDFFlow(this)" class="border border-white/30 text-white px-8 py-4 text-xs tracking-[0.2em] uppercase text-center hover:border-gold hover:text-gold transition-colors mt-1">ייצוא PDF</button>
+
+          </div>
+        </div>
+
+        <!-- Sparkline of recovered $ per month -->
+        <div class="mt-10 pt-8 border-t border-white/10 flex items-end gap-2 h-20">
+          <script>/* bars rendered below */</script>
+          <!-- 12 bars -->
+        </div>
+        <div class="flex items-end gap-2 h-16 -mt-16 px-1" id="spark">
+          <!-- inserted by JS -->
+        </div>
+        <div class="flex justify-between text-[10px] text-white/30 tracking-widest uppercase mt-2 font-mono">
+          <span>ינו׳</span><span>פבר׳</span><span>מרץ</span><span>אפר׳</span><span>מאי</span><span>יונ׳</span><span>יול׳</span><span>אוג׳</span><span>ספט׳</span><span>אוק׳</span><span>נוב׳</span><span>דצמ׳</span>
+        </div>
+      </div>
+
+      <!-- TAX PROFILE BANNER -->
+      <a href="/tax-profile" class="block mb-6 fade-up group" style="animation-delay:.05s">
+        <div class="bg-charcoal text-cream relative overflow-hidden border border-gold/30 hover:border-gold transition-colors">
+          <div class="absolute inset-0 opacity-30" style="background:radial-gradient(circle at 90% 50%, rgba(184,155,94,0.25), transparent 60%);"></div>
+          <div class="relative grid md:grid-cols-[1fr_auto_auto] items-center gap-6 p-6 md:p-7">
+            <div class="flex items-start gap-4">
+              <div class="shrink-0 w-11 h-11 rounded-full bg-gold/15 border border-gold/40 flex items-center justify-center">
+                <i data-lucide="user-cog" class="w-5 h-5 text-gold"></i>
+              </div>
+              <div class="min-w-0">
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="text-[10px] tracking-[0.3em] uppercase text-gold font-mono">▸ פרופיל מס · חד-פעמי</span>
+                  <span class="px-2 py-0.5 text-[9px] tracking-[0.2em] uppercase bg-gold text-charcoal font-bold">חדש</span>
+                </div>
+                <div class="font-serif text-xl md:text-2xl font-black text-cream leading-tight mb-1">השלם פרופיל אישי = פתח עוד <span class="text-gold">5 בדיקות מס</span></div>
+                <p class="text-sm text-white/65 max-w-2xl leading-relaxed">נקודות זיכוי, פטורי עיר, זיכויי לימודים, תרומות, וזכאויות מיוחדות — אלפי שקלים בשנה שלא נראים מהתלוש לבד.</p>
+              </div>
+            </div>
+            <div class="hidden md:block text-center px-6 border-x border-white/10">
+              <div class="text-[10px] tracking-[0.25em] uppercase text-white/45 font-mono mb-1">משך</div>
+              <div class="font-serif text-2xl font-black text-cream leading-none">3 דק׳</div>
+            </div>
+            <div class="flex items-center gap-3 text-gold group-hover:gap-5 transition-all">
+              <span class="text-xs tracking-[0.25em] uppercase font-semibold">השלם עכשיו</span>
+              <i data-lucide="arrow-left" class="w-4 h-4"></i>
+            </div>
+          </div>
+        </div>
+      </a>
+
+      <!-- ============ SYNC MATRIX: Profile ↔ Contract ↔ Payslip ============ -->
+      <div class="card mb-10 fade-up overflow-hidden" style="animation-delay:.07s" id="syncMatrix">
+        <div class="bg-charcoal text-cream p-6 md:p-7 relative overflow-hidden">
+          <div class="absolute inset-0 opacity-25" style="background:radial-gradient(circle at 95% 50%, rgba(184,155,94,0.4), transparent 50%);"></div>
+          <div class="relative flex items-baseline justify-between flex-wrap gap-3">
+            <div>
+              <div class="text-[10px] tracking-[0.3em] uppercase text-gold font-mono mb-2">▸ מטריצת סנכרון</div>
+              <h3 class="font-serif text-xl md:text-2xl font-black text-cream leading-tight">פרופיל ↔ חוזה ↔ תלוש</h3>
+              <p class="text-xs text-white/60 mt-1.5">המערכת בודקת התאמה מלאה בין שלושת המקורות. כל פער = החזר אפשרי.</p>
+            </div>
+            <div class="flex items-center gap-2 bg-white/5 px-4 py-2 border border-white/10">
+              <div class="w-2 h-2 bg-gold rounded-full animate-pulse"></div>
+              <span class="text-[10px] tracking-widest uppercase font-mono text-white/70">מסונכרן</span>
+              <span id="syncScore" class="font-serif font-black text-gold text-lg mr-1">94%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-charcoal/15 bg-sand/40">
+                <th class="text-right p-4 text-[10px] tracking-widest uppercase font-mono text-charcoal/55 font-medium w-[28%]">פרמטר</th>
+                <th class="text-right p-4 text-[10px] tracking-widest uppercase font-mono text-charcoal/55 font-medium">📋 פרופיל מס</th>
+                <th class="text-right p-4 text-[10px] tracking-widest uppercase font-mono text-charcoal/55 font-medium">📄 חוזה העסקה</th>
+                <th class="text-right p-4 text-[10px] tracking-widest uppercase font-mono text-charcoal/55 font-medium">🧾 תלוש בפועל</th>
+                <th class="text-right p-4 text-[10px] tracking-widest uppercase font-mono text-charcoal/55 font-medium w-[12%]">סטטוס</th>
+              </tr>
+            </thead>
+            <tbody id="syncTbody"></tbody>
+          </table>
+        </div>
+
+        <div class="p-5 border-t border-charcoal/10 bg-sand/30 flex items-center justify-between flex-wrap gap-3">
+          <div class="text-xs text-charcoal/65 leading-relaxed">
+            <i data-lucide="info" class="w-3.5 h-3.5 inline-block text-gold ml-1 align-text-bottom"></i>
+            הסנכרון מתעדכן אוטומטית בכל העלאת תלוש. הבדיקות הצבועות בכתום הן פערים שזוהו.
+          </div>
+          <a href="/tax-profile" class="text-[10px] tracking-widest uppercase text-gold hover:text-charcoal transition font-mono font-semibold">עדכן פרופיל ←</a>
+        </div>
+      </div>
+
+      <!-- KPI GRID -->
+      <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
+        <div class="card p-6 fade-up" style="animation-delay:.1s">
+          <div class="text-[11px] tracking-[0.2em] uppercase text-charcoal/50 mb-3">תלושים נסרקו</div>
+          <div class="font-serif text-4xl font-black text-charcoal">12</div>
+          <div class="flex items-center gap-2 text-xs text-charcoal/60 mt-3">
+            <i data-lucide="trending-up" class="w-3.5 h-3.5 text-gold"></i>
+            <span>+3 החודש</span>
+          </div>
+        </div>
+        <div class="card p-6 fade-up" id="gaps" style="animation-delay:.15s">
+          <div class="text-[11px] tracking-[0.2em] uppercase text-charcoal/50 mb-3">פערים פעילים</div>
+          <div class="font-serif text-4xl font-black text-gold">3</div>
+          <div class="flex items-center gap-2 text-xs text-charcoal/60 mt-3">
+            <i data-lucide="alert-circle" class="w-3.5 h-3.5 text-gold"></i>
+            <span>2 דורשים תיקון
+</span>
+          </div>
+        </div>
+        <div class="card p-6 fade-up" style="animation-delay:.2s">
+          <div class="text-[11px] tracking-[0.2em] uppercase text-charcoal/50 mb-3">פער חודשי ממוצע</div>
+          <div class="font-serif text-4xl font-black text-charcoal">₪1,847</div>
+          <div class="flex items-center gap-2 text-xs text-charcoal/60 mt-3">
+            <i data-lucide="minus" class="w-3.5 h-3.5"></i>
+            <span>יציב 3 חודשים</span>
+          </div>
+        </div>
+        <div class="card p-6 fade-up" style="animation-delay:.25s">
+          <div class="text-[11px] tracking-[0.2em] uppercase text-charcoal/50 mb-3">ציון תקינות</div>
+          <div class="flex items-baseline gap-2">
+            <div class="font-serif text-4xl font-black text-charcoal">74</div>
+            <div class="text-charcoal/40 text-sm">/100</div>
+          </div>
+          <div class="w-full h-1 bg-charcoal/5 mt-4">
+            <div class="h-1 bg-gold" style="width:74%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MAIN 2-COL -->
+      <div class="grid lg:grid-cols-3 gap-6 mb-10">
+
+        <!-- Active findings -->
+        <div class="card lg:col-span-2 fade-up" style="animation-delay:.3s">
+          <div class="p-6 flex items-center justify-between border-b border-charcoal/10">
+            <div>
+              <h3 class="font-serif text-xl font-bold text-charcoal">פערים שזוהו בתלוש שלך</h3>
+              <p class="text-xs text-charcoal/50 mt-1">דצמבר 2026 · 3 פריטים</p>
+            </div>
+            <a href="#" class="text-xs tracking-widest uppercase text-charcoal/60 hover:text-gold">הכל ←</a>
+          </div>
+
+          <div class="divide-y divide-charcoal/10">
+            <!-- Finding 1 -->
+            <div class="px-6 py-5 row-hover flex items-start gap-5">
+              <div class="shrink-0 w-10 h-10 rounded-full bg-gold/10 flex items-center justify-center">
+                <i data-lucide="clock" class="w-4 h-4 text-gold"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-3 mb-1">
+                  <span class="pill pill-gold">דורש טעון</span>
+                  <span class="text-[10px] text-charcoal/50 tracking-widest uppercase font-mono">Check #07</span>
+                </div>
+                <div class="font-bold text-charcoal">שעות נוספות בתעריף 125%</div>
+                <div class="text-xs text-charcoal/60 mt-1">שולם עבור 12 שעות · על פי חוזה: 16 שעות · פער 4 שעות</div>
+              </div>
+              <div class="text-right shrink-0">
+                <div class="font-serif text-2xl font-bold text-gold">₪437</div>
+                <div class="text-[10px] text-charcoal/50 tracking-widest uppercase">פער</div>
+              </div>
+            </div>
+
+            <!-- Finding 2 -->
+            <div class="px-6 py-5 row-hover flex items-start gap-5">
+              <div class="shrink-0 w-10 h-10 rounded-full bg-gold/10 flex items-center justify-center">
+                <i data-lucide="piggy-bank" class="w-4 h-4 text-gold"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-3 mb-1">
+                  <span class="pill pill-gold">המשך</span>
+                  <span class="text-[10px] text-charcoal/50 tracking-widest uppercase font-mono">Check #14</span>
+                </div>
+                <div class="font-bold text-charcoal">הפרשה לפנסיה — חלק מעסיק</div>
+                <div class="text-xs text-charcoal/60 mt-1">הופרש 6.0% · בחוזה מופיע 6.5% · חוסר מצטבר 6 חודשים</div>
+              </div>
+              <div class="text-right shrink-0">
+                <div class="font-serif text-2xl font-bold text-gold">₪372</div>
+                <div class="text-[10px] text-charcoal/50 tracking-widest uppercase">6 חודשים</div>
+              </div>
+            </div>
+
+            <!-- Finding 3 -->
+            <div class="px-6 py-5 row-hover flex items-start gap-5">
+              <div class="shrink-0 w-10 h-10 rounded-full bg-charcoal/5 flex items-center justify-center">
+                <i data-lucide="heart-pulse" class="w-4 h-4 text-charcoal/50"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-3 mb-1">
+                  <span class="pill pill-muted">אוסף מסמכים</span>
+                  <span class="text-[10px] text-charcoal/50 tracking-widest uppercase font-mono">Check #22</span>
+                </div>
+                <div class="font-bold text-charcoal">דמי הבראה — שנה 2025</div>
+                <div class="text-xs text-charcoal/60 mt-1">זכאי ל-7 ימים · שולמו 5 בלבד · יש להעלות אישור ותק</div>
+              </div>
+              <div class="text-right shrink-0">
+                <div class="font-serif text-2xl font-bold text-charcoal">₪568</div>
+                <div class="text-[10px] text-charcoal/50 tracking-widest uppercase">משוער</div>
+              </div>
+            </div>
+
+            <!-- All clear -->
+            <div class="px-6 py-5 flex items-center gap-5 bg-sand/40">
+              <div class="shrink-0 w-10 h-10 rounded-full bg-white flex items-center justify-center">
+                <i data-lucide="check" class="w-4 h-4 text-green-700"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="font-bold text-charcoal text-sm">עוד 26 בדיקות עברו ללא בעיה</div>
+                <div class="text-xs text-charcoal/60 mt-0.5">שכר בסיס · ביטוח לאומי · מס בריאות · קרן השתלמות · ...</div>
+              </div>
+              <button type="button" onclick="Talush.toast('תצוגת מלאה — בקרוב. בדגמה זו לא נתמכות טבלאות מלאות.', 'info')" class="text-xs tracking-widest uppercase text-charcoal/60 hover:text-gold shrink-0 bg-transparent border-0 cursor-pointer">הצג הכל</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right column -->
+        <div class="space-y-6">
+          <!-- Upload new (LIVE Uploader) -->
+          <div class="fade-up" style="animation-delay:.35s">
+            <div data-talush-uploader data-type="payslip" data-multi="true"></div>
+          </div>
+
+          <!-- Health score -->
+          <div class="card-dark p-6 fade-up" style="animation-delay:.4s">
+            <div class="text-[11px] tracking-[0.2em] uppercase text-white/50 mb-4">תקינות חוזית</div>
+            <div class="flex items-center gap-6">
+              <div class="relative w-24 h-24 shrink-0">
+                <svg class="progress-ring w-24 h-24">
+                  <circle cx="48" cy="48" r="40" stroke="rgba(255,255,255,0.1)" stroke-width="4" fill="none"/>
+                  <circle cx="48" cy="48" r="40" stroke="#B89B5E" stroke-width="4" fill="none" stroke-dasharray="251.2" stroke-dashoffset="65.3" stroke-linecap="round"/>
+                </svg>
+                <div class="absolute inset-0 flex items-center justify-center">
+                  <div class="font-serif text-2xl font-black text-white">74</div>
+                </div>
+              </div>
+              <div class="flex-1">
+                <div class="text-white font-semibold mb-1">טוב, דורש שיפור</div>
+                <div class="text-xs text-white/60 leading-relaxed">3 נקודות שחיקה פעילות. טיפול בפער הפנסיה ישפר ב-12 נקודות.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick actions -->
+          <div class="card p-6 fade-up" style="animation-delay:.45s">
+            <div class="text-[11px] tracking-[0.2em] uppercase text-charcoal/50 mb-4">פעולות מהירות</div>
+            <div class="space-y-3">
+              <a href="#syncMatrix" class="flex items-center justify-between py-2.5 border-b border-charcoal/5 hover:text-gold transition-colors">
+                <span class="text-sm flex items-center gap-3"><i data-lucide="file-plus" class="w-4 h-4"></i>הוסף חוזה חדש</span>
+                <i data-lucide="chevron-left" class="w-4 h-4 text-charcoal/30"></i>
+              </a>
+              <a href="#payslips" class="flex items-center justify-between py-2.5 border-b border-charcoal/5 hover:text-gold transition-colors">
+                <span class="text-sm flex items-center gap-3"><i data-lucide="git-compare" class="w-4 h-4"></i>השווה תקופות</span>
+                <i data-lucide="chevron-left" class="w-4 h-4 text-charcoal/30"></i>
+              </a>
+              <button type="button" id="quickActionBot" class="w-full flex items-center justify-between py-2.5 hover:text-gold transition-colors text-right">
+                <span class="text-sm flex items-center gap-3"><i data-lucide="message-square" class="w-4 h-4"></i>דבר עם הבוט שלנו</span>
+                <i data-lucide="chevron-left" class="w-4 h-4 text-charcoal/30"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 29 CHECKS GRID -->
+      <div class="mb-10 fade-up" style="animation-delay:.5s">
+        <div class="flex items-end justify-between mb-6">
+          <div>
+            <h3 class="font-serif text-2xl font-bold text-charcoal">29 בדיקות הליבה</h3>
+            <p class="text-xs text-charcoal/50 mt-1">מצב כל בדיקה בחודש האחרון</p>
+          </div>
+          <div class="hidden md:flex items-center gap-5 text-xs">
+            <span class="flex items-center gap-2 text-charcoal/60"><span class="w-2 h-2 bg-green-700 inline-block"></span>עבר · 26</span>
+            <span class="flex items-center gap-2 text-charcoal/60"><span class="w-2 h-2 bg-gold inline-block"></span>פער · 3</span>
+            <span class="flex items-center gap-2 text-charcoal/60"><span class="w-2 h-2 bg-charcoal/20 inline-block"></span>מחכה · 0</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-3" id="check-grid"></div>
+      </div>
+
+      <!-- RECENT UPLOADS -->
+      <div class="card fade-up" id="payslips" style="animation-delay:.55s">
+        <div class="p-6 border-b border-charcoal/10 flex items-center justify-between">
+          <div>
+            <h3 class="font-serif text-xl font-bold text-charcoal">תלושים אחרונים</h3>
+            <p class="text-xs text-charcoal/50 mt-1">12 תלושים · מיון לפי תאריך</p>
+          </div>
+          <button type="button" onclick="Talush.confirm('ארכיון מלא — בקרוב.\', 'כרגע מוצגים 5 תלושים אחרונים בטבלה למטה.', 'אישור', 'סגור');" class="text-xs tracking-widest uppercase text-charcoal/60 hover:text-gold">ארכיון ←</button>
+        </div>
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-right text-[10px] tracking-widest uppercase text-charcoal/50 border-b border-charcoal/5">
+              <th class="px-6 py-3 font-medium">תקופה</th>
+              <th class="px-6 py-3 font-medium">שכר נטו</th>
+              <th class="px-6 py-3 font-medium">פער זוהה</th>
+              <th class="px-6 py-3 font-medium">סטטוס</th>
+              <th class="px-6 py-3 font-medium"></th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-charcoal/5">
+            <tr class="row-hover">
+              <td class="px-6 py-4 font-semibold">דצמבר 2026</td>
+              <td class="px-6 py-4 font-mono">₪14,230</td>
+              <td class="px-6 py-4 font-mono text-gold font-bold">₪437</td>
+              <td class="px-6 py-4"><span class="pill pill-gold">3 פערים</span></td>
+              <td class="px-6 py-4 text-left"><a href="#" class="text-xs tracking-widest uppercase text-charcoal/60 hover:text-gold">פתח</a></td>
+            </tr>
+            <tr class="row-hover">
+              <td class="px-6 py-4 font-semibold">נובמבר 2026</td>
+              <td class="px-6 py-4 font-mono">₪13,980</td>
+              <td class="px-6 py-4 font-mono text-gold font-bold">₪312</td>
+              <td class="px-6 py-4"><span class="pill pill-gold">2 פערים</span></td>
+              <td class="px-6 py-4 text-left"><a href="#" class="text-xs tracking-widest uppercase text-charcoal/60 hover:text-gold">פתח</a></td>
+            </tr>
+            <tr class="row-hover">
+              <td class="px-6 py-4 font-semibold">אוקטובר 2026</td>
+              <td class="px-6 py-4 font-mono">₪14,100</td>
+              <td class="px-6 py-4 font-mono text-charcoal/60">—</td>
+              <td class="px-6 py-4"><span class="pill pill-ok">תקין</span></td>
+              <td class="px-6 py-4 text-left"><a href="#" class="text-xs tracking-widest uppercase text-charcoal/60 hover:text-gold">פתח</a></td>
+            </tr>
+            <tr class="row-hover">
+              <td class="px-6 py-4 font-semibold">ספטמבר 2026</td>
+              <td class="px-6 py-4 font-mono">₪13,760</td>
+              <td class="px-6 py-4 font-mono text-gold font-bold">₪684</td>
+              <td class="px-6 py-4"><span class="pill pill-warn">הוגש מכתב</span></td>
+              <td class="px-6 py-4 text-left"><a href="#" class="text-xs tracking-widest uppercase text-charcoal/60 hover:text-gold">פתח</a></td>
+            </tr>
+            <tr class="row-hover">
+              <td class="px-6 py-4 font-semibold">אוגוסט 2026</td>
+              <td class="px-6 py-4 font-mono">₪14,020</td>
+              <td class="px-6 py-4 font-mono text-charcoal/60">—</td>
+              <td class="px-6 py-4"><span class="pill pill-ok">תקין</span></td>
+              <td class="px-6 py-4 text-left"><a href="#" class="text-xs tracking-widest uppercase text-charcoal/60 hover:text-gold">פתח</a></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Footer info -->
+      <div class="mt-12 pt-8 border-t border-charcoal/10 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-charcoal/50">
+        <div class="flex items-center gap-2">
+          <i data-lucide="shield-check" class="w-4 h-4 text-gold"></i>
+          <span>הנתונים מעובדים מקומית בדפדפן שלך. אין שרת, אין סיכון דליפה.</span>
+        </div>
+        <div class="flex items-center gap-5">
+          <a href="/legal#terms" class="hover:text-gold transition-colors">תנאי שימוש</a>
+          <a href="/legal#privacy" class="hover:text-gold transition-colors">הצהרת פרטיות</a>
+          <a href="/legal#disclaimer" class="hover:text-gold transition-colors">כתב ויתור</a>
+          <span class="font-mono tracking-widest uppercase text-charcoal/40">© 2026</span>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+lucide.createIcons();
+
+// === Action Flows (with loading states) ===
+async function generateLetterFlow(btn) {
+  const ok = await Talush.confirm(
+    'הפקת מכתב דרישה',
+    'מכתב דרישה הוא מסמך משפטי. בלחיצה אתה מאשר שקראת את כתב הוויתור והבנת שהאחריות על השימוש בו היא שלך בלבד.',
+    'הפק מכתב', 'ביטול'
+  );
+  if (!ok) return;
+  await Talush.withLoading(btn, 'מכין מכתב...', async () => {
+    await new Promise(r => setTimeout(r, 1800));
+  }, 'המכתב הופק בהצלחה. (גרסת הדגמה — קובץ אמיתי בקרוב)');
+}
+
+async function paymentFlow(btn) {
+  await Talush.withLoading(btn, 'מתחבר לסליקה...', async () => {
+    await new Promise(r => setTimeout(r, 1200));
+  }, 'מנותב לדף תשלום מאובטח. (דגמה — Stripe/Tranzila בקרוב)');
+}
+
+async function exportPDFFlow(btn) {
+  await Talush.withLoading(btn, 'יוצר PDF...', async () => {
+    await new Promise(r => setTimeout(r, 1400));
+  }, 'הקובץ ירד בקרוב. (דגמה — PDF אמיתי בגרסה המלאה)');
+}
+
+async function handleDashExport(btn) {
+  await Talush.withLoading(btn, 'מכין את התיק...', async () => {
+    if (!window.talushExportData) throw new Error('Export module not loaded');
+    const result = await window.talushExportData();
+    return result;
+  }, 'התיק הורד! פתח את הקובץ ZIP לראות את כל הנתונים שלך.');
+}
+
+// === Mobile Drawer ===
+function openMobileDrawer() {
+  document.getElementById('main-sidebar').classList.add('open');
+  document.getElementById('mobile-drawer-overlay').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+function closeMobileDrawer() {
+  document.getElementById('main-sidebar').classList.remove('open');
+  document.getElementById('mobile-drawer-overlay').classList.add('hidden');
+  document.body.style.overflow = '';
+}
+// Close drawer on link click (mobile only)
+document.querySelectorAll('#main-sidebar .nav-item').forEach(a => {
+  a.addEventListener('click', () => {
+    if (window.innerWidth < 1024) closeMobileDrawer();
+  });
+});
+// ESC closes drawer
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && document.getElementById('main-sidebar').classList.contains('open')) {
+    closeMobileDrawer();
+  }
+});
+// Resize handler — reset state on desktop
+window.addEventListener('resize', () => {
+  if (window.innerWidth >= 1024) {
+    document.getElementById('main-sidebar').classList.remove('open');
+    document.getElementById('mobile-drawer-overlay').classList.add('hidden');
+    document.body.style.overflow = '';
+  }
+});
+
+// Sparkline bars
+(function(){
+  const values = [320,410,280,520,480,380,600,1100,750,890,1320,2394];
+  const max = Math.max(...values);
+  const el = document.getElementById('spark');
+  values.forEach((v,i) => {
+    const h = Math.max(8, (v/max) * 64);
+    const b = document.createElement('div');
+    b.className = 'spark-bar' + (i === values.length -1 ? ' hot' : (i >= values.length - 3 ? ' hot' : ''));
+    b.style.height = h + 'px';
+    b.style.flex = '1';
+    b.style.maxWidth = '18px';
+    el.appendChild(b);
+  });
+})();
+
+// ============ SYNC MATRIX: Profile × Contract × Payslip ============
+(function() {
+  let profile = null;
+  try {
+    const raw = localStorage.getItem('taxProfile_v1');
+    if (raw) profile = JSON.parse(raw);
+  } catch(_) {}
+
+  // Mock contract data — in production this would come from uploaded contract OCR
+  const contract = {
+    grossSalary: 14500,
+    pensionEmployer: 6.5,        // %
+    studyEmployer: 7.5,          // % (קרן השתלמות)
+    severance: 8.33,             // %
+    overtime125Hours: 16,
+    overtime150Hours: 8,
+    vacationDays: 14,
+    creditPoints: profile ? null : 2.25, // contract may state credits if known
+    geoEligible: false,
+  };
+
+  // Mock payslip data — in production this would come from latest uploaded payslip
+  const payslip = {
+    grossSalary: 14500,
+    pensionEmployer: 6.0,        // less than contract — FLAG
+    studyEmployer: 7.5,
+    severance: 8.33,
+    overtime125Hours: 12,        // less than contract — FLAG
+    overtime150Hours: 8,
+    vacationDaysUsed: 0,
+    vacationDaysAccrued: 14,
+    creditPoints: 2.25,
+    geoExemption: 0,             // 0% applied
+  };
+
+  // Profile-derived expectations
+  const profilePoints = profile ? calcProfilePoints(profile) : null;
+  const profileGeoPct = profile?.cityPct || 0;
+  const profileGeoCity = profile?.cityName || null;
+
+  function calcProfilePoints(p) {
+    let pts = 2.25;
+    if (p.gender === 'f') pts += 0.5;
+    if (p.status === 'single-parent') pts += 1;
+    pts += (p.kidsYoung || 0) * 1 + (p.kidsOld || 0) * 0.5;
+    if (['bachelor','phd'].includes(p.edu)) pts += 1;
+    else if (p.edu === 'master') pts += 0.5;
+    if (p.special?.includes('discharged')) pts += 1;
+    if (p.special?.includes('oleh')) pts += 0.25;
+    return pts;
+  }
+
+  // Build comparison rows
+  const rows = [
+    {
+      param: 'שכר ברוטו חודשי',
+      profile: profile ? `₪${(profile.expectedSalary || contract.grossSalary).toLocaleString('he')}` : '—',
+      contract: `₪${contract.grossSalary.toLocaleString('he')}`,
+      payslip: `₪${payslip.grossSalary.toLocaleString('he')}`,
+      status: payslip.grossSalary === contract.grossSalary ? 'ok' : 'flag',
+    },
+    {
+      param: 'נקודות זיכוי',
+      profile: profilePoints ? profilePoints.toFixed(2) : '— (השלם פרופיל)',
+      contract: contract.creditPoints || 'לא מצוין',
+      payslip: payslip.creditPoints.toFixed(2),
+      status: profilePoints && Math.abs(profilePoints - payslip.creditPoints) > 0.01 ? 'flag' : (profilePoints ? 'ok' : 'pending'),
+      note: profilePoints && profilePoints > payslip.creditPoints
+        ? `הפרופיל מצביע על ${profilePoints} נקודות, בתלוש מופיעות ${payslip.creditPoints} — חסר!`
+        : null,
+    },
+    {
+      param: 'הפרשת מעסיק לפנסיה',
+      profile: '6.5% (חוקי מינ׳)',
+      contract: `${contract.pensionEmployer}%`,
+      payslip: `${payslip.pensionEmployer}%`,
+      status: payslip.pensionEmployer < contract.pensionEmployer ? 'flag' : 'ok',
+      note: payslip.pensionEmployer < contract.pensionEmployer
+        ? `המעסיק מפריש פחות מהמוסכם בחוזה — ${(contract.pensionEmployer - payslip.pensionEmployer).toFixed(1)}% פער`
+        : null,
+    },
+    {
+      param: 'קרן השתלמות',
+      profile: '7.5% (סטנדרט)',
+      contract: `${contract.studyEmployer}%`,
+      payslip: `${payslip.studyEmployer}%`,
+      status: payslip.studyEmployer === contract.studyEmployer ? 'ok' : 'flag',
+    },
+    {
+      param: 'שעות נוספות 125%',
+      profile: '—',
+      contract: `${contract.overtime125Hours} שעות`,
+      payslip: `${payslip.overtime125Hours} שעות`,
+      status: payslip.overtime125Hours < contract.overtime125Hours ? 'flag' : 'ok',
+      note: payslip.overtime125Hours < contract.overtime125Hours
+        ? `שולם עבור ${payslip.overtime125Hours} שעות, בחוזה ${contract.overtime125Hours} — פער ${contract.overtime125Hours - payslip.overtime125Hours} שעות`
+        : null,
+    },
+    {
+      param: 'הנחת יישוב מזכה',
+      profile: profileGeoPct ? `${profileGeoPct}% · ${profileGeoCity}` : (profile ? 'לא רלוונטי' : '—'),
+      contract: contract.geoEligible ? 'זכאי' : 'לא מצוין',
+      payslip: payslip.geoExemption ? `${payslip.geoExemption}%` : '0% (לא מיושם)',
+      status: profileGeoPct > 0 && payslip.geoExemption === 0 ? 'flag' : (profileGeoPct ? 'ok' : 'na'),
+      note: profileGeoPct > 0 && payslip.geoExemption === 0
+        ? `אתה זכאי ל-${profileGeoPct}% הנחה ב-${profileGeoCity} — לא מיושם בתלוש!`
+        : null,
+    },
+    {
+      param: 'ימי חופשה צבורים',
+      profile: '—',
+      contract: `${contract.vacationDays} ימים בשנה`,
+      payslip: `${payslip.vacationDaysAccrued} ימים`,
+      status: 'ok',
+    },
+  ];
+
+  // Render
+  const tbody = document.getElementById('syncTbody');
+  if (!tbody) return;
+
+  const STATUS = {
+    ok:      { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', icon: 'check', label: 'מסונכרן' },
+    flag:    { bg: 'bg-orange-50',  text: 'text-orange-700',  border: 'border-orange-300',  icon: 'alert-triangle', label: 'פער' },
+    pending: { bg: 'bg-sand',       text: 'text-charcoal/55', border: 'border-charcoal/15', icon: 'help-circle', label: 'חסר מידע' },
+    na:      { bg: 'bg-gray-50',    text: 'text-gray-500',    border: 'border-gray-200',    icon: 'minus',  label: 'לא רלוונטי' },
+  };
+
+  rows.forEach((r, i) => {
+    const s = STATUS[r.status];
+    const tr = document.createElement('tr');
+    tr.className = 'border-b border-charcoal/8 hover:bg-sand/30 transition-colors';
+    tr.innerHTML = `
+      <td class="p-4 font-semibold text-charcoal">${r.param}</td>
+      <td class="p-4 font-mono text-charcoal/75 text-xs">${r.profile}</td>
+      <td class="p-4 font-mono text-charcoal/75 text-xs">${r.contract}</td>
+      <td class="p-4 font-mono text-xs ${r.status === 'flag' ? 'text-orange-700 font-bold' : 'text-charcoal/85'}">${r.payslip}</td>
+      <td class="p-4">
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 ${s.bg} ${s.text} border ${s.border} text-[10px] tracking-widest uppercase font-mono whitespace-nowrap">
+          <i data-lucide="${s.icon}" class="w-3 h-3"></i>${s.label}
+        </span>
+      </td>
+    `;
+    tbody.appendChild(tr);
+
+    if (r.note) {
+      const noteTr = document.createElement('tr');
+      noteTr.className = 'border-b border-charcoal/8';
+      noteTr.innerHTML = `
+        <td colspan="5" class="px-4 pb-3 -mt-1">
+          <div class="text-xs text-orange-800 bg-orange-50/70 border-r-2 border-orange-400 p-2.5 pr-3 leading-relaxed">
+            <i data-lucide="info" class="w-3 h-3 inline-block ml-1 align-text-bottom"></i>${r.note}
+          </div>
+        </td>
+      `;
+      tbody.appendChild(noteTr);
+    }
+  });
+
+  // Compute sync score (% of OK rows out of relevant rows)
+  const relevant = rows.filter(r => r.status !== 'na' && r.status !== 'pending');
+  const ok = relevant.filter(r => r.status === 'ok').length;
+  const score = relevant.length ? Math.round((ok / relevant.length) * 100) : 100;
+  const scoreEl = document.getElementById('syncScore');
+  if (scoreEl) {
+    scoreEl.textContent = score + '%';
+    if (score < 70) scoreEl.style.color = '#fb923c';
+    else if (score < 90) scoreEl.style.color = '#B89B5E';
+  }
+
+  lucide.createIcons();
+})();
+
+// ============ PRICING MATRIX (Depth × Volume) ============
+const DEPTH_INFO = {
+  basic:   { label: 'Basic',   pricePerUnit: 8,  desc: '14 בדיקות בסיסיות + דוח PDF' },
+  pro:     { label: 'Pro',     pricePerUnit: 10, desc: '29 בדיקות + פרופיל + מטריצת סנכרון' },
+  premium: { label: 'Premium', pricePerUnit: 14, desc: '29 בדיקות + מכתב דרישה + מרכז זכאויות + עוזר חכם (Bot)' },
+};
+const VOLUME_INFO = {
+  1:  { discount: 0,    label: 'תלוש בודד' },
+  3:  { discount: 0.10, label: 'רבעון (3 חודשים)' },
+  6:  { discount: 0.17, label: 'חצי שנה (6 חודשים)' },
+  12: { discount: 0.25, label: 'שנה מלאה (12 חודשים)' },
+};
+
+let pricingState = { depth: 'pro', vol: 3 };
+
+function updatePricing() {
+  const d = DEPTH_INFO[pricingState.depth];
+  const v = VOLUME_INFO[pricingState.vol];
+  const baseTotal = d.pricePerUnit * pricingState.vol;
+  const discounted = baseTotal * (1 - v.discount);
+  const perUnit = discounted / pricingState.vol;
+
+  const summaryEl = document.getElementById('orderSummary');
+  const detailEl = document.getElementById('orderDetail');
+  const priceEl = document.getElementById('orderPrice');
+  const perUnitEl = document.getElementById('orderPerUnit');
+
+  if (summaryEl) summaryEl.textContent = `${pricingState.vol} ${pricingState.vol === 1 ? 'תלוש' : 'תלושים'} · עומק ${d.label}`;
+  if (detailEl) detailEl.textContent = d.desc + (pricingState.vol > 1 ? ' · השוואה רב-חודשית' : '');
+  if (priceEl) priceEl.textContent = discounted.toFixed(2);
+  if (perUnitEl) perUnitEl.textContent = `${perUnit.toFixed(2)} ₪ לתלוש${v.discount > 0 ? ` · חיסכון ${Math.round(v.discount*100)}%` : ''}`;
+}
+
+document.querySelectorAll('.depth-card').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.depth-card').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    pricingState.depth = btn.dataset.depth;
+    updatePricing();
+  });
+});
+document.querySelectorAll('.vol-card').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.vol-card').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    pricingState.vol = +btn.dataset.vol;
+    updatePricing();
+  });
+});
+updatePricing();
+
+// 29 checks grid
+(function(){
+  const checks = [
+    {n:'שכר בסיס', s:'ok'},
+    {n:'שעות נוספות 125%', s:'flag', a:'₪437'},
+    {n:'שעות נוספות 150%', s:'ok'},
+    {n:'עבודת לילה', s:'ok'},
+    {n:'עבודת שבת', s:'ok'},
+    {n:'עבודת חג', s:'ok'},
+    {n:'תעריף שעתי', s:'ok'},
+    {n:'ביטוח לאומי', s:'ok'},
+    {n:'מס בריאות', s:'ok'},
+    {n:'מס הכנסה', s:'ok'},
+    {n:'נקודות זיכוי', s:'ok'},
+    {n:'הפרשה לפנסיה', s:'flag', a:'₪62/ח'},
+    {n:'קרן השתלמות', s:'ok'},
+    {n:'קרן פיצויים', s:'ok'},
+    {n:'אובדן כושר עבודה', s:'ok'},
+    {n:'דמי הבראה', s:'flag', a:'₪568'},
+    {n:'דמי חופשה', s:'ok'},
+    {n:'דמי מחלה', s:'ok'},
+    {n:'ותק', s:'ok'},
+    {n:'שווי רכב', s:'ok'},
+    {n:'הוצאות נסיעה', s:'ok'},
+    {n:'ארוחות', s:'ok'},
+    {n:'טלפון/נייד', s:'ok'},
+    {n:'בונוס שנתי', s:'ok'},
+    {n:'עמלות', s:'ok'},
+    {n:'ניכויים חריגים', s:'ok'},
+    {n:'מקדמות', s:'ok'},
+    {n:'התאמות חוזיות', s:'ok'},
+    {n:'הודעה מוקדמת', s:'ok'}
+  ];
+  const grid = document.getElementById('check-grid');
+  checks.forEach((c, i) => {
+    const tile = document.createElement('div');
+    tile.className = 'check-tile ' + c.s;
+    tile.innerHTML = `
+      <div class="flex items-start justify-between mb-3">
+        <div class="text-[10px] tracking-widest uppercase ${c.s==='flag'?'text-gold':'text-charcoal/40'} font-mono">#${String(i+1).padStart(2,'0')}</div>
+        ${c.s==='flag'
+          ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#B89B5E" stroke-width="2"><path d="M12 9v4"/><circle cx="12" cy="17" r="0.5" fill="#B89B5E"/><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>'
+          : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgb(61 122 61)" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>'}
+      </div>
+      <div class="text-sm font-semibold leading-tight ${c.s==='flag'?'':'text-charcoal'}">${c.n}</div>
+      ${c.a ? `<div class="font-serif text-lg font-bold text-gold mt-2">${c.a}</div>` : '<div class="text-[10px] text-charcoal/40 tracking-widest uppercase mt-2">עבר</div>'}
+    `;
+    grid.appendChild(tile);
+  });
+})();
+</script>
+<!-- ============ FLOATING ASSISTANT BOT (Premium) ============ -->
+<div id="botContainer" class="hidden">
+  <button id="botToggle" class="fixed bottom-6 left-6 z-50 w-14 h-14 bg-charcoal text-gold flex items-center justify-center shadow-2xl hover:bg-gold hover:text-charcoal transition-all group" aria-label="עוזר חכם">
+    <i data-lucide="message-circle" class="w-6 h-6 group-hover:scale-110 transition-transform"></i>
+    <span class="absolute -top-1 -right-1 w-3 h-3 bg-gold rounded-full animate-pulse"></span>
+  </button>
+
+  <div id="botPanel" class="fixed bottom-6 left-6 z-50 w-[380px] max-w-[calc(100vw-3rem)] h-[560px] max-h-[calc(100vh-3rem)] bg-cream border border-charcoal/15 shadow-2xl flex flex-col hidden">
+    <!-- Header -->
+    <div class="bg-charcoal text-cream p-4 flex items-center justify-between border-b border-gold/30">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 bg-gold/20 border border-gold/40 flex items-center justify-center">
+          <i data-lucide="sparkles" class="w-4 h-4 text-gold"></i>
+        </div>
+        <div>
+          <div class="font-serif font-black text-base leading-tight">עוזר חכם</div>
+          <div class="text-[10px] tracking-widest uppercase text-gold/80 font-mono">תלוש · AI Assistant</div>
+        </div>
+      </div>
+      <button id="botClose" class="text-white/60 hover:text-gold transition" aria-label="סגור">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
+
+    <!-- Messages -->
+    <div id="botMessages" class="flex-1 overflow-y-auto p-4 space-y-4 bg-cream"></div>
+
+    <!-- Suggested questions -->
+    <div id="botSuggestions" class="px-4 py-3 border-t border-charcoal/10 bg-sand/40">
+      <div class="text-[10px] tracking-widest uppercase text-charcoal/45 font-mono mb-2">שאלות נפוצות</div>
+      <div class="flex flex-wrap gap-1.5">
+        <button class="suggest-chip" data-q="מה זה מטריצת סנכרון?">מטריצת סנכרון</button>
+        <button class="suggest-chip" data-q="איך מעלים תלוש?">איך מעלים תלוש</button>
+        <button class="suggest-chip" data-q="למה כדאי למלא פרופיל מס?">למה למלא פרופיל</button>
+        <button class="suggest-chip" data-q="ההבדל בין Basic ל-Premium?">ההבדלים במסלולים</button>
+      </div>
+    </div>
+
+    <!-- Input -->
+    <div class="p-3 border-t border-charcoal/10 bg-cream">
+      <form id="botForm" class="flex gap-2">
+        <input id="botInput" type="text" placeholder="שאל אותי על האתר..." spellcheck="false" autocomplete="off" class="flex-1 px-3 py-2.5 bg-sand border border-charcoal/15 text-sm focus:border-gold focus:outline-none" autocomplete="off" />
+        <button type="submit" class="bg-charcoal text-gold px-4 hover:bg-gold hover:text-charcoal transition" aria-label="שלח">
+          <i data-lucide="arrow-left" class="w-4 h-4"></i>
+        </button>
+      </form>
+      <div class="text-[10px] text-charcoal/40 mt-2 font-mono tracking-wider text-center">תשובות מתבססות על האתר בלבד · לא ייעוץ משפטי</div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .suggest-chip {
+    font-size: 11px;
+    padding: 5px 10px;
+    background: #fff;
+    border: 1px solid rgba(10,10,10,0.12);
+    color: rgba(10,10,10,0.7);
+    cursor: pointer;
+    transition: all .15s;
+    font-family: inherit;
+  }
+  .suggest-chip:hover { border-color: #B89B5E; color: #0a0a0a; background: #FDFBF7; }
+  .bot-msg { animation: fadeUp .3s ease; }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:none; } }
+  .bot-msg-user { align-self: flex-end; background:#0a0a0a; color:#FDFBF7; padding: 10px 14px; max-width: 85%; font-size: 13.5px; line-height: 1.55; }
+  .bot-msg-bot { align-self: flex-start; background:#fff; border: 1px solid rgba(10,10,10,0.08); padding: 12px 14px; max-width: 90%; font-size: 13.5px; line-height: 1.6; color:#0a0a0a; }
+  .bot-msg-bot strong { color:#B89B5E; }
+  #botMessages { display:flex; flex-direction: column; gap: 12px; }
+  .bot-typing::after { content: '...'; animation: typing 1.2s steps(4) infinite; }
+  @keyframes typing { 0% { content: '.'; } 33% { content: '..'; } 66% { content: '...'; } }
+</style>
+
+<script>
+// ============ BOT LOGIC ============
+(function() {
+  const SYSTEM_PROMPT = `אתה עוזר חכם של אתר "תלוש" — מערכת לבדיקת תלושי שכר במגזר הפרטי בישראל.
+תפקידך: לענות על שאלות משתמשים על האתר בלבד. אל תיתן ייעוץ משפטי, מס או חשבונאי. אל תענה על שאלות לא רלוונטיות לאתר.
+
+== מבנה האתר ==
+1. **דשבורד** — מציג את כל הפערים, KPIs, מטריצת סנכרון, תמחור.
+2. **פרופיל מס** (TaxProfile) — טופס חכם שאוסף נתונים אישיים: מגדר, מצב משפחתי, ילדים, השכלה, יישוב מגורים, מצבים מיוחדים (עולה, משוחרר, נכה, תרומות, מעל תקרת פנסיה). שומר ב-localStorage על המכשיר. נשאר על המכשיר — לא נשלח לשרת.
+3. **מחשבון נטו** (NetCalculator) — מחשב נטו מברוטו לפי שיעורי 2022-2026: מס הכנסה פרוגרסיבי, ביטוח לאומי, בריאות, פנסיה, נקודות זיכוי, פטור גיאוגרפי. בורר שנים בולט.
+4. **מרכז זכאויות** (Rights) — 18 זכאויות (מס/ב.ל./עובד/משפחה) שמוצגות מותאמות אישית לפי הפרופיל: זכאי / לבדוק / לא רלוונטי. כל זכאות מקושרת לכל-זכות.org.il.
+5. **מסמכים משפטיים** (Legal) — תנאי שימוש, פרטיות, ויתור משפטי, הסכם רישיון.
+
+== מטריצת סנכרון ==
+טבלה שמשווה 3 מקורות לכל פרמטר: פרופיל המס × חוזה ההעסקה × התלוש בפועל. כל פער (כתום) = החזר אפשרי. בודקת: שכר ברוטו, נקודות זיכוי, פנסיה, קרן השתלמות, שעות נוספות, הנחת יישוב, חופשה. מציגה ציון סנכרון % חי.
+
+== מסלולי תמחור — 2 צירים ==
+**עומק (Depth):**
+- Basic (8₪/תלוש): 14 בדיקות בסיסיות + דוח PDF
+- Pro (10₪/תלוש): 29 בדיקות מלאות + פרופיל מס + מטריצת סנכרון
+- Premium (14₪/תלוש): 29 בדיקות + מכתב דרישה למעסיק + מרכז זכאויות + עוזר חכם (אני!)
+
+**כמות (Volume):**
+- 1 תלוש: ללא הנחה
+- 3 תלושים: 10% הנחה
+- 6 תלושים: 17% הנחה
+- 12 תלושים: 25% הנחה
+
+המשתמש בוחר עומק וכמות בנפרד. תלוש בודד יכול להיות פרימיום מלא.
+
+== פרטיות ==
+כל המידע נשמר ב-localStorage של הדפדפן. לא נשלח לשרת. לא נצפה ע״י אף אחד מלבד המשתמש. למחוק: כלי מפתחים → Application → Local Storage → מחיקה. במצב גלישה בסתר — נמחק עם סגירת חלון.
+
+== חוקי תשובות ==
+- ענה תמיד בעברית, קצר ומדויק (2-4 משפטים).
+- השתמש ב-**מודגש** למילים חשובות.
+- אם נשאלת על משהו לא קשור לאתר ("מה השעה?" / "כתוב לי שיר") — סרב באדיבות והפנה לשאלות על האתר.
+- אם נשאלת לייעוץ משפטי/מס ספציפי — הפנה לכתב הוויתור: "האתר אינפורמטיבי בלבד; לייעוץ אישי פנה לרו״ח/עו״ד."
+- אם המשתמש שואל על פיצ'ר שלא קיים באתר — אמור בכנות: "פיצ'ר זה לא קיים כרגע באתר."
+- אל תמציא נתונים, סכומים או חוקים שלא הוזכרו ב-system prompt הזה.`;
+
+  const botContainer = document.getElementById('botContainer');
+  const botToggle = document.getElementById('botToggle');
+  const botPanel = document.getElementById('botPanel');
+  const botClose = document.getElementById('botClose');
+  const botMessages = document.getElementById('botMessages');
+  const botForm = document.getElementById('botForm');
+  const botInput = document.getElementById('botInput');
+
+  // Show bot only for Premium tier (or always — for now show always so users see what they get)
+  // For demo: show always
+  botContainer.classList.remove('hidden');
+  // Render bot icons (after container becomes visible)
+  if (window.lucide) lucide.createIcons();
+
+  let conversation = [];
+  let isTyping = false;
+
+  function addMessage(role, text) {
+    const div = document.createElement('div');
+    div.className = `bot-msg bot-msg-${role}`;
+    // Convert **bold** to <strong>
+    div.innerHTML = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br/>');
+    botMessages.appendChild(div);
+    botMessages.scrollTop = botMessages.scrollHeight;
+    return div;
+  }
+
+  function welcome() {
+    addMessage('bot', 'שלום! אני העוזר החכם של תלוש. אשמח לעזור עם שאלות על האתר — איך מעלים תלוש, מה זה מטריצת סנכרון, אילו זכאויות מגיעות לך, ועוד.\n\nשאל אותי כל דבר 👇');
+  }
+
+  async function sendMessage(text) {
+    if (!text.trim() || isTyping) return;
+    isTyping = true;
+
+    addMessage('user', text);
+    conversation.push({ role: 'user', content: text });
+
+    const typingEl = addMessage('bot', '');
+    typingEl.innerHTML = '<span class="bot-typing"></span>';
+
+    try {
+      const messages = [{ role: 'user', content: SYSTEM_PROMPT + '\n\n---\n\nהשאלה: ' + text }];
+      // Include short history for context
+      const recent = conversation.slice(-6);
+      const historyContext = recent.length > 1
+        ? '\n\nהיסטוריית שיחה אחרונה:\n' + recent.slice(0, -1).map(m => `${m.role === 'user' ? 'משתמש' : 'אתה'}: ${m.content}`).join('\n')
+        : '';
+
+      const reply = await window.claude.complete({
+        messages: [{ role: 'user', content: SYSTEM_PROMPT + historyContext + '\n\nשאלת המשתמש: ' + text + '\n\nענה בעברית, קצר ומדויק (2-4 משפטים), על בסיס המידע שלמעלה בלבד.' }]
+      });
+
+      typingEl.innerHTML = (reply || 'מצטער, לא הצלחתי לענות כעת. נסה שוב.').replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br/>');
+      conversation.push({ role: 'assistant', content: reply });
+    } catch (err) {
+      typingEl.innerHTML = 'מצטער, יש בעיה בחיבור. נסה שוב בעוד רגע.';
+    }
+
+    isTyping = false;
+    botMessages.scrollTop = botMessages.scrollHeight;
+  }
+
+  botToggle.addEventListener('click', () => {
+    botPanel.classList.toggle('hidden');
+    botToggle.classList.toggle('hidden');
+    if (!botMessages.children.length) welcome();
+    setTimeout(() => botInput.focus(), 100);
+  });
+
+  botClose.addEventListener('click', () => {
+    botPanel.classList.add('hidden');
+    botToggle.classList.remove('hidden');
+  });
+
+  botForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const text = botInput.value.trim();
+    if (!text) return;
+    botInput.value = '';
+    sendMessage(text);
+  });
+
+  document.querySelectorAll('.suggest-chip').forEach(chip => {
+    chip.addEventListener('click', () => sendMessage(chip.dataset.q));
+  });
+})();
+</script>
+
+<script>
+// ============ FINAL: Wire orphan href="#" links + Quick actions ============
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('a[href="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      const text = a.textContent.trim();
+      Talush.confirm(`"${text}"`, `פעולה זו תהיה זמינה במלואה לאחר חיבור למערכת ה-backend. כרגע זוהי תצוגה (mock).`, 'אישור', 'סגור');
+    });
+  });
+
+  const botQuick = document.getElementById('quickActionBot');
+  if (botQuick) {
+    botQuick.addEventListener('click', () => {
+      const t = document.getElementById('botToggle');
+      if (t) t.click();
+    });
+  }
+});
+
+// Final pass: ensure all lucide icons are rendered (catches anything injected late)
+window.addEventListener('load', () => {
+  if (window.lucide) {
+    try { lucide.createIcons(); } catch(e) { console.warn('[lucide] late render failed', e); }
+  }
+});
+
+// === FREEMIUM CTA: Highlight uploader + scroll, with anti-abuse check ===
+document.addEventListener('DOMContentLoaded', () => {
+  const startBtn = document.getElementById('startFreeCheckBtn');
+  const banner = document.getElementById('freemiumBanner');
+  if (!startBtn || !banner) return;
+  
+  // Get current user email (from session if logged in)
+  function getUserEmail() {
+    try {
+      const sess = localStorage.getItem('talush_user_session');
+      if (sess) return JSON.parse(sess).email || '';
+    } catch {}
+    return '';
+  }
+  
+  // On load: check if freemium already used → swap banner UI + lock uploader
+  if (window.FreemiumGuard) {
+    FreemiumGuard.checkUsage(getUserEmail()).then(result => {
+      if (result.used) {
+        // Replace banner content with "already used" state
+        const since = result.since ? new Date(result.since).toLocaleDateString('he-IL') : '';
+        const reasonText = result.reason === 'email' 
+          ? 'מייל זה כבר ניצל את הבדיקה החינמית' 
+          : 'מכשיר זה כבר ניצל את הבדיקה החינמית';
+        
+        banner.innerHTML = `
+          <div class="shrink-0 w-10 h-10 rounded-full flex items-center justify-center" style="background:rgba(217,164,65,0.15); border:1px solid rgba(217,164,65,0.4)">
+            <i data-lucide="check-circle-2" class="w-4 h-4" style="color:#9b8149"></i>
+          </div>
+          <div class="flex-1 min-w-[260px]">
+            <div class="font-serif font-bold text-charcoal text-base mb-1">הבדיקה החינמית נוצלה ${since ? `· ${since}` : ''}</div>
+            <p class="text-sm text-charcoal/75 leading-relaxed">
+              ${reasonText}. להמשך בדיקת תלושים, בחר חבילה — מ-₪8 לתלוש בלבד.
+            </p>
+          </div>
+          <button type="button" id="goToPricingBtn" class="shrink-0 bg-charcoal text-cream px-6 py-3.5 text-xs tracking-[0.25em] uppercase font-mono font-semibold hover:bg-gold hover:text-charcoal transition-colors flex items-center gap-2">
+            <i data-lucide="arrow-left" class="w-4 h-4"></i>
+            בחר חבילה
+          </button>
+        `;
+        banner.style.background = 'rgba(217,164,65,0.06)';
+        banner.style.borderColor = 'rgba(217,164,65,0.3)';
+        if (window.lucide) lucide.createIcons();
+        
+        // Wire pricing scroll
+        document.getElementById('goToPricingBtn')?.addEventListener('click', () => {
+          const pricing = document.querySelector('[data-pricing-section]');
+          if (pricing) {
+            const r = pricing.getBoundingClientRect();
+            window.scrollTo({ top: window.scrollY + r.top - 100, behavior:'smooth' });
+          }
+        });
+        
+        // ===== LOCK THE UPLOADER =====
+        // אם המשתמש לא רכש חבילה → חוסמים את ה-uploader עצמו
+        const hasPaidPlan = (() => {
+          try {
+            const sess = localStorage.getItem('talush_user_session');
+            if (sess) {
+              const s = JSON.parse(sess);
+              return s.tier && s.tier !== 'free';
+            }
+          } catch {}
+          return false;
+        })();
+        
+        if (!hasPaidPlan) {
+          const uploaderHost = document.querySelector('[data-talush-uploader]');
+          if (uploaderHost) {
+            // Wrap uploader with overlay
+            const wrap = document.createElement('div');
+            wrap.style.cssText = 'position:relative;';
+            uploaderHost.parentNode.insertBefore(wrap, uploaderHost);
+            wrap.appendChild(uploaderHost);
+            
+            uploaderHost.style.cssText += 'pointer-events:none; filter:grayscale(0.6) opacity(0.5); user-select:none;';
+            uploaderHost.setAttribute('aria-disabled', 'true');
+            uploaderHost.setAttribute('inert', '');
+            
+            const overlay = document.createElement('div');
+            overlay.innerHTML = `
+              <div style="position:absolute; inset:0; background:rgba(253,251,247,0.85); backdrop-filter:blur(2px); display:flex; align-items:center; justify-content:center; z-index:5; border:1px dashed rgba(184,155,94,0.5);">
+                <div style="text-align:center; max-width:320px; padding:32px 24px;">
+                  <div style="width:48px; height:48px; margin:0 auto 16px; background:rgba(184,155,94,0.15); border:1px solid rgba(184,155,94,0.4); border-radius:50%; display:flex; align-items:center; justify-content:center;">
+                    <i data-lucide="lock" style="width:20px; height:20px; color:#9b8149;"></i>
+                  </div>
+                  <div style="font-family:'Frank Ruhl Libre',serif; font-weight:900; font-size:18px; color:#0a0a0a; margin-bottom:8px; line-height:1.3;">העלאה נעולה</div>
+                  <div style="font-size:13px; color:rgba(10,10,10,0.7); line-height:1.6; margin-bottom:18px;">הבדיקה החינמית כבר נוצלה. כדי לבדוק תלושים נוספים, יש לבחור חבילה.</div>
+                  <button type="button" id="unlockUploaderBtn" style="background:#0a0a0a; color:#FDFBF7; padding:10px 20px; font-size:11px; letter-spacing:0.2em; text-transform:uppercase; font-family:ui-monospace,monospace; font-weight:600; border:none; cursor:pointer; transition:all .2s;" onmouseover="this.style.background='#B89B5E'" onmouseout="this.style.background='#0a0a0a'">בחר חבילה →</button>
+                </div>
+              </div>
+            `;
+            wrap.appendChild(overlay);
+            if (window.lucide) lucide.createIcons();
+            
+            document.getElementById('unlockUploaderBtn')?.addEventListener('click', () => {
+              const pricing = document.querySelector('[data-pricing-section]');
+              if (pricing) {
+                const r = pricing.getBoundingClientRect();
+                window.scrollTo({ top: window.scrollY + r.top - 100, behavior:'smooth' });
+              }
+            });
+          }
+          
+          // Also lock the freemium CTA button itself (now redundant but defensive)
+          startBtn.disabled = true;
+          startBtn.style.cssText += 'opacity:0.4; cursor:not-allowed;';
+        }
+      }
+    });
+  }
+  
+  // Original CTA: scroll + highlight uploader
+  startBtn.addEventListener('click', () => {
+    const uploaderHost = document.querySelector('[data-talush-uploader]');
+    if (!uploaderHost) return;
+    
+    const rect = uploaderHost.getBoundingClientRect();
+    window.scrollTo({ top: window.scrollY + rect.top - 100, behavior: 'smooth' });
+    
+    uploaderHost.style.transition = 'box-shadow 0.4s ease';
+    uploaderHost.style.boxShadow = '0 0 0 4px rgba(184,155,94,0.5), 0 0 30px rgba(184,155,94,0.4)';
+    setTimeout(() => { uploaderHost.style.boxShadow = '0 0 0 0 rgba(184,155,94,0)'; }, 2000);
+    
+    setTimeout(() => {
+      const trigger = uploaderHost.querySelector('button, [role="button"], label[for]');
+      if (trigger) trigger.focus();
+    }, 800);
+  });
+  
+  // Hook into uploader: when first upload completes successfully → mark freemium used
+  // (uploader.js fires 'talush:file-added' / 'talush:upload-complete' on document)
+  document.addEventListener('talush:upload-complete', () => {
+    if (window.FreemiumGuard) {
+      FreemiumGuard.markUsed(getUserEmail());
+      console.log('[Talush] Freemium marked as used.');
+    }
+  });
+});
+</script>
+</body>
+</html>
