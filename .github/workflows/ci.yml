@@ -21,7 +21,11 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        # Use `npm install` (not `npm ci`) — known npm bug where lockfiles
+        # generated on Windows omit transitive deps of optional native
+        # bindings like @rolldown/binding-wasm32-wasi (@emnapi/core etc).
+        # `npm install` tolerates the drift and installs missing entries.
+        run: npm install --no-audit --no-fund --prefer-offline
 
       - name: Lint
         run: npm run lint
