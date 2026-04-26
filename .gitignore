@@ -38,7 +38,15 @@ graphify-out/
 src/graphify-out/
 dogfood-output/
 .playwright-mcp/
-*.png
+
+# Block PNG screenshots/artifacts at repo root + dogfood + graphify only
+# (NOT in public/, where assets must ship to Vercel)
+/*.png
+graphify-out/**/*.png
+src/graphify-out/**/*.png
+dogfood-output/**/*.png
+.playwright-mcp/**/*.png
+e2e/__screenshots__/**/*.png
 
 # Talush integration reference package (gitignored, local-only)
 talush-package/
