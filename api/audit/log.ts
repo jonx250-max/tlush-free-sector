@@ -10,8 +10,8 @@
  */
 
 import { createClient } from '@supabase/supabase-js'
-import { computeHash, HASH_CHAIN_GENESIS } from '../../src/lib/auditLog'
-import { isGeoAllowed } from '../_lib/geoCheck'
+import { computeHash, HASH_CHAIN_GENESIS } from '../../src/lib/auditLog.js'
+import { isGeoAllowed } from '../_lib/geoCheck.js'
 
 interface VercelRequest {
   method: string

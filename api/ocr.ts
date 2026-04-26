@@ -12,9 +12,9 @@
  * Returns: OcrResult { ok, rawText, structured, confidence, warnings }
  */
 
-import { callVision, callClaude, validateSums, type OcrResult } from './_lib/ocr'
-import { isGeoAllowed } from './_lib/geoCheck'
-import { rateLimit, extractClientIp } from './_lib/rateLimit'
+import { callVision, callClaude, validateSums, type OcrResult } from './_lib/ocr.js'
+import { isGeoAllowed } from './_lib/geoCheck.js'
+import { rateLimit, extractClientIp } from './_lib/rateLimit.js'
 
 interface VercelRequest {
   method: string

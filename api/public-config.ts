@@ -8,7 +8,7 @@
  * every Function request.
  */
 
-import { isGeoAllowed } from './_lib/geoCheck'
+import { isGeoAllowed } from './_lib/geoCheck.js'
 
 interface VercelRequest {
   method: string

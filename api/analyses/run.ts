@@ -19,10 +19,10 @@
  */
 
 import { createClient } from '@supabase/supabase-js'
-import { checksForTier, type DepthTier } from '../../src/services/checkRegistry'
-import { computeHash, HASH_CHAIN_GENESIS } from '../../src/lib/auditLog'
-import { isGeoAllowed } from '../_lib/geoCheck'
-import { rateLimit, extractClientIp } from '../_lib/rateLimit'
+import { checksForTier, type DepthTier } from '../../src/services/checkRegistry.js'
+import { computeHash, HASH_CHAIN_GENESIS } from '../../src/lib/auditLog.js'
+import { isGeoAllowed } from '../_lib/geoCheck.js'
+import { rateLimit, extractClientIp } from '../_lib/rateLimit.js'
 
 interface VercelRequest {
   method: string

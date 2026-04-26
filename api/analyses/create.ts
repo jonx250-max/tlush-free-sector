@@ -17,9 +17,9 @@
  */
 
 import { createClient } from '@supabase/supabase-js'
-import { calculatePrice, isValidMonths, isValidTier } from '../../src/lib/pricing'
-import { isGeoAllowed } from '../_lib/geoCheck'
-import { rateLimit, extractClientIp } from '../_lib/rateLimit'
+import { calculatePrice, isValidMonths, isValidTier } from '../../src/lib/pricing.js'
+import { isGeoAllowed } from '../_lib/geoCheck.js'
+import { rateLimit, extractClientIp } from '../_lib/rateLimit.js'
 
 interface VercelRequest {
   method: string
