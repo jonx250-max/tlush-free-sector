@@ -13,7 +13,7 @@
  * Tamper detection: re-run computeHash for each entry; mismatch = chain broken.
  */
 
-import { supabase } from './supabase'
+import { supabase } from './supabase.js'
 
 export interface AuditEntry {
   id?: number

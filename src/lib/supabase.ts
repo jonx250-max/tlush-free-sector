@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-import { appConfig } from './appConfig'
+import { appConfig } from './appConfig.js'
 
 export const supabase = appConfig.requiresSupabaseConfiguration
   ? null
