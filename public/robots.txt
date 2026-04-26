@@ -1,0 +1,16 @@
+# Beta — block all indexing until public launch
+User-agent: *
+Disallow: /
+
+# Disallow common crawlers explicitly
+User-agent: Googlebot
+Disallow: /
+
+User-agent: Bingbot
+Disallow: /
+
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
