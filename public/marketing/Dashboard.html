@@ -690,21 +690,21 @@ tailwind.config = {
 
         <!-- Right column -->
         <div class="space-y-6">
-          <!-- Contract upload (LIVE Uploader) — one-time per employer -->
+          <!-- Contract upload (LIVE Uploader) — worker uploads their own employment contract once -->
           <div id="contractUpload" class="fade-up" style="animation-delay:.32s">
             <div class="text-[11px] tracking-[0.2em] uppercase text-charcoal/50 mb-3 flex items-center gap-2">
               <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
-              <span>חוזה העסקה</span>
-              <span class="text-charcoal/30 text-[10px] tracking-normal normal-case">· פעם אחת לכל מעסיק</span>
+              <span>חוזה ההעסקה שלך</span>
+              <span class="text-charcoal/30 text-[10px] tracking-normal normal-case">· העלאה חד-פעמית</span>
             </div>
             <div data-talush-uploader data-type="contract" data-multi="true"></div>
           </div>
 
-          <!-- Payslip upload (LIVE Uploader) — recurring -->
+          <!-- Payslip upload (LIVE Uploader) — worker uploads their monthly payslip -->
           <div id="payslipUpload" class="fade-up" style="animation-delay:.35s">
             <div class="text-[11px] tracking-[0.2em] uppercase text-charcoal/50 mb-3 flex items-center gap-2">
               <i data-lucide="receipt" class="w-3.5 h-3.5"></i>
-              <span>תלוש שכר</span>
+              <span>תלוש השכר שלך</span>
               <span class="text-charcoal/30 text-[10px] tracking-normal normal-case">· כל חודש</span>
             </div>
             <div data-talush-uploader data-type="payslip" data-multi="true"></div>
