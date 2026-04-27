@@ -79,6 +79,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     })
   }
 
+  // Magic-byte validation: refuse to forward non-image payloads to Vision.
+  // Without this check an attacker could burn the global OCR quota by
+  // POSTing arbitrary base64 (random data, zip bombs, etc.) — Vision
+  // would 4xx but the global daily counter would still tick down.
+  if (!isAllowedImagePayload(imageBase64, req.body?.format)) {
+    return res.status(415).json({
+      error: 'הקובץ אינו תמונה נתמכת (JPEG/PNG/HEIC/WebP/GIF)',
+      code: 'UNSUPPORTED_MEDIA_TYPE',
+    })
+  }
+
   const fileHash = createHash('sha256').update(imageBase64).digest('hex')
   const mockMode = process.env.OCR_MOCK_MODE === 'true'
 
@@ -197,4 +208,49 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     logServerError('ocr-pipeline', err)
     return res.status(500).json(safeError('OCR_FAILED'))
   }
+}
+
+/**
+ * Validate that the base64 payload starts with a recognised image-format
+ * magic-byte signature. Only the first 16 bytes are decoded so the check
+ * is cheap and runs before any quota/cache lookup.
+ *
+ * Allowed: JPEG, PNG, GIF, WebP, HEIC/HEIF (when format hint = 'heic').
+ * Anything else (PDF, text, random data) returns false.
+ */
+export function isAllowedImagePayload(base64: string, formatHint?: string): boolean {
+  if (typeof base64 !== 'string' || base64.length < 8) return false
+
+  let head: Buffer
+  try {
+    head = Buffer.from(base64.slice(0, 32), 'base64')
+  } catch {
+    return false
+  }
+  if (head.length < 4) return false
+
+  // JPEG: FF D8 FF
+  if (head[0] === 0xff && head[1] === 0xd8 && head[2] === 0xff) return true
+  // PNG: 89 50 4E 47 0D 0A 1A 0A
+  if (
+    head[0] === 0x89 && head[1] === 0x50 && head[2] === 0x4e && head[3] === 0x47 &&
+    head[4] === 0x0d && head[5] === 0x0a && head[6] === 0x1a && head[7] === 0x0a
+  ) return true
+  // GIF: "GIF87a" or "GIF89a"
+  if (head[0] === 0x47 && head[1] === 0x49 && head[2] === 0x46 && head[3] === 0x38) return true
+  // WebP: "RIFF" .... "WEBP"
+  if (
+    head.length >= 12 &&
+    head[0] === 0x52 && head[1] === 0x49 && head[2] === 0x46 && head[3] === 0x46 &&
+    head[8] === 0x57 && head[9] === 0x45 && head[10] === 0x42 && head[11] === 0x50
+  ) return true
+  // HEIC/HEIF: ISO-BMFF box "ftyp" at offset 4, then a HEIF brand
+  if (formatHint === 'heic' && head.length >= 12 &&
+      head[4] === 0x66 && head[5] === 0x74 && head[6] === 0x79 && head[7] === 0x70) {
+    const brand = head.slice(8, 12).toString('ascii')
+    if (['heic', 'heix', 'hevc', 'hevx', 'mif1', 'msf1', 'heim', 'heis'].includes(brand)) {
+      return true
+    }
+  }
+  return false
 }

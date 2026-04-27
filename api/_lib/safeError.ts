@@ -4,6 +4,13 @@
  *
  * Full errors still go to console.error so Vercel runtime logs capture them
  * for debugging — only the response body is sanitized.
+ *
+ * Boundary policy: callers must NEVER map raw Postgres SQLSTATE codes into
+ * distinct public error codes. An attacker probing constraint failures
+ * (e.g. forcing 23505 to enumerate columns) should see only the generic
+ * code passed to `safeError()`. Map pg-codes to HTTP categories at most
+ * (e.g. 42501 → 403) inside the handler, never to bespoke public codes
+ * that mirror DB structure.
  */
 
 import { randomBytes } from 'node:crypto'
@@ -30,23 +37,6 @@ export function safeError(code: string, hebrewOverride?: string): SafeErrorBody 
     error: hebrewOverride ?? HEBREW_USER_MESSAGES[code] ?? HEBREW_USER_MESSAGES.INTERNAL,
     code,
     requestId: randomBytes(8).toString('hex'),
-  }
-}
-
-/**
- * Maps known Postgres error codes to a safe public code. Returns null
- * for unknown codes — caller should use a generic 'INTERNAL' fallback.
- */
-export function mapPostgresError(pgCode: string | undefined): string | null {
-  if (!pgCode) return null
-  switch (pgCode) {
-    case '23505': return 'DUPLICATE'           // unique violation
-    case '23503': return 'INVALID_REFERENCE'    // foreign key violation
-    case '23514': return 'VALIDATION_FAILED'    // check constraint
-    case '42501': return 'FORBIDDEN'            // insufficient privilege
-    case '22023': return 'INVALID_INPUT'        // invalid parameter
-    case '40001': return 'CONFLICT'             // serialization failure
-    default: return null
   }
 }
 
