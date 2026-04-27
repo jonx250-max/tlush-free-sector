@@ -237,7 +237,7 @@ tailwind.config = {
         <span>התלושים שלי</span>
         <span class="text-[10px] text-gold mr-auto">12</span>
       </a>
-      <a href="#syncMatrix" class="nav-item">
+      <a href="#contractUpload" class="nav-item">
         <i data-lucide="file-signature" class="icon"></i>
         <span>חוזה העסקה</span>
       </a>
@@ -690,8 +690,23 @@ tailwind.config = {
 
         <!-- Right column -->
         <div class="space-y-6">
-          <!-- Upload new (LIVE Uploader) -->
-          <div class="fade-up" style="animation-delay:.35s">
+          <!-- Contract upload (LIVE Uploader) — one-time per employer -->
+          <div id="contractUpload" class="fade-up" style="animation-delay:.32s">
+            <div class="text-[11px] tracking-[0.2em] uppercase text-charcoal/50 mb-3 flex items-center gap-2">
+              <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
+              <span>חוזה העסקה</span>
+              <span class="text-charcoal/30 text-[10px] tracking-normal normal-case">· פעם אחת לכל מעסיק</span>
+            </div>
+            <div data-talush-uploader data-type="contract" data-multi="true"></div>
+          </div>
+
+          <!-- Payslip upload (LIVE Uploader) — recurring -->
+          <div id="payslipUpload" class="fade-up" style="animation-delay:.35s">
+            <div class="text-[11px] tracking-[0.2em] uppercase text-charcoal/50 mb-3 flex items-center gap-2">
+              <i data-lucide="receipt" class="w-3.5 h-3.5"></i>
+              <span>תלוש שכר</span>
+              <span class="text-charcoal/30 text-[10px] tracking-normal normal-case">· כל חודש</span>
+            </div>
             <div data-talush-uploader data-type="payslip" data-multi="true"></div>
           </div>
 
@@ -719,7 +734,7 @@ tailwind.config = {
           <div class="card p-6 fade-up" style="animation-delay:.45s">
             <div class="text-[11px] tracking-[0.2em] uppercase text-charcoal/50 mb-4">פעולות מהירות</div>
             <div class="space-y-3">
-              <a href="#syncMatrix" class="flex items-center justify-between py-2.5 border-b border-charcoal/5 hover:text-gold transition-colors">
+              <a href="#contractUpload" class="flex items-center justify-between py-2.5 border-b border-charcoal/5 hover:text-gold transition-colors">
                 <span class="text-sm flex items-center gap-3"><i data-lucide="file-plus" class="w-4 h-4"></i>הוסף חוזה חדש</span>
                 <i data-lucide="chevron-left" class="w-4 h-4 text-charcoal/30"></i>
               </a>
