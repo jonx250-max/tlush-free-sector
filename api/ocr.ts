@@ -20,6 +20,7 @@ import { createClient } from '@supabase/supabase-js'
 import { callVision, callClaude, validateSums, type OcrResult } from './_lib/ocr.js'
 import { isGeoAllowed } from './_lib/geoCheck.js'
 import { rateLimit, extractClientIp } from './_lib/rateLimit.js'
+import { safeError, logServerError } from './_lib/safeError.js'
 
 interface VercelRequest {
   method: string
@@ -60,13 +61,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const ip = extractClientIp(req.headers)
-  const rl = rateLimit({ key: `ocr:${ip}`, limit: 5, windowMs: 60_000 })
+  const rl = await rateLimit({ key: `ocr:${ip}`, limit: 5, windowMs: 60_000 })
   if (!rl.allowed) {
     return res.status(429).json({ error: 'יותר מדי בקשות OCR', code: 'RATE_LIMITED', resetAt: rl.resetAt })
   }
 
   const imageBase64 = req.body?.imageBase64
   if (!imageBase64) return res.status(400).json({ error: 'imageBase64 required' })
+
+  // ~8MB raw → ~11.2MB base64. Reject larger payloads to prevent memory exhaustion.
+  const MAX_IMAGE_BASE64_BYTES = 11 * 1024 * 1024
+  if (imageBase64.length > MAX_IMAGE_BASE64_BYTES) {
+    return res.status(413).json({
+      error: 'תמונה גדולה מדי, מקסימום 8MB',
+      code: 'IMAGE_TOO_LARGE',
+      maxBytes: MAX_IMAGE_BASE64_BYTES,
+    })
+  }
 
   const fileHash = createHash('sha256').update(imageBase64).digest('hex')
   const mockMode = process.env.OCR_MOCK_MODE === 'true'
@@ -183,7 +194,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     return res.status(200).json(result)
   } catch (err) {
-    result.error = err instanceof Error ? err.message : String(err)
-    return res.status(500).json(result)
+    logServerError('ocr-pipeline', err)
+    return res.status(500).json(safeError('OCR_FAILED'))
   }
 }

@@ -45,7 +45,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const ip = extractClientIp(req.headers)
-  const rl = rateLimit({ key: `analyses-run:${ip}`, limit: 30, windowMs: 60_000 })
+  const rl = await rateLimit({ key: `analyses-run:${ip}`, limit: 30, windowMs: 60_000 })
   if (!rl.allowed) {
     return res.status(429).json({ error: 'יותר מדי בקשות', code: 'RATE_LIMITED', resetAt: rl.resetAt })
   }

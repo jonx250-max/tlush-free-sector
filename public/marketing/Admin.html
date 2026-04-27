@@ -11,7 +11,7 @@
 <link rel="manifest" href="/marketing/manifest.json">
 <title>Admin · מסך אישור עדכוני חוקים</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://unpkg.com/lucide@0.469.0"></script>
 <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700&family=Frank+Ruhl+Libre:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 <script>
 tailwind.config = { theme: { extend: {
@@ -433,7 +433,7 @@ function renderPending() {
         <button onclick="reject('${item.id}')" class="flex-1 sm:flex-none px-4 py-2.5 border border-charcoal/15 text-sm hover:bg-charcoal/5 transition flex items-center justify-center gap-2">
           <i data-lucide="x" class="w-4 h-4"></i> דחה
         </button>
-        <a href="${escapeHtml(item.candidate.url)}" target="_blank" rel="noopener" class="flex-1 sm:flex-none px-4 py-2.5 border border-charcoal/15 text-sm hover:bg-charcoal/5 transition flex items-center justify-center gap-2">
+        <a href="${escapeHtml(item.candidate.url)}" target="_blank" rel="noopener noreferrer" class="flex-1 sm:flex-none px-4 py-2.5 border border-charcoal/15 text-sm hover:bg-charcoal/5 transition flex items-center justify-center gap-2">
           <i data-lucide="external-link" class="w-4 h-4"></i> פתח מקור
         </a>
         <button onclick="openSnapshot('${item.candidate.content_hash}')" class="flex-1 sm:flex-none px-4 py-2.5 border border-charcoal/15 text-sm hover:bg-charcoal/5 transition flex items-center justify-center gap-2">

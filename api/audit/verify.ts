@@ -49,6 +49,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const caseId = typeof req.query.case_id === 'string' ? req.query.case_id : null
   const targetUserId = typeof req.query.user_id === 'string' ? req.query.user_id : null
 
+  // Admin gate: cross-user queries (?user_id=other) require is_admin=true.
+  // Without this, RLS still scopes results but a leaked admin token could
+  // read others' audit trails. Belt-and-braces.
+  if (targetUserId && targetUserId !== user.id) {
+    const { data: profile } = await client
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', user.id)
+      .maybeSingle()
+    if (!profile?.is_admin) {
+      return res.status(403).json({ error: 'Forbidden', code: 'ADMIN_REQUIRED' })
+    }
+  }
+
   let query = client.from('audit_log').select('*').order('id', { ascending: true })
   if (caseId) query = query.eq('case_id', caseId)
   else if (targetUserId) query = query.eq('user_id', targetUserId)

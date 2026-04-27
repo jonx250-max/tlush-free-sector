@@ -16,10 +16,36 @@
  * Returns: { id, checkout_url? } | { error, code }
  */
 
+import { createHash } from 'node:crypto'
 import { createClient } from '@supabase/supabase-js'
 import { calculatePrice, isValidMonths, isValidTier } from '../../src/lib/pricing.js'
 import { isGeoAllowed } from '../_lib/geoCheck.js'
 import { rateLimit, extractClientIp } from '../_lib/rateLimit.js'
+import { safeError, logServerError } from '../_lib/safeError.js'
+
+// Server-side re-derivation: client-provided device_fingerprint + email_hash
+// are NOT trusted. We compute both from the JWT (email) + request headers
+// (IP, user-agent) so a tampered client can't bypass free-tier uniqueness.
+const FREE_TIER_PEPPER = process.env.FREE_TIER_HASH_PEPPER ?? 'tlush.beta.v1'
+
+function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase()
+}
+
+function deriveEmailHash(email: string): string {
+  return createHash('sha256')
+    .update(FREE_TIER_PEPPER + '\x00' + normalizeEmail(email))
+    .digest('hex')
+}
+
+function deriveDeviceFingerprint(headers: Record<string, string | string[] | undefined>): string {
+  const ip = extractClientIp(headers)
+  const ua = headers['user-agent']
+  const uaStr = typeof ua === 'string' ? ua : Array.isArray(ua) ? ua[0] ?? '' : ''
+  return createHash('sha256')
+    .update(FREE_TIER_PEPPER + '\x00' + ip + '\x00' + uaStr)
+    .digest('hex')
+}
 
 interface VercelRequest {
   method: string
@@ -53,7 +79,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const ip = extractClientIp(req.headers)
-  const rl = rateLimit({ key: `analyses-create:${ip}`, limit: 10, windowMs: 60_000 })
+  const rl = await rateLimit({ key: `analyses-create:${ip}`, limit: 10, windowMs: 60_000 })
   if (!rl.allowed) {
     return res.status(429).json({ error: 'יותר מדי בקשות, נסה שוב בעוד דקה', code: 'RATE_LIMITED', resetAt: rl.resetAt })
   }
@@ -85,23 +111,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const admin = createClient(url, serviceKey, { auth: { persistSession: false } })
 
   if (tier === 'free') {
-    return handleFree(req, res, admin, user.id)
+    if (!user.email) {
+      return res.status(400).json({ error: 'Email required for free tier' })
+    }
+    // Re-derive both server-side. Client values are ignored.
+    const fingerprint = deriveDeviceFingerprint(req.headers)
+    const emailHash = deriveEmailHash(user.email)
+    return handleFree(res, admin, user.id, fingerprint, emailHash)
   }
 
   return handlePaid(res, admin, user.id, tier, months)
 }
 
 async function handleFree(
-  req: VercelRequest,
   res: VercelResponse,
   admin: ReturnType<typeof createClient>,
-  userId: string
+  userId: string,
+  fingerprint: string,
+  emailHash: string
 ) {
-  const fingerprint = req.body?.device_fingerprint
-  const emailHash = req.body?.email_hash
-  if (!fingerprint || !emailHash) {
-    return res.status(400).json({ error: 'device_fingerprint and email_hash required for free tier' })
-  }
 
   // Atomic claim — INSERT will fail with unique constraint if already used
   const { error } = await admin.from('free_tier_usage').insert({
@@ -112,13 +140,14 @@ async function handleFree(
 
   if (error) {
     if (error.code === '23505') {
-      // Map which constraint blocked
+      // Map which constraint blocked — generic message, code distinguishes
       let code: string = FREE_TIER_BLOCKED_CODES.USER_USED
       if (error.message.includes('device')) code = FREE_TIER_BLOCKED_CODES.DEVICE_USED
       else if (error.message.includes('email')) code = FREE_TIER_BLOCKED_CODES.EMAIL_USED
-      return res.status(403).json({ error: 'Free tier already used', code })
+      return res.status(403).json({ error: 'הניתוח החינמי כבר נוצל', code })
     }
-    return res.status(500).json({ error: error.message })
+    logServerError('free-tier-claim', error)
+    return res.status(500).json(safeError('ANALYSES_INSERT_FAILED'))
   }
 
   // Insert purchase row marked free (no payment required)
@@ -135,7 +164,10 @@ async function handleFree(
     .select('id')
     .single()
 
-  if (insertErr) return res.status(500).json({ error: insertErr.message })
+  if (insertErr) {
+    logServerError('purchase-insert', insertErr)
+    return res.status(500).json(safeError('ANALYSES_INSERT_FAILED'))
+  }
 
   return res.status(200).json({ id: purchase.id, checkout_url: null })
 }
@@ -161,7 +193,10 @@ async function handlePaid(
     .select('id')
     .single()
 
-  if (error) return res.status(500).json({ error: error.message })
+  if (error) {
+    logServerError('paid-purchase-insert', error)
+    return res.status(500).json(safeError('ANALYSES_INSERT_FAILED'))
+  }
 
   // P10 will replace this with Tranzila checkout-session URL
   return res.status(200).json({

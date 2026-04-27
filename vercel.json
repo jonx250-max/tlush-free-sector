@@ -2,6 +2,9 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
+  "functions": {
+    "api/ocr.ts": { "maxDuration": 30 }
+  },
   "rewrites": [
     { "source": "/", "destination": "/marketing/index.html" },
     { "source": "/landing", "destination": "/marketing/index.html" },

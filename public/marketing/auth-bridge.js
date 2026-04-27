@@ -14,6 +14,19 @@
  */
 (function () {
   const SUPABASE_CDN = 'https://esm.sh/@supabase/supabase-js@2.104.1'
+  // OAuth/email redirects are restricted to a hardcoded allow-list. Origin
+  // takeover (subdomain hijack, DNS rebind, etc.) cannot redirect users to
+  // an attacker-controlled host post-auth.
+  const ALLOWED_ORIGINS = [
+    'https://tlush-free-sector.vercel.app',
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+  ]
+  function safeOrigin() {
+    const current = window.location.origin
+    if (ALLOWED_ORIGINS.indexOf(current) !== -1) return current
+    return ALLOWED_ORIGINS[0]
+  }
   const HEBREW_ERROR_MAP = {
     'Invalid login credentials': 'פרטי ההתחברות שגויים. נסה שנית.',
     'Email not confirmed': 'אימייל לא אומת. בדוק את תיבת הדואר.',
@@ -86,7 +99,7 @@
           password,
           options: {
             data: { full_name: fullName },
-            emailRedirectTo: `${window.location.origin}/dashboard`,
+            emailRedirectTo: `${safeOrigin()}/dashboard`,
           },
         })
         if (error) return { ok: false, error: toHebrew(error) }
@@ -101,7 +114,7 @@
       try {
         const c = await ensureClient()
         const { error } = await c.auth.resetPasswordForEmail(email, {
-          redirectTo: `${window.location.origin}/login`,
+          redirectTo: `${safeOrigin()}/login`,
         })
         if (error) return { ok: false, error: toHebrew(error) }
         return { ok: true }
@@ -123,7 +136,7 @@
         const c = await ensureClient()
         const { error } = await c.auth.signInWithOAuth({
           provider,
-          options: { redirectTo: `${window.location.origin}/dashboard` },
+          options: { redirectTo: `${safeOrigin()}/dashboard` },
         })
         if (error) return { ok: false, error: toHebrew(error) }
         return { ok: true }
@@ -132,12 +145,20 @@
       }
     },
     async sendPhoneOtp(phone) {
+      // Server-side proxy normalizes the phone, rate-limits per-phone (3/10min)
+      // and per-IP (10/min), then forwards to Supabase SMS. Client-side fallback
+      // path is removed — the proxy is mandatory to prevent SMS abuse.
       try {
-        const c = await ensureClient()
-        const normalized = phone.replace(/\s+/g, '').replace(/^0/, '+972')
-        const { error } = await c.auth.signInWithOtp({ phone: normalized })
-        if (error) return { ok: false, error: toHebrew(error) }
-        return { ok: true, phone: normalized }
+        const response = await fetch('/api/auth/otp-send', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ phone }),
+        })
+        const data = await response.json().catch(() => ({}))
+        if (!response.ok) {
+          return { ok: false, error: data.error || 'שליחת הקוד נכשלה' }
+        }
+        return { ok: true, phone: data.phone }
       } catch (err) {
         return { ok: false, error: toHebrew(err) }
       }

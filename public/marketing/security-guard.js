@@ -130,6 +130,10 @@
   }
 
   // ─── BLOCK SCREEN ───
+  // Built via DOM methods (no inline-HTML interpolation, no onclick=).
+  // Defense-in-depth: even if `reason` ever derives from server data,
+  // textContent prevents HTML injection. addEventListener replaces
+  // onclick= so the page can run under a strict CSP nonce policy.
   function showBlockScreen(reason, options = {}) {
     if (document.getElementById('talush-security-block')) return;
     state.blocked = true;
@@ -137,36 +141,82 @@
 
     const overlay = document.createElement('div');
     overlay.id = 'talush-security-block';
-    overlay.style.cssText = `
-      position:fixed; inset:0; background:#0a0a0a; color:#FDFBF7; z-index:99999;
-      display:flex; align-items:center; justify-content:center; padding:24px;
-      font-family:'Assistant',system-ui,sans-serif;
-    `;
-    overlay.innerHTML = `
-      <div style="max-width:520px; text-align:center;">
-        <div style="font-size:11px; letter-spacing:0.3em; color:#B89B5E; margin-bottom:24px;">TALUSH · SECURITY</div>
-        <div style="width:64px; height:64px; margin:0 auto 24px; border:1px solid rgba(184,155,94,.4); display:flex; align-items:center; justify-content:center;">
-          <span style="font-size:32px;">🛡️</span>
-        </div>
-        <h1 style="font-family:'Frank Ruhl Libre',serif; font-size:32px; font-weight:300; margin:0 0 16px; line-height:1.2;">${reason.title}</h1>
-        <p style="color:rgba(253,251,247,.7); line-height:1.7; margin:0 0 28px; font-size:15px;">${reason.message}</p>
-        ${options.allowSMS ? `
-          <button onclick="window._talushVerifySMS()" style="background:#B89B5E; color:#0a0a0a; border:0; padding:14px 28px; font-size:14px; font-weight:600; cursor:pointer; margin:0 8px 12px;">
-            אמת באמצעות SMS
-          </button>
-        ` : ''}
-        ${options.allowInvite ? `
-          <button onclick="window._talushEnterInvite()" style="background:transparent; color:#FDFBF7; border:1px solid rgba(253,251,247,.3); padding:14px 28px; font-size:14px; cursor:pointer; margin:0 8px 12px;">
-            יש לי קוד הזמנה
-          </button>
-        ` : ''}
-        <div style="margin-top:32px; font-size:12px; color:rgba(253,251,247,.45); line-height:1.6;">
-          חסום בגלל: <span style="color:#B89B5E; font-family:monospace;">${reason.code}</span><br>
-          ${reason.ipMasked ? 'IP: ' + reason.ipMasked + ' · ' : ''}${reason.country ? 'מדינה: ' + reason.country : ''}<br>
-          <a href="mailto:security@talush.app" style="color:#B89B5E; text-decoration:underline;">צור קשר עם אבטחה</a>
-        </div>
-      </div>
-    `;
+    overlay.style.cssText =
+      "position:fixed;inset:0;background:#0a0a0a;color:#FDFBF7;z-index:99999;" +
+      "display:flex;align-items:center;justify-content:center;padding:24px;" +
+      "font-family:'Assistant',system-ui,sans-serif;";
+
+    const card = document.createElement('div');
+    card.style.cssText = 'max-width:520px;text-align:center;';
+
+    const brand = document.createElement('div');
+    brand.style.cssText = 'font-size:11px;letter-spacing:0.3em;color:#B89B5E;margin-bottom:24px;';
+    brand.textContent = 'TALUSH · SECURITY';
+    card.appendChild(brand);
+
+    const shieldWrap = document.createElement('div');
+    shieldWrap.style.cssText =
+      'width:64px;height:64px;margin:0 auto 24px;border:1px solid rgba(184,155,94,.4);' +
+      'display:flex;align-items:center;justify-content:center;';
+    const shield = document.createElement('span');
+    shield.style.fontSize = '32px';
+    shield.textContent = '🛡️';
+    shieldWrap.appendChild(shield);
+    card.appendChild(shieldWrap);
+
+    const heading = document.createElement('h1');
+    heading.style.cssText = "font-family:'Frank Ruhl Libre',serif;font-size:32px;font-weight:300;margin:0 0 16px;line-height:1.2;";
+    heading.textContent = String(reason.title || '');
+    card.appendChild(heading);
+
+    const message = document.createElement('p');
+    message.style.cssText = 'color:rgba(253,251,247,.7);line-height:1.7;margin:0 0 28px;font-size:15px;';
+    message.textContent = String(reason.message || '');
+    card.appendChild(message);
+
+    if (options.allowSMS) {
+      const smsBtn = document.createElement('button');
+      smsBtn.style.cssText = 'background:#B89B5E;color:#0a0a0a;border:0;padding:14px 28px;font-size:14px;font-weight:600;cursor:pointer;margin:0 8px 12px;';
+      smsBtn.textContent = 'אמת באמצעות SMS';
+      smsBtn.addEventListener('click', () => window._talushVerifySMS && window._talushVerifySMS());
+      card.appendChild(smsBtn);
+    }
+    if (options.allowInvite) {
+      const inviteBtn = document.createElement('button');
+      inviteBtn.style.cssText = 'background:transparent;color:#FDFBF7;border:1px solid rgba(253,251,247,.3);padding:14px 28px;font-size:14px;cursor:pointer;margin:0 8px 12px;';
+      inviteBtn.textContent = 'יש לי קוד הזמנה';
+      inviteBtn.addEventListener('click', () => window._talushEnterInvite && window._talushEnterInvite());
+      card.appendChild(inviteBtn);
+    }
+
+    const footer = document.createElement('div');
+    footer.style.cssText = 'margin-top:32px;font-size:12px;color:rgba(253,251,247,.45);line-height:1.6;';
+
+    const blockedLine = document.createElement('div');
+    blockedLine.appendChild(document.createTextNode('חסום בגלל: '));
+    const codeSpan = document.createElement('span');
+    codeSpan.style.cssText = 'color:#B89B5E;font-family:monospace;';
+    codeSpan.textContent = String(reason.code || '');
+    blockedLine.appendChild(codeSpan);
+    footer.appendChild(blockedLine);
+
+    if (reason.ipMasked || reason.country) {
+      const meta = document.createElement('div');
+      const parts = [];
+      if (reason.ipMasked) parts.push('IP: ' + String(reason.ipMasked));
+      if (reason.country) parts.push('מדינה: ' + String(reason.country));
+      meta.textContent = parts.join(' · ');
+      footer.appendChild(meta);
+    }
+
+    const contact = document.createElement('a');
+    contact.href = 'mailto:security@talush.app';
+    contact.style.cssText = 'color:#B89B5E;text-decoration:underline;';
+    contact.textContent = 'צור קשר עם אבטחה';
+    footer.appendChild(contact);
+
+    card.appendChild(footer);
+    overlay.appendChild(card);
     document.body.appendChild(overlay);
 
     // Bypass actions

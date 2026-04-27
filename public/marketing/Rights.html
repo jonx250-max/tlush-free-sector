@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>מרכז זכאויות · בדיקת תלוש שכר</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://unpkg.com/lucide@0.469.0"></script>
 <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700&family=Frank+Ruhl+Libre:wght@300;400;700;900&display=swap" rel="stylesheet">
 <script>
 tailwind.config = {
@@ -316,9 +316,9 @@ tailwind.config = {
     <div>
       <div class="text-gold font-mono text-[10px] tracking-[0.3em] uppercase mb-3">▸ מקורות</div>
       <div class="space-y-2 text-white/65">
-        <a href="https://www.kolzchut.org.il/" target="_blank" rel="noopener" class="block hover:text-gold transition">כל-זכות.org.il</a>
-        <a href="https://www.gov.il/he/departments/israel_tax_authority" target="_blank" rel="noopener" class="block hover:text-gold transition">רשות המיסים</a>
-        <a href="https://www.btl.gov.il/" target="_blank" rel="noopener" class="block hover:text-gold transition">ביטוח לאומי</a>
+        <a href="https://www.kolzchut.org.il/" target="_blank" rel="noopener noreferrer" class="block hover:text-gold transition">כל-זכות.org.il</a>
+        <a href="https://www.gov.il/he/departments/israel_tax_authority" target="_blank" rel="noopener noreferrer" class="block hover:text-gold transition">רשות המיסים</a>
+        <a href="https://www.btl.gov.il/" target="_blank" rel="noopener noreferrer" class="block hover:text-gold transition">ביטוח לאומי</a>
       </div>
     </div>
   </div>
@@ -747,11 +747,11 @@ function renderGrid() {
           <div class="font-mono text-[10px] tracking-widest uppercase text-gold mb-2">▸ איך תובעים</div>
           <p class="text-charcoal/75 text-sm leading-relaxed mb-4">${r.howTo}</p>
           <div class="flex flex-wrap gap-2">
-            <a href="${r.source}" target="_blank" rel="noopener" class="action-link">
+            <a href="${r.source}" target="_blank" rel="noopener noreferrer" class="action-link">
               <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
               ${r.sourceLabel}
             </a>
-            <a href="https://www.kolzchut.org.il/" target="_blank" rel="noopener" class="action-link outline">
+            <a href="https://www.kolzchut.org.il/" target="_blank" rel="noopener noreferrer" class="action-link outline">
               <i data-lucide="search" class="w-3.5 h-3.5"></i>
               חפש בכל-זכות
             </a>

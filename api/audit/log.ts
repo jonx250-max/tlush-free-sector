@@ -3,15 +3,19 @@
  *
  * Server-side append to `audit_log` with SHA-256 hash chain.
  * Authenticated via Bearer token (Supabase session JWT).
- * Inserts via service role (bypasses RLS write blocks).
+ *
+ * The actual SELECT-prev / hash / INSERT happens inside the Postgres
+ * function `audit_log_append()` under an advisory lock so concurrent
+ * calls cannot fork the chain. The function also enforces case_id
+ * ownership against `analysis_runs.user_id`.
  *
  * Body: { action: string, payload?: object|null, case_id?: string|null }
  * Returns: { id, hash } | { error }
  */
 
 import { createClient } from '@supabase/supabase-js'
-import { computeHash, HASH_CHAIN_GENESIS } from '../../src/lib/auditLog.js'
 import { isGeoAllowed } from '../_lib/geoCheck.js'
+import { safeError, logServerError } from '../_lib/safeError.js'
 
 interface VercelRequest {
   method: string
@@ -39,7 +43,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   const anonKey = process.env.SUPABASE_ANON_KEY
   if (!url || !serviceKey || !anonKey) {
-    return res.status(500).json({ error: 'Supabase env vars missing' })
+    return res.status(500).json({ error: 'Service unavailable', code: 'CONFIG_MISSING' })
   }
 
   const auth = req.headers.authorization
@@ -62,44 +66,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const payload = (req.body?.payload ?? null) as Record<string, unknown> | null
   const caseId = req.body?.case_id ?? null
 
+  if (caseId !== null && (typeof caseId !== 'string' || caseId.length > 128)) {
+    return res.status(400).json({ error: 'Invalid case_id' })
+  }
+
   const admin = createClient(url, serviceKey, { auth: { persistSession: false } })
 
-  // Get prev_hash from latest audit_log entry (global chain across all users
-  // for stronger collision resistance — entries are still RLS-isolated for reads)
-  const { data: latest } = await admin
-    .from('audit_log')
-    .select('hash')
-    .order('id', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-
-  const prev_hash = latest?.hash ?? HASH_CHAIN_GENESIS
-  const created_at = new Date().toISOString()
-
-  const hash = await computeHash({
-    user_id: user.id,
-    case_id: caseId,
-    action,
-    payload,
-    prev_hash,
-    created_at,
+  // Single atomic RPC: lock + read prev_hash + compute + insert + ownership check.
+  // Replaces the prior SELECT-then-INSERT race condition that allowed forks.
+  const { data, error } = await admin.rpc('audit_log_append', {
+    p_user_id: user.id,
+    p_case_id: caseId,
+    p_action: action,
+    p_payload: payload,
   })
 
-  const { data: inserted, error: insertErr } = await admin
-    .from('audit_log')
-    .insert({
-      user_id: user.id,
-      case_id: caseId,
-      action,
-      payload,
-      prev_hash,
-      hash,
-      created_at,
-    })
-    .select('id, hash')
-    .single()
+  if (error) {
+    // 42501 = case_id ownership mismatch (raised by the function)
+    if (error.code === '42501' || error.message?.includes('ownership mismatch')) {
+      return res.status(403).json({ error: 'Forbidden', code: 'CASE_ID_FORBIDDEN' })
+    }
+    if (error.code === '22023' || error.message?.includes('required') || error.message?.includes('invalid')) {
+      return res.status(400).json({ error: 'Invalid request', code: 'INVALID_INPUT' })
+    }
+    logServerError('audit_log_append failed', error)
+    return res.status(500).json(safeError('AUDIT_INSERT_FAILED'))
+  }
 
-  if (insertErr) return res.status(500).json({ error: insertErr.message })
-
-  return res.status(200).json({ id: inserted.id, hash: inserted.hash })
+  const result = data as { id: number; hash: string }
+  return res.status(200).json({ id: result.id, hash: result.hash })
 }
