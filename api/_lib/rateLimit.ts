@@ -7,11 +7,17 @@
  * same DB row, so attackers can't reset the counter by waiting for a
  * redeploy or by spreading requests across regions).
  *
- * Falls back to a per-instance in-memory Map if Supabase env vars
- * aren't set (local dev without service role) — graceful degradation.
+ * Fail-closed in production: if Supabase env vars are configured but
+ * the RPC errors (network, deploy lag, function not yet applied), this
+ * returns `{ allowed: false }` so callers respond 429/503. The previous
+ * implementation degraded to per-instance in-memory rate limiting on
+ * RPC error, which let attackers bypass the limit by spreading across
+ * regions and waiting for transient backend hiccups.
  *
- * Async signature change from the previous sync version. All callers
- * must `await` the result.
+ * In-memory fallback is now used only when env vars are absent (true
+ * local dev without a service role) — never as a "graceful" prod path.
+ *
+ * Async signature: all callers must `await` the result.
  *
  * Usage:
  *   const result = await rateLimit({ key: ip, limit: 30, windowMs: 60_000 })
@@ -53,8 +59,8 @@ function getAdmin() {
 export async function rateLimit(cfg: RateLimitConfig): Promise<RateLimitResult> {
   const admin = getAdmin()
   if (admin) {
+    const windowSeconds = Math.max(1, Math.round(cfg.windowMs / 1000))
     try {
-      const windowSeconds = Math.max(1, Math.round(cfg.windowMs / 1000))
       const { data, error } = await admin.rpc('rate_limit_check', {
         p_key: cfg.key,
         p_limit: cfg.limit,
@@ -68,11 +74,16 @@ export async function rateLimit(cfg: RateLimitConfig): Promise<RateLimitResult> 
           resetAt: new Date(row.reset_at).getTime(),
         }
       }
-      // RPC failed → fall through to memory fallback (don't block request on infra issue)
-    } catch {
-      // network error → fall through
+      // RPC was reachable but returned an error or unexpected shape.
+      // In prod, fail closed so attackers can't exploit transient backend
+      // problems by spreading load.
+      console.error('[rateLimit] RPC returned error/invalid shape', { key: cfg.key, error })
+    } catch (err) {
+      console.error('[rateLimit] RPC threw', { key: cfg.key, err })
     }
+    return { allowed: false, remaining: 0, resetAt: Date.now() + cfg.windowMs }
   }
+  // No admin client → env vars absent → true local dev. Use memory fallback.
   return memoryRateLimit(cfg)
 }
 
