@@ -32,9 +32,11 @@ jobs:
         run: npm ci || npm install
 
       - name: Scrape sources
+        env:
+          SOURCE: ${{ inputs.source }}
         run: |
-          if [ -n "${{ inputs.source }}" ]; then
-            node scripts/auto-update/scraper.js --source=${{ inputs.source }}
+          if [ -n "$SOURCE" ]; then
+            node scripts/auto-update/scraper.js --source="$SOURCE"
           else
             node scripts/auto-update/scraper.js
           fi
