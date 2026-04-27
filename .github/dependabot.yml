@@ -12,6 +12,16 @@ updates:
       - dependencies
       - automated
     versioning-strategy: increase-if-necessary
+    ignore:
+      # React 19 = major breaking change. Pin to 18.x until deliberate upgrade branch.
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/react-dom"
+        update-types: ["version-update:semver-major"]
     groups:
       eslint:
         patterns:
