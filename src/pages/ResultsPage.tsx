@@ -41,6 +41,11 @@ export function ResultsPage() {
   const navigate = useNavigate()
   const [letterHtml, setLetterHtml] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  // copyError + letterError surface async failures the user otherwise
+  // would not notice (silent clipboard rejection on Safari with no
+  // permission, generator throwing on malformed result, etc.).
+  const [copyError, setCopyError] = useState<string | null>(null)
+  const [letterError, setLetterError] = useState<string | null>(null)
 
   const result = store.result
 
@@ -67,27 +72,39 @@ export function ResultsPage() {
   }
 
   const handleCopy = async () => {
+    setCopyError(null)
     try {
       await navigator.clipboard.writeText(summaryText)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {
-      // clipboard unavailable
+      // Permission denied (sandboxed iframe / Safari without focus / HTTP
+      // origin) or quota exceeded. Surfacing the failure prevents the
+      // user from sending a partial demand letter believing they had
+      // a copy of the summary in their clipboard.
+      setCopyError('ההעתקה נכשלה — נסה לסמן ולהעתיק ידנית')
+      setTimeout(() => setCopyError(null), 4000)
     }
   }
 
   const handleGenerateLetter = () => {
+    setLetterError(null)
     if (!store.payslip) return
-    const output = generateDemandLetter({
-      employeeName: 'עובד/ת',
-      employeeId: '',
-      employerName: 'מעסיק',
-      employerId: '',
-      result,
-      payslipMonth: store.payslip.month,
-      payslipYear: store.payslip.year,
-    })
-    setLetterHtml(output.html)
+    try {
+      const output = generateDemandLetter({
+        employeeName: 'עובד/ת',
+        employeeId: '',
+        employerName: 'מעסיק',
+        employerId: '',
+        result,
+        payslipMonth: store.payslip.month,
+        payslipYear: store.payslip.year,
+      })
+      setLetterHtml(output.html)
+    } catch (err) {
+      console.error('[results] generateDemandLetter failed', err)
+      setLetterError('נכשלה הפקת מכתב הדרישה — נסה שוב, ואם הבעיה ממשיכה צור איתנו קשר')
+    }
   }
 
   const handlePrintLetter = () => {
@@ -119,11 +136,31 @@ export function ResultsPage() {
     <div className="mx-auto max-w-4xl space-y-6 px-4 py-8 pb-28 sm:pb-8">
       <h1 className="font-heading text-2xl font-bold text-cs-text">{he.results.title}</h1>
 
-      <ResultsSummary result={result} />
+      {/* Amendment-24 alert moved ABOVE the summary so screen readers and
+          sighted users see the critical legal-violation card first. On
+          mobile it stays in viewport while the user scrolls findings. */}
       <Amendment24Alert findings={result.findings} />
+
+      {/* Summary is wrapped in an aria-live region so SR users hear the
+          totals when the page loads or when async results arrive. */}
+      <section role="status" aria-live="polite" aria-atomic="true">
+        <ResultsSummary result={result} />
+      </section>
+
       <CategoryGroupedFindings findings={result.findings} />
       <TaxSummary result={result} />
       <OvertimeSummary result={result} />
+
+      {letterError && (
+        <p role="alert" className="text-sm font-medium text-cs-danger">
+          {letterError}
+        </p>
+      )}
+      {copyError && (
+        <p role="alert" className="text-sm font-medium text-cs-danger">
+          {copyError}
+        </p>
+      )}
 
       {/* Desktop actions */}
       <div className="hidden flex-wrap gap-3 sm:flex">
@@ -206,8 +243,14 @@ function Amendment24Alert({ findings }: { findings: AnalysisFinding[] }) {
   const a24 = findings.find(f => f.category === 'amendment24')
   if (!a24) return null
 
+  // role="alert" → SR announces immediately on render. On mobile the card
+  // becomes sticky-top so this critical legal warning stays visible while
+  // the user scrolls through the rest of the findings.
   return (
-    <Card className="border-cs-danger/30 bg-cs-danger/5">
+    <Card
+      role="alert"
+      className="border-cs-danger/30 bg-cs-danger/5 sm:static sticky top-16 z-30 shadow-md sm:shadow-none"
+    >
       <div className="flex items-start gap-3">
         <AlertTriangle size={24} className="mt-0.5 shrink-0 text-cs-danger" />
         <div>
