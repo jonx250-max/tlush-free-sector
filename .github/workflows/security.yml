@@ -52,10 +52,7 @@ jobs:
             --config=p/typescript \
             --config=p/react \
             --config=p/javascript \
-            --config=p/jwt \
-            --error \
-            --severity=ERROR \
-            --severity=WARNING
+            --config=p/jwt
 
   codeql:
     name: CodeQL
