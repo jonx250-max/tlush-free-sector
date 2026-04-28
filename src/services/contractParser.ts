@@ -113,7 +113,8 @@ function parseContractMeta(text: string): ContractMeta {
 // ══════════════════════════════════════════════════════════════
 
 async function extractText(file: File): Promise<string> {
-  const pdfjsLib = await import('pdfjs-dist')
+  const { loadPdfjs } = await import('../lib/pdfWorkerSetup')
+  const pdfjsLib = await loadPdfjs()
   const arrayBuffer = await file.arrayBuffer()
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
   const lines: string[] = []
