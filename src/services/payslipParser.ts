@@ -97,7 +97,8 @@ export function parsePayslipText(text: string): ParsedPayslip {
 // ══════════════════════════════════════════════════════════════
 
 async function extractStructured(file: File): Promise<{ text: string; rows: ParsedRow[] }> {
-  const pdfjsLib = await import('pdfjs-dist')
+  const { loadPdfjs } = await import('../lib/pdfWorkerSetup')
+  const pdfjsLib = await loadPdfjs()
   const arrayBuffer = await file.arrayBuffer()
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
   const allLines: string[] = []

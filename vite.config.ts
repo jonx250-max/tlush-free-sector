@@ -114,4 +114,27 @@ export default defineConfig({
     host: '127.0.0.1',
     headers: securityHeaders,
   },
+  build: {
+    rollupOptions: {
+      output: {
+        // Split heavy / lazy-loaded deps into named chunks. The browser
+        // can cache them independently of app code, and route chunks
+        // that don't import them stay smaller.
+        //   pdfjs-vendor  — only loaded when the user uploads a PDF
+        //   motion-vendor — landing-page animations
+        //   supabase-vendor — auth + DB client (called from many places
+        //                     but rarely changes; benefits from a stable
+        //                     long-lived chunk hash)
+        //   sanitize-vendor — DOMPurify (only used by ResultsPage)
+        // Vite 8 (Rolldown) requires the function form of manualChunks.
+        manualChunks(id: string) {
+          if (id.includes('node_modules/pdfjs-dist/')) return 'pdfjs-vendor'
+          if (id.includes('node_modules/framer-motion/')) return 'motion-vendor'
+          if (id.includes('node_modules/@supabase/')) return 'supabase-vendor'
+          if (id.includes('node_modules/dompurify/')) return 'sanitize-vendor'
+          return undefined
+        },
+      },
+    },
+  },
 })

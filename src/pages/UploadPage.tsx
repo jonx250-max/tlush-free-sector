@@ -5,7 +5,7 @@ import { Card } from '../components/ui/Card'
 import { he } from '../i18n/he'
 import { useAnalysis, useAnalysisStore } from '../hooks/useAnalysis'
 import { useAuth } from '../lib/auth'
-import { initPdfWorker } from '../lib/pdfWorkerSetup'
+import { prefetchPdfjs } from '../lib/pdfWorkerSetup'
 import { buildProfileData } from '../components/upload/buildProfileData'
 import { ContractUploadStep } from '../components/upload/ContractUploadStep'
 import { PayslipUploadStep } from '../components/upload/PayslipUploadStep'
@@ -19,7 +19,7 @@ export function UploadPage() {
   const store = useAnalysisStore()
   const { profile } = useAuth()
 
-  useEffect(() => { initPdfWorker() }, [])
+  useEffect(() => { prefetchPdfjs() }, [])
 
   const handleContractSelect = useCallback(async (file: File) => { await parseContract(file) }, [parseContract])
   const handlePayslipSelect = useCallback(async (file: File) => { await parsePayslip(file) }, [parsePayslip])
