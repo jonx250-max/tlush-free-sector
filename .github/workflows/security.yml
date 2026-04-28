@@ -73,3 +73,19 @@ jobs:
       - uses: github/codeql-action/analyze@v4
         with:
           category: "/language:${{ matrix.language }}"
+
+  gitleaks:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # gitleaks needs full history on push events to scan the diff
+          # against the previous commit; on PRs the action handles depth
+          # itself. fetch-depth: 0 covers both cases.
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          # GITHUB_TOKEN is provided automatically; gitleaks uses it to
+          # add a check-run annotation listing any leaks found.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
