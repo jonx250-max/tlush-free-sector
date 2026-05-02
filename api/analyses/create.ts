@@ -21,6 +21,7 @@ import { createClient } from '@supabase/supabase-js'
 import { calculatePrice, isValidMonths, isValidTier } from '../../src/lib/pricing.js'
 import { isGeoAllowed } from '../_lib/geoCheck.js'
 import { rateLimit, extractClientIp } from '../_lib/rateLimit.js'
+import { userRateLimit, POLICY } from '../_lib/userRateLimit.js'
 import { safeError, logServerError } from '../_lib/safeError.js'
 import { getServerConfig } from '../_lib/serverConfig.js'
 
@@ -103,6 +104,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const { data: { user }, error: userErr } = await userClient.auth.getUser()
   if (userErr || !user) return res.status(401).json({ error: 'Invalid session' })
+
+  // Stage C C6 — per-user mutation rate-limit (50 / 24h). Defends against
+  // a single account looping through IPs to bypass the per-IP cap.
+  const userRl = await userRateLimit({
+    userId: user.id,
+    endpoint: 'analyses-create',
+    ...POLICY.ANALYSES_CREATE,
+  })
+  if (!userRl.allowed) {
+    return res.status(429).json({
+      error: 'הגעת למכסה היומית של ניתוחים',
+      code: 'USER_RATE_LIMITED',
+      resetAt: userRl.resetAt,
+    })
+  }
 
   const tier = req.body?.depth_tier
   const months = req.body?.months_count

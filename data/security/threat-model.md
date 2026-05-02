@@ -204,3 +204,4 @@ payslips at scale.
 | Date | Phase / PR | Notes |
 |---|---|---|
 | 2026-04-28 | P5 (`p5-strategic-hardening`) | Initial document. Covers S1–S5 with mitigations from P1+P5 hardening waves. |
+| 2026-05-02 | Stage C (this branch) | Added: C1 admin enforcement test (preventive, no admin endpoints yet); C3 central PII redactor wired into `logServerError`; C4 magic-byte format detection (rejects PDFs/EXEs disguised as images); C5 OCR text scrubber + strict Zod schema on Claude response; C6 per-user mutation rate-limit (`api/_lib/userRateLimit.ts`); C8 demo-auth refuses prod build; C9 CSRF doc explaining bearer-token immunity; C11 right-to-be-forgotten endpoint (`api/account/forget.ts`, hash-chain audit `ACCOUNT_PURGED`); C12 BotID activation note (code deferred until dashboard flip). Deferred: C2 strip CSP `unsafe-inline` (Stage G/H), C7 MFA UI (Stage H), C10 pgsodium per-column encryption (behind feature flag). |

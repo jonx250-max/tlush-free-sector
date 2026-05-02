@@ -17,7 +17,7 @@
 
 import { createHash } from 'node:crypto'
 import { createClient } from '@supabase/supabase-js'
-import { callVision, callClaude, validateSums, type OcrResult } from './_lib/ocr.js'
+import { callVision, callClaude, validateSums, detectImageFormat, type OcrResult } from './_lib/ocr.js'
 import { isGeoAllowed } from './_lib/geoCheck.js'
 import { rateLimit, extractClientIp } from './_lib/rateLimit.js'
 import { safeError, logServerError } from './_lib/safeError.js'
@@ -77,6 +77,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       error: 'תמונה גדולה מדי, מקסימום 8MB',
       code: 'IMAGE_TOO_LARGE',
       maxBytes: MAX_IMAGE_BASE64_BYTES,
+    })
+  }
+
+  // Stage C C4 — Magic-byte check. PDF-with-embedded-JS, EXE, or other
+  // weaponized payloads disguised as images are rejected here.
+  const detected = detectImageFormat(imageBase64)
+  const claimed = req.body?.format
+  if (detected === 'unknown') {
+    return res.status(415).json({
+      error: 'פורמט קובץ לא נתמך — רק JPEG / PNG / HEIC',
+      code: 'UNSUPPORTED_FORMAT',
+    })
+  }
+  if (claimed === 'heic' && detected !== 'heic') {
+    return res.status(415).json({
+      error: 'הקובץ אינו HEIC תקין',
+      code: 'FORMAT_MISMATCH',
+      detected,
     })
   }
 

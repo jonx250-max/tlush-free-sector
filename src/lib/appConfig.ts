@@ -9,15 +9,15 @@
 
 import { z } from 'zod'
 
-const viteEnv: Record<string, string | undefined> =
-  (typeof import.meta !== 'undefined' && (import.meta as { env?: Record<string, string | undefined> }).env) || {}
+const viteEnv: Record<string, string | boolean | undefined> =
+  (typeof import.meta !== 'undefined' && (import.meta as { env?: Record<string, string | boolean | undefined> }).env) || {}
 
 function pickEnv(key: string, fallbackKey?: string): string | undefined {
   const direct = viteEnv[key]
-  if (direct) return direct
+  if (typeof direct === 'string' && direct) return direct
   if (fallbackKey) {
     const fb = viteEnv[fallbackKey]
-    if (fb) return fb
+    if (typeof fb === 'string' && fb) return fb
   }
   return undefined
 }
@@ -48,6 +48,15 @@ function buildConfig(): AppConfig {
     throw new Error(`[appConfig] invalid client env: ${issues}`)
   }
   const value = parsed.data
+
+  // Stage C item C8: refuse to boot if demo auth is enabled in a Vite
+  // production build. Vite sets `import.meta.env.PROD = true` only on
+  // production builds, so dev + test still work normally.
+  const isProdBuild = (viteEnv.PROD === true || viteEnv.PROD === 'true' || viteEnv.MODE === 'production')
+  if (value.isDemoAuthEnabled && isProdBuild) {
+    throw new Error('[appConfig] VITE_DEMO_AUTH=true is forbidden in production builds')
+  }
+
   return {
     ...value,
     get requiresSupabaseConfiguration(): boolean {
