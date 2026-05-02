@@ -28,6 +28,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js'
+import { getServerConfig } from './serverConfig.js'
 
 interface AdminRequest {
   headers: Record<string, string | string[] | undefined>
@@ -47,9 +48,10 @@ interface AdminGateDeny {
 export type AdminGate = AdminGateOk | AdminGateDeny
 
 export async function requireAdmin(req: AdminRequest): Promise<AdminGate> {
-  const url = process.env.SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  const anonKey = process.env.SUPABASE_ANON_KEY
+  const cfg = getServerConfig().supabase
+  const url = cfg.url
+  const serviceKey = cfg.serviceRoleKey
+  const anonKey = cfg.anonKey
   if (!url || !serviceKey || !anonKey) {
     return { ok: false, status: 500, body: { error: 'Service unavailable', code: 'CONFIG_MISSING' } }
   }

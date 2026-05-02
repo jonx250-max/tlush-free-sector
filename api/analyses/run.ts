@@ -23,6 +23,7 @@ import { checksForTier, type DepthTier } from '../../src/services/checkRegistry.
 import { computeHash, HASH_CHAIN_GENESIS } from '../../src/lib/auditLog.js'
 import { isGeoAllowed } from '../_lib/geoCheck.js'
 import { rateLimit, extractClientIp } from '../_lib/rateLimit.js'
+import { getServerConfig } from '../_lib/serverConfig.js'
 
 interface VercelRequest {
   method: string
@@ -50,9 +51,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(429).json({ error: 'יותר מדי בקשות', code: 'RATE_LIMITED', resetAt: rl.resetAt })
   }
 
-  const url = process.env.SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  const anonKey = process.env.SUPABASE_ANON_KEY
+  const supaCfg = getServerConfig().supabase
+  const url = supaCfg.url
+  const serviceKey = supaCfg.serviceRoleKey
+  const anonKey = supaCfg.anonKey
   if (!url || !serviceKey || !anonKey) return res.status(500).json({ error: 'Supabase env vars missing' })
 
   const auth = req.headers.authorization

@@ -21,6 +21,7 @@ import { callVision, callClaude, validateSums, type OcrResult } from './_lib/ocr
 import { isGeoAllowed } from './_lib/geoCheck.js'
 import { rateLimit, extractClientIp } from './_lib/rateLimit.js'
 import { safeError, logServerError } from './_lib/safeError.js'
+import { getServerConfig } from './_lib/serverConfig.js'
 
 interface VercelRequest {
   method: string
@@ -80,11 +81,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const fileHash = createHash('sha256').update(imageBase64).digest('hex')
-  const mockMode = process.env.OCR_MOCK_MODE === 'true'
+  const cfg = getServerConfig()
+  const mockMode = cfg.ocr.mockMode
 
   // Cache + quota only available with Supabase service role
-  const supabaseUrl = process.env.SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const supabaseUrl = cfg.supabase.url
+  const serviceKey = cfg.supabase.serviceRoleKey
   const admin = supabaseUrl && serviceKey
     ? createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } })
     : null
@@ -111,8 +113,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json({ ...MOCK_RESULT, mock: true })
   }
 
-  const visionKey = process.env.GOOGLE_VISION_API_KEY
-  const claudeKey = process.env.ANTHROPIC_API_KEY
+  const visionKey = cfg.ocr.visionKey
+  const claudeKey = cfg.ocr.claudeKey
 
   if (!visionKey || !claudeKey) {
     return res.status(503).json({
@@ -124,7 +126,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // Daily quota gate — real API calls only
   if (admin) {
-    const dailyLimit = Number.parseInt(process.env.OCR_DAILY_LIMIT ?? '20', 10)
+    const dailyLimit = cfg.ocr.dailyLimit
     const today = new Date().toISOString().slice(0, 10)
     const { count } = await admin
       .from('ocr_cache')

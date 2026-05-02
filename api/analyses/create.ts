@@ -22,28 +22,30 @@ import { calculatePrice, isValidMonths, isValidTier } from '../../src/lib/pricin
 import { isGeoAllowed } from '../_lib/geoCheck.js'
 import { rateLimit, extractClientIp } from '../_lib/rateLimit.js'
 import { safeError, logServerError } from '../_lib/safeError.js'
+import { getServerConfig } from '../_lib/serverConfig.js'
 
 // Server-side re-derivation: client-provided device_fingerprint + email_hash
 // are NOT trusted. We compute both from the JWT (email) + request headers
 // (IP, user-agent) so a tampered client can't bypass free-tier uniqueness.
-const FREE_TIER_PEPPER = process.env.FREE_TIER_HASH_PEPPER ?? 'tlush.beta.v1'
 
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase()
 }
 
 function deriveEmailHash(email: string): string {
+  const pepper = getServerConfig().freeTierPepper
   return createHash('sha256')
-    .update(FREE_TIER_PEPPER + '\x00' + normalizeEmail(email))
+    .update(pepper + '\x00' + normalizeEmail(email))
     .digest('hex')
 }
 
 function deriveDeviceFingerprint(headers: Record<string, string | string[] | undefined>): string {
+  const pepper = getServerConfig().freeTierPepper
   const ip = extractClientIp(headers)
   const ua = headers['user-agent']
   const uaStr = typeof ua === 'string' ? ua : Array.isArray(ua) ? ua[0] ?? '' : ''
   return createHash('sha256')
-    .update(FREE_TIER_PEPPER + '\x00' + ip + '\x00' + uaStr)
+    .update(pepper + '\x00' + ip + '\x00' + uaStr)
     .digest('hex')
 }
 
@@ -84,9 +86,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(429).json({ error: 'יותר מדי בקשות, נסה שוב בעוד דקה', code: 'RATE_LIMITED', resetAt: rl.resetAt })
   }
 
-  const url = process.env.SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  const anonKey = process.env.SUPABASE_ANON_KEY
+  const supaCfg = getServerConfig().supabase
+  const url = supaCfg.url
+  const serviceKey = supaCfg.serviceRoleKey
+  const anonKey = supaCfg.anonKey
   if (!url || !serviceKey || !anonKey) return res.status(500).json({ error: 'Supabase env vars missing' })
 
   const auth = req.headers.authorization
