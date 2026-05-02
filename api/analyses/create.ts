@@ -21,29 +21,32 @@ import { createClient } from '@supabase/supabase-js'
 import { calculatePrice, isValidMonths, isValidTier } from '../../src/lib/pricing.js'
 import { isGeoAllowed } from '../_lib/geoCheck.js'
 import { rateLimit, extractClientIp } from '../_lib/rateLimit.js'
+import { userRateLimit, POLICY } from '../_lib/userRateLimit.js'
 import { safeError, logServerError } from '../_lib/safeError.js'
+import { getServerConfig } from '../_lib/serverConfig.js'
 
 // Server-side re-derivation: client-provided device_fingerprint + email_hash
 // are NOT trusted. We compute both from the JWT (email) + request headers
 // (IP, user-agent) so a tampered client can't bypass free-tier uniqueness.
-const FREE_TIER_PEPPER = process.env.FREE_TIER_HASH_PEPPER ?? 'tlush.beta.v1'
 
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase()
 }
 
 function deriveEmailHash(email: string): string {
+  const pepper = getServerConfig().freeTierPepper
   return createHash('sha256')
-    .update(FREE_TIER_PEPPER + '\x00' + normalizeEmail(email))
+    .update(pepper + '\x00' + normalizeEmail(email))
     .digest('hex')
 }
 
 function deriveDeviceFingerprint(headers: Record<string, string | string[] | undefined>): string {
+  const pepper = getServerConfig().freeTierPepper
   const ip = extractClientIp(headers)
   const ua = headers['user-agent']
   const uaStr = typeof ua === 'string' ? ua : Array.isArray(ua) ? ua[0] ?? '' : ''
   return createHash('sha256')
-    .update(FREE_TIER_PEPPER + '\x00' + ip + '\x00' + uaStr)
+    .update(pepper + '\x00' + ip + '\x00' + uaStr)
     .digest('hex')
 }
 
@@ -84,9 +87,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(429).json({ error: 'יותר מדי בקשות, נסה שוב בעוד דקה', code: 'RATE_LIMITED', resetAt: rl.resetAt })
   }
 
-  const url = process.env.SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  const anonKey = process.env.SUPABASE_ANON_KEY
+  const supaCfg = getServerConfig().supabase
+  const url = supaCfg.url
+  const serviceKey = supaCfg.serviceRoleKey
+  const anonKey = supaCfg.anonKey
   if (!url || !serviceKey || !anonKey) return res.status(500).json({ error: 'Supabase env vars missing' })
 
   const auth = req.headers.authorization
@@ -100,6 +104,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const { data: { user }, error: userErr } = await userClient.auth.getUser()
   if (userErr || !user) return res.status(401).json({ error: 'Invalid session' })
+
+  // Stage C C6 — per-user mutation rate-limit (50 / 24h). Defends against
+  // a single account looping through IPs to bypass the per-IP cap.
+  const userRl = await userRateLimit({
+    userId: user.id,
+    endpoint: 'analyses-create',
+    ...POLICY.ANALYSES_CREATE,
+  })
+  if (!userRl.allowed) {
+    return res.status(429).json({
+      error: 'הגעת למכסה היומית של ניתוחים',
+      code: 'USER_RATE_LIMITED',
+      resetAt: userRl.resetAt,
+    })
+  }
 
   const tier = req.body?.depth_tier
   const months = req.body?.months_count
