@@ -1,6 +1,7 @@
 import type { Settlement } from '../data/settlements'
 import { CREDIT_POINT_VALUES } from './tax/values'
 import { calculateCreditPoints } from './tax/creditPoints'
+import { getLawSet } from './lawVersion'
 
 // ============================================================
 // Israeli Income Tax Calculator — Multi-Year (2022-2026)
@@ -53,62 +54,19 @@ export interface TaxResult {
   effectiveTaxRate: number
 }
 
-// --- Tax brackets per year ---
-const TAX_BRACKETS: Record<number, TaxBracket[]> = {
-  2022: [
-    { limit: 6_450, rate: 0.10 },
-    { limit: 9_240, rate: 0.14 },
-    { limit: 14_840, rate: 0.20 },
-    { limit: 20_620, rate: 0.31 },
-    { limit: 42_910, rate: 0.35 },
-    { limit: 55_270, rate: 0.47 },
-    { limit: Infinity, rate: 0.50 },
-  ],
-  2023: [
-    { limit: 6_790, rate: 0.10 },
-    { limit: 9_730, rate: 0.14 },
-    { limit: 15_620, rate: 0.20 },
-    { limit: 21_710, rate: 0.31 },
-    { limit: 45_180, rate: 0.35 },
-    { limit: 58_190, rate: 0.47 },
-    { limit: Infinity, rate: 0.50 },
-  ],
-  2024: [
-    { limit: 6_790, rate: 0.10 },
-    { limit: 9_730, rate: 0.14 },
-    { limit: 15_620, rate: 0.20 },
-    { limit: 21_710, rate: 0.31 },
-    { limit: 45_180, rate: 0.35 },
-    { limit: 58_190, rate: 0.47 },
-    { limit: Infinity, rate: 0.50 },
-  ],
-  2025: [
-    { limit: 7_010, rate: 0.10 },
-    { limit: 10_060, rate: 0.14 },
-    { limit: 16_150, rate: 0.20 },
-    { limit: 22_440, rate: 0.31 },
-    { limit: 46_690, rate: 0.35 },
-    { limit: 60_130, rate: 0.47 },
-    { limit: Infinity, rate: 0.50 },
-  ],
-  2026: [
-    { limit: 7_010, rate: 0.10 },
-    { limit: 10_060, rate: 0.14 },
-    { limit: 19_000, rate: 0.20 },
-    { limit: 25_100, rate: 0.31 },
-    { limit: 42_400, rate: 0.35 },
-    { limit: 60_130, rate: 0.47 },
-    { limit: Infinity, rate: 0.50 },
-  ],
-}
-
 // Eilat income exemption ceiling (annual)
 const EILAT_EXEMPTION_CEILING = 262_320
 
-// --- Core: Progressive tax calculation ---
+/**
+ * Stage E18 — bracket data sourced from `getLawSet(year)`. The legacy
+ * `TAX_BRACKETS` constant is gone; year-version selection + 2027+
+ * fallback live in `lawVersion.ts`.
+ *
+ * Throws only if the static law-set imports are missing entirely
+ * (compile-time impossible).
+ */
 export function calculateIncomeTax(monthlyGross: number, year: number): number {
-  const brackets = TAX_BRACKETS[year]
-  if (!brackets) throw new Error(`No tax brackets for year ${year}`)
+  const brackets = getLawSet(year).taxBrackets
   if (monthlyGross <= 0) return 0
 
   let tax = 0
@@ -116,11 +74,12 @@ export function calculateIncomeTax(monthlyGross: number, year: number): number {
 
   for (const bracket of brackets) {
     if (monthlyGross <= prev) break
-    const taxable = Math.min(monthlyGross, bracket.limit) - prev
+    const limit = bracket.limitMonthly ?? Number.POSITIVE_INFINITY
+    const taxable = Math.min(monthlyGross, limit) - prev
     if (taxable > 0) {
       tax += taxable * bracket.rate
     }
-    prev = bracket.limit
+    prev = limit
   }
 
   return Math.round(tax * 100) / 100

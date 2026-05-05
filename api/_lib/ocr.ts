@@ -100,7 +100,7 @@ export function detectImageFormat(base64: string): OcrImageFormat {
 // authoritative gate.
 const PIVOT_PATTERNS: RegExp[] = [
   /ignore\s+(?:all\s+)?(?:previous|prior|above|preceding)/gi,
-  /(?:^|\n)\s*system\s*[:>\-]/gim,
+  /(?:^|\n)\s*system\s*[:>-]/gim,
   /\b(?:you\s+are|act\s+as)\s+(?:now\s+)?a\s+(?:different|new)/gi,
   /\bDAN\b/g,
   /\bdeveloper\s+mode\b/gi,

@@ -70,8 +70,13 @@ describe('calculateIncomeTax', () => {
     expect(calculateIncomeTax(7010, 2025)).toBeCloseTo(701, 0)
   })
 
-  it('throws for unsupported year', () => {
-    expect(() => calculateIncomeTax(10000, 2020)).toThrow()
+  it('falls back to most-recent year for unsupported year (Stage E2)', () => {
+    // Pre-Stage-E this threw. New behavior: getLawSet() falls back to the
+    // latest supported year so a stale `year` parameter can't crash the
+    // analysis. Callers signal staleness via lawSet.actualYear !== year.
+    const fallback = calculateIncomeTax(10000, 2020)
+    const supported = calculateIncomeTax(10000, 2026)
+    expect(fallback).toBe(supported)
   })
 })
 

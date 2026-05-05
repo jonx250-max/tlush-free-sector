@@ -23,4 +23,24 @@ export default tseslint.config(
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     },
   },
+  // Stage A enforcement: forbid direct `process.env.X` reads in Vercel
+  // Functions outside the typed-config layer. The layer is the single
+  // source of truth (`api/_lib/serverConfig.ts`); regressing back to
+  // scattered reads loses the Zod validation + test mockability.
+  {
+    files: ['api/**/*.ts'],
+    ignores: [
+      'api/_lib/serverConfig.ts',
+      'api/**/*.test.ts',
+    ],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "MemberExpression[object.object.name='process'][object.property.name='env']",
+          message: "Read env via getServerConfig() in api/_lib/serverConfig.ts; do not read process.env directly.",
+        },
+      ],
+    },
+  },
 )

@@ -13,6 +13,8 @@
     "test": "vitest run --config vitest.config.ts --configLoader native --pool threads",
     "test:watch": "vitest --config vitest.config.ts --configLoader native --pool threads",
     "test:coverage": "vitest run --config vitest.config.ts --configLoader native --pool threads --coverage",
+    "test:update-snapshots": "vitest run --config vitest.config.ts --configLoader native --pool threads -u",
+    "gen:types": "supabase gen types typescript --linked > src/types/supabase.ts && echo 'Wrote src/types/supabase.ts (D1 — requires `supabase login` + `supabase link --project-ref <ref>`)'",
     "test:e2e": "playwright test",
     "test:e2e:demo": "playwright test --config playwright.demo.config.ts",
     "test:mutation": "stryker run",

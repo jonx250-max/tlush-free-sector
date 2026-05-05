@@ -89,9 +89,14 @@ function makeProfile(overrides: Partial<ProfileData> = {}): ProfileData {
 }
 
 describe('diffEngine.compare', () => {
-  it('produces no gap findings when contract matches payslip', () => {
+  it('produces no critical/warning underpayments when contract matches payslip', () => {
+    // Stage E8 added an `info` severity tax-undercharge finding; that's a
+    // separate concern from contract-vs-payslip parity. Filter to severities
+    // the test was originally asserting on.
     const result = compare(makeContract(), makePayslip(), makeProfile(), 2026)
-    const underpaid = result.findings.filter(f => f.gapDirection === 'underpaid')
+    const underpaid = result.findings.filter(
+      f => f.gapDirection === 'underpaid' && f.severity !== 'info',
+    )
     expect(underpaid.length).toBe(0)
   })
 

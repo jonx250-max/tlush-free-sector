@@ -15,6 +15,11 @@ import { checkPension } from './diff/pension'
 import { checkKerenHishtalmut } from './diff/kerenHishtalmut'
 import { checkBenefits } from './diff/benefits'
 import { checkTax } from './diff/tax'
+import { checkNationalInsurance } from './diff/nationalInsurance'
+import { checkMasBriut } from './diff/masBriut'
+import { checkAllowances } from './diff/allowances'
+import { checkRecreationPay } from './diff/recreationPay'
+import { checkReservist } from './diff/reservist'
 import { buildOvertimeAnalysis } from './diff/overtimeAnalysis'
 import { buildTaxAnalysis } from './diff/taxAnalysis'
 import { buildSummary } from './diff/summary'
@@ -33,6 +38,11 @@ export interface ProfileData {
   settlement: Settlement | null
   yearsOfService: number
   workDaysPerWeek: 5 | 6
+  // Stage E13/E14 — optional employer-specific overrides above the
+  // statutory minimum. If present, they replace the legal floor when
+  // computing entitlements.
+  sickDaysCapOverride?: number | null
+  vacationDaysOverride?: number | null
 }
 
 export function compare(
@@ -54,6 +64,11 @@ export function compare(
     ...checkPension(ctx),
     ...checkKerenHishtalmut(ctx),
     ...checkTax(ctx, taxAnalysis),
+    ...checkNationalInsurance(ctx),
+    ...checkMasBriut(ctx),
+    ...checkAllowances(ctx),
+    ...checkRecreationPay(ctx),
+    ...checkReservist(ctx),
     ...checkBenefits(ctx),
   ]
 

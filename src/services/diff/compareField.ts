@@ -1,6 +1,6 @@
 import type { AnalysisFinding, FindingCategory, Severity, GapDirection } from '../../types'
 import { round2 } from '../../lib/numbers'
-import { TOLERANCE } from './context'
+import { toleranceFor } from './context'
 
 export function compareField(
   category: FindingCategory,
@@ -9,13 +9,16 @@ export function compareField(
   payslipValue: number | null,
   severity: Severity,
   legalReference?: string,
+  /** Gross salary used to derive the tolerance band; defaults to contractValue. */
+  toleranceBasis?: number | null,
 ): AnalysisFinding | null {
   if (contractValue === null || contractValue === undefined) return null
 
   const actual = payslipValue ?? 0
   const gap = round2(contractValue - actual)
+  const tolerance = toleranceFor(toleranceBasis ?? contractValue)
 
-  const gapDirection: GapDirection = Math.abs(gap) < TOLERANCE
+  const gapDirection: GapDirection = Math.abs(gap) < tolerance
     ? 'match'
     : payslipValue === null ? 'missing_from_payslip'
     : gap > 0 ? 'underpaid' : 'overpaid'
