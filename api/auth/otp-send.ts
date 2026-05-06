@@ -16,6 +16,7 @@
 import { isGeoAllowed } from '../_lib/geoCheck.js'
 import { rateLimit, extractClientIp } from '../_lib/rateLimit.js'
 import { safeError, logServerError } from '../_lib/safeError.js'
+import { getServerConfig } from '../_lib/serverConfig.js'
 
 interface VercelRequest {
   method: string
@@ -88,8 +89,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     })
   }
 
-  const supabaseUrl = process.env.SUPABASE_URL
-  const anonKey = process.env.SUPABASE_ANON_KEY
+  const { url: supabaseUrl, anonKey } = getServerConfig().supabase
   if (!supabaseUrl || !anonKey) {
     return res.status(503).json({ error: 'Auth service unavailable', code: 'CONFIG_MISSING' })
   }

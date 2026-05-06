@@ -139,6 +139,9 @@ export function Layout() {
       <main id="main-content" className="flex-1 overflow-y-auto p-4 pt-18 md:p-8 md:pt-8" tabIndex={-1}>
         <Outlet />
       </main>
+
+      {/* Stage H4 — global toast region */}
+      <Toaster />
     </div>
   )
 }

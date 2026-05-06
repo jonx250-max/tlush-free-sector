@@ -1,0 +1,62 @@
+{
+  "_comment": "Stage E1 — tax year 2026. PROVISIONAL flags require verification. See docs/STAGE_E_INPUTS.md.",
+  "year": 2026,
+  "taxBrackets": [
+    { "limitMonthly": 7010, "rate": 0.10 },
+    { "limitMonthly": 10060, "rate": 0.14 },
+    { "limitMonthly": 19000, "rate": 0.20 },
+    { "limitMonthly": 25100, "rate": 0.31 },
+    { "limitMonthly": 42400, "rate": 0.35 },
+    { "limitMonthly": 60130, "rate": 0.47 },
+    { "limitMonthly": null, "rate": 0.50 }
+  ],
+  "creditPointValueMonthly": 242,
+  "minimumWage": {
+    "monthlyNis": 6247.67,
+    "hourlyNis": 32.30,
+    "provisional": true
+  },
+  "pensionMandatory": {
+    "employeePct": 6,
+    "employerPct": 6.5,
+    "severancePct": 6,
+    "provisional": false
+  },
+  "nationalInsurance": {
+    "reducedRateCeilingMonthly": 7522,
+    "reducedRatePct": 0.4,
+    "fullRateCeilingMonthly": 50695,
+    "fullRatePct": 7.0,
+    "provisional": true
+  },
+  "masBriut": {
+    "reducedRateCeilingMonthly": 7522,
+    "reducedRatePct": 3.10,
+    "fullRateCeilingMonthly": 50695,
+    "fullRatePct": 5.00,
+    "provisional": true
+  },
+  "maternity": {
+    "niiDailyCapNis": 1546,
+    "provisional": true
+  },
+  "recreationPay": {
+    "dailyRateNis": 425,
+    "scheduleByYearsService": [
+      { "minYearsOfService": 1, "days": 5 },
+      { "minYearsOfService": 2, "days": 6 },
+      { "minYearsOfService": 4, "days": 7 },
+      { "minYearsOfService": 11, "days": 8 },
+      { "minYearsOfService": 16, "days": 9 },
+      { "minYearsOfService": 20, "days": 10 }
+    ],
+    "provisional": true
+  },
+  "reservist": {
+    "statutoryMinimumDailyPayNis": 318,
+    "averagingDivisor": 25,
+    "topUpRule": "המעסיק חייב להשלים אם דמי המילואים נמוכים מהשכר היומי הרגיל",
+    "lawSection": "חוק חיילים משוחררים, התשמ\"ח-1988, סעיף 17א",
+    "provisional": true
+  }
+}

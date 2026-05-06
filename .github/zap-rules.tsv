@@ -1,0 +1,3 @@
+10054	IGNORE	Cookie without SameSite Attribute (Supabase auth cookie config managed by provider)
+10055	IGNORE	CSP wildcard https: in img-src is intentional for marketing landing
+10202	IGNORE	Absence of Anti-CSRF Tokens (bearer-token routes — see data/security/csrf.md)

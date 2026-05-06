@@ -1,5 +1,6 @@
 import { defineConfig, loadEnv, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
+import { visualizer } from 'rollup-plugin-visualizer'
 import { existsSync } from 'fs'
 import { join } from 'path'
 
@@ -105,6 +106,15 @@ export default defineConfig({
   plugins: [
     react(),
     devApiPlugin(),
+    // Build-only: emits dist/stats.html so we can spot bundle bloat.
+    // gzipSize: true gives a realistic over-the-wire size.
+    visualizer({
+      filename: 'dist/stats.html',
+      template: 'treemap',
+      gzipSize: true,
+      brotliSize: true,
+      sourcemap: true,
+    }) as Plugin,
   ],
   server: {
     host: '127.0.0.1',

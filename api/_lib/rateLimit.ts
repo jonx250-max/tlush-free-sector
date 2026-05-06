@@ -19,6 +19,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js'
+import { getServerConfig } from './serverConfig.js'
 
 export interface RateLimitConfig {
   key: string
@@ -43,10 +44,9 @@ let memoryLastSweep = 0
 let cachedAdmin: ReturnType<typeof createClient> | null = null
 function getAdmin() {
   if (cachedAdmin) return cachedAdmin
-  const url = process.env.SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url || !serviceKey) return null
-  cachedAdmin = createClient(url, serviceKey, { auth: { persistSession: false } })
+  const { url, serviceRoleKey } = getServerConfig().supabase
+  if (!url || !serviceRoleKey) return null
+  cachedAdmin = createClient(url, serviceRoleKey, { auth: { persistSession: false } })
   return cachedAdmin
 }
 

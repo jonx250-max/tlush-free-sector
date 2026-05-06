@@ -1,0 +1,60 @@
+name: DB migrations
+
+# Stage D D6 — applies SQL migrations to a transient Supabase branch on
+# every PR that touches supabase/migrations/, runs a smoke query, then
+# tears down. Fails the PR if any migration breaks.
+#
+# Requires repo secret SUPABASE_ACCESS_TOKEN (operator step — see
+# docs/runbook.md). Without that secret the job is skipped (so the
+# workflow is forward-compatible — adding the secret enables the job
+# without code changes).
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/**'
+
+jobs:
+  apply:
+    name: Apply + smoke
+    runs-on: ubuntu-latest
+    if: ${{ secrets.SUPABASE_ACCESS_TOKEN != '' && secrets.SUPABASE_PROJECT_REF != '' }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Supabase CLI
+        run: npm install -g supabase@latest
+
+      - name: Link project
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+
+      - name: Create branch
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          BRANCH_NAME="ci-${{ github.run_id }}"
+          echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_ENV
+          supabase branches create "$BRANCH_NAME" --persistent=false
+
+      - name: Apply migrations
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase db push --branch ${{ env.BRANCH_NAME }}
+
+      - name: Smoke query
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase db query --branch ${{ env.BRANCH_NAME }} \
+            "select count(*) from pg_tables where schemaname='public';"
+
+      - name: Tear down branch
+        if: always()
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase branches delete "$BRANCH_NAME" --confirm

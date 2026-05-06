@@ -8,6 +8,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { verifyChain, type AuditEntry } from '../../src/lib/auditLog.js'
 import { isGeoAllowed } from '../_lib/geoCheck.js'
+import { getServerConfig } from '../_lib/serverConfig.js'
 
 interface VercelRequest {
   method: string
@@ -30,8 +31,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(403).json({ error: 'Service available in Israel only', code: 'GEO_BLOCKED' })
   }
 
-  const url = process.env.SUPABASE_URL
-  const anonKey = process.env.SUPABASE_ANON_KEY
+  const { url, anonKey } = getServerConfig().supabase
   if (!url || !anonKey) return res.status(500).json({ error: 'Supabase env vars missing' })
 
   const auth = req.headers.authorization

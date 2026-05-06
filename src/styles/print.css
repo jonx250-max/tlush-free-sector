@@ -1,0 +1,48 @@
+/* Stage H5 — print stylesheet
+ *
+ * Optimizes the demand-letter print path + general site print. Removes
+ * navigation, sticky bars, action buttons. Restores black-on-white for
+ * legibility. Forces page breaks before each top-level finding section.
+ */
+
+@media print {
+  /* Reset page chrome */
+  body { background: #fff !important; color: #000 !important; }
+  header, nav, aside, footer,
+  [role="navigation"],
+  .tlush-print-hide,
+  .tlush-mobile-actions,
+  button { display: none !important; }
+
+  /* Single column, no padding wasters */
+  main { padding: 0 !important; }
+  .container, .max-w-4xl, .max-w-3xl { max-width: none !important; padding: 0 !important; }
+
+  /* Cards — drop shadow + ring for ink savings */
+  .tlush-card,
+  [class*="rounded-xl"] {
+    box-shadow: none !important;
+    border: 1px solid #000 !important;
+    page-break-inside: avoid;
+  }
+
+  /* Heading hierarchy stays visible */
+  h1, h2, h3 { color: #000 !important; page-break-after: avoid; }
+
+  /* Severity badges become text-only on paper */
+  [data-severity="critical"]::before { content: "[קריטי] "; font-weight: bold; }
+  [data-severity="warning"]::before { content: "[אזהרה] "; }
+  [data-severity="info"]::before { content: "[מידע] "; }
+
+  /* Links: show URL in parens for traceability */
+  a[href]:not([href^="#"])::after { content: " (" attr(href) ")"; font-size: 0.85em; }
+
+  /* Tables — keep rows together */
+  tr, .tlush-finding-row { page-break-inside: avoid; }
+
+  /* Demand letter section gets its own page */
+  .tlush-demand-letter { page-break-before: always; }
+
+  /* Disable the shimmer animation */
+  .tlush-skeleton-shimmer { background: #f0f0f0 !important; animation: none !important; }
+}

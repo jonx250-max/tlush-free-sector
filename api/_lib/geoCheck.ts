@@ -11,6 +11,8 @@
  * IPQualityScore (env: IPQS_API_KEY). If no key, VPN check skipped.
  */
 
+import { getServerConfig } from './serverConfig.js'
+
 const ALLOWED_COUNTRY = 'IL'
 
 // Reserved for future VPN/datacenter detection (Plan §8 IPQualityScore wiring).
@@ -61,6 +63,5 @@ function pickQuery(
 }
 
 function validInviteToken(token: string): boolean {
-  const allowed = (process.env.GEO_BYPASS_TOKENS || '').split(',').map(t => t.trim()).filter(Boolean)
-  return allowed.includes(token)
+  return getServerConfig().geo.bypassTokens.includes(token)
 }

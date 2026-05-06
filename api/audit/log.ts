@@ -16,6 +16,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { isGeoAllowed } from '../_lib/geoCheck.js'
 import { safeError, logServerError } from '../_lib/safeError.js'
+import { getServerConfig } from '../_lib/serverConfig.js'
 
 interface VercelRequest {
   method: string
@@ -39,9 +40,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(403).json({ error: 'Service available in Israel only', code: 'GEO_BLOCKED' })
   }
 
-  const url = process.env.SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  const anonKey = process.env.SUPABASE_ANON_KEY
+  const cfg = getServerConfig().supabase
+  const url = cfg.url
+  const serviceKey = cfg.serviceRoleKey
+  const anonKey = cfg.anonKey
   if (!url || !serviceKey || !anonKey) {
     return res.status(500).json({ error: 'Service unavailable', code: 'CONFIG_MISSING' })
   }

@@ -1,0 +1,37 @@
+name: ZAP baseline (DAST)
+
+# Stage J2 — nightly OWASP ZAP baseline scan against the production
+# preview deployment. Runs at 02:00 UTC. Findings posted as a GitHub
+# issue when severity >= medium.
+#
+# Requires repo secret ZAP_TARGET_URL (the production deployment URL).
+# When unset, the job skips (forward-compatible).
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    if: ${{ secrets.ZAP_TARGET_URL != '' }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: ZAP baseline
+        uses: zaproxy/action-baseline@v0.14.0
+        with:
+          target: ${{ secrets.ZAP_TARGET_URL }}
+          rules_file_name: '.github/zap-rules.tsv'
+          cmd_options: '-a -j -m 5 -T 10'
+          fail_action: false
+          allow_issue_writing: true
+
+      - name: Upload report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-baseline-report
+          path: report_html.html
+          retention-days: 30

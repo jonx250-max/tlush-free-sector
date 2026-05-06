@@ -257,15 +257,36 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
+/* ===== Skeleton shimmer (Stage H3) ===== */
+
+@keyframes tlushShimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.tlush-skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--cs-bg) 0%,
+    var(--cs-border-strong) 50%,
+    var(--cs-bg) 100%
+  );
+  background-size: 200% 100%;
+  animation: tlushShimmer 1.6s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tlush-skeleton-shimmer {
+    animation: none;
+    background: var(--cs-border-strong);
+  }
+}
+
 /* ===== Print Styles ===== */
+/* Detailed print rules in src/styles/print.css; this is the legacy
+   minimal block kept for safety. */
 
 @media print {
-  body {
-    background: white;
-    color: black;
-  }
-
-  .no-print {
-    display: none !important;
-  }
+  body { background: white; color: black; }
+  .no-print { display: none !important; }
 }

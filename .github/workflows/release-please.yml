@@ -1,0 +1,32 @@
+name: release-please
+
+# Stage J3 — auto-generated release notes + version bumping driven by
+# conventional-commits in the commit log. Opens a "release PR" that,
+# when merged, tags the commit and emits a GitHub Release with the
+# changelog.
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v4
+        with:
+          release-type: node
+          package-name: tlush-free-sector
+          changelog-types: |
+            [
+              {"type":"feat","section":"Features","hidden":false},
+              {"type":"fix","section":"Bug Fixes","hidden":false},
+              {"type":"perf","section":"Performance","hidden":false},
+              {"type":"docs","section":"Documentation","hidden":false},
+              {"type":"chore","section":"Chores","hidden":true},
+              {"type":"refactor","section":"Refactors","hidden":false}
+            ]

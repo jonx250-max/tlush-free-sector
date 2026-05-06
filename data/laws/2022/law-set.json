@@ -1,0 +1,66 @@
+{
+  "_comment": "Stage E1 — externalized law data for tax year 2022. PROVISIONAL flags mark values that need human verification against authoritative sources. See docs/STAGE_E_INPUTS.md.",
+  "year": 2022,
+  "taxBrackets": [
+    { "limitMonthly": 6450, "rate": 0.10 },
+    { "limitMonthly": 9240, "rate": 0.14 },
+    { "limitMonthly": 14840, "rate": 0.20 },
+    { "limitMonthly": 20620, "rate": 0.31 },
+    { "limitMonthly": 42910, "rate": 0.35 },
+    { "limitMonthly": 55270, "rate": 0.47 },
+    { "limitMonthly": null, "rate": 0.50 }
+  ],
+  "creditPointValueMonthly": 223,
+  "minimumWage": {
+    "monthlyNis": 5300,
+    "hourlyNis": 29.12,
+    "provisional": true,
+    "_source_note": "Verify 2022 IL minimum-wage values"
+  },
+  "pensionMandatory": {
+    "employeePct": 6,
+    "employerPct": 6.5,
+    "severancePct": 6,
+    "provisional": false
+  },
+  "nationalInsurance": {
+    "reducedRateCeilingMonthly": 6790,
+    "reducedRatePct": 0.4,
+    "fullRateCeilingMonthly": 45075,
+    "fullRatePct": 7.0,
+    "provisional": true,
+    "_source_note": "PLACEHOLDER — verify against btl.gov.il/About/Pages/SocialInsuranceRates.aspx for 2022"
+  },
+  "masBriut": {
+    "reducedRateCeilingMonthly": 6790,
+    "reducedRatePct": 3.10,
+    "fullRateCeilingMonthly": 45075,
+    "fullRatePct": 5.00,
+    "provisional": true,
+    "_source_note": "PLACEHOLDER — verify"
+  },
+  "maternity": {
+    "niiDailyCapNis": 1530,
+    "provisional": true
+  },
+  "recreationPay": {
+    "dailyRateNis": 405,
+    "scheduleByYearsService": [
+      { "minYearsOfService": 1, "days": 5 },
+      { "minYearsOfService": 2, "days": 6 },
+      { "minYearsOfService": 4, "days": 7 },
+      { "minYearsOfService": 11, "days": 8 },
+      { "minYearsOfService": 16, "days": 9 },
+      { "minYearsOfService": 20, "days": 10 }
+    ],
+    "provisional": true,
+    "_source_note": "PLACEHOLDER private-sector — verify against 2022 צו הרחבה"
+  },
+  "reservist": {
+    "statutoryMinimumDailyPayNis": 270,
+    "averagingDivisor": 25,
+    "topUpRule": "המעסיק חייב להשלים אם דמי המילואים נמוכים מהשכר היומי הרגיל",
+    "lawSection": "חוק חיילים משוחררים, התשמ\"ח-1988, סעיף 17א",
+    "provisional": true
+  }
+}

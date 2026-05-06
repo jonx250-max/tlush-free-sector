@@ -1,0 +1,63 @@
+{
+  "_comment": "Stage E1 — tax year 2023. PROVISIONAL flags require verification. See docs/STAGE_E_INPUTS.md.",
+  "year": 2023,
+  "taxBrackets": [
+    { "limitMonthly": 6790, "rate": 0.10 },
+    { "limitMonthly": 9730, "rate": 0.14 },
+    { "limitMonthly": 15620, "rate": 0.20 },
+    { "limitMonthly": 21710, "rate": 0.31 },
+    { "limitMonthly": 45180, "rate": 0.35 },
+    { "limitMonthly": 58190, "rate": 0.47 },
+    { "limitMonthly": null, "rate": 0.50 }
+  ],
+  "creditPointValueMonthly": 235,
+  "minimumWage": {
+    "monthlyNis": 5571.75,
+    "hourlyNis": 30.61,
+    "provisional": true
+  },
+  "pensionMandatory": {
+    "employeePct": 6,
+    "employerPct": 6.5,
+    "severancePct": 6,
+    "provisional": false
+  },
+  "nationalInsurance": {
+    "reducedRateCeilingMonthly": 7122,
+    "reducedRatePct": 0.4,
+    "fullRateCeilingMonthly": 47465,
+    "fullRatePct": 7.0,
+    "provisional": true,
+    "_source_note": "PLACEHOLDER — verify"
+  },
+  "masBriut": {
+    "reducedRateCeilingMonthly": 7122,
+    "reducedRatePct": 3.10,
+    "fullRateCeilingMonthly": 47465,
+    "fullRatePct": 5.00,
+    "provisional": true
+  },
+  "maternity": {
+    "niiDailyCapNis": 1530,
+    "provisional": true
+  },
+  "recreationPay": {
+    "dailyRateNis": 412,
+    "scheduleByYearsService": [
+      { "minYearsOfService": 1, "days": 5 },
+      { "minYearsOfService": 2, "days": 6 },
+      { "minYearsOfService": 4, "days": 7 },
+      { "minYearsOfService": 11, "days": 8 },
+      { "minYearsOfService": 16, "days": 9 },
+      { "minYearsOfService": 20, "days": 10 }
+    ],
+    "provisional": true
+  },
+  "reservist": {
+    "statutoryMinimumDailyPayNis": 280,
+    "averagingDivisor": 25,
+    "topUpRule": "המעסיק חייב להשלים אם דמי המילואים נמוכים מהשכר היומי הרגיל",
+    "lawSection": "חוק חיילים משוחררים, התשמ\"ח-1988, סעיף 17א",
+    "provisional": true
+  }
+}

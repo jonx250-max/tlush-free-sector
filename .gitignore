@@ -27,6 +27,14 @@ coverage/
 playwright-report/
 test-results/
 
+# Bundle analyzer + SBOM artifacts
+dist/stats.html
+sbom.cdx.json
+
+# Stryker mutation testing artifacts
+.stryker-tmp/
+reports/mutation/
+
 # Logs
 *.log
 npm-debug.log*

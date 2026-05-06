@@ -7,6 +7,7 @@
  */
 
 import { randomBytes } from 'node:crypto'
+import { redactPII } from './redact.js'
 
 export interface SafeErrorBody {
   error: string
@@ -18,10 +19,13 @@ const HEBREW_USER_MESSAGES: Record<string, string> = {
   AUDIT_INSERT_FAILED: 'שגיאה זמנית — נסה שוב',
   ANALYSES_INSERT_FAILED: 'לא ניתן ליצור ניתוח כעת',
   OCR_FAILED: 'שגיאה בעיבוד התלוש',
+  OTP_SEND_FAILED: 'לא ניתן לשלוח קוד כעת',
   CONFIG_MISSING: 'השירות אינו זמין כעת',
   RATE_LIMITED: 'יותר מדי בקשות, נסה בעוד דקה',
+  USER_RATE_LIMITED: 'הגעת למכסה היומית',
   CASE_ID_FORBIDDEN: 'אין לך גישה לתיק זה',
   INVALID_INPUT: 'בקשה לא תקינה',
+  PURGE_FAILED: 'שגיאה במחיקת נתונים, נסה שוב',
   INTERNAL: 'שגיאה זמנית',
 }
 
@@ -55,8 +59,9 @@ export function mapPostgresError(pgCode: string | undefined): string | null {
  * into queryable logs via `vercel logs` and the dashboard.
  */
 export function logServerError(context: string, err: unknown): void {
-  const detail = err instanceof Error
+  const raw = err instanceof Error
     ? { name: err.name, message: err.message, stack: err.stack }
     : { value: String(err) }
-  console.error(`[server-error] ${context}`, JSON.stringify(detail))
+  const safe = redactPII(raw)
+  console.error(`[server-error] ${context}`, JSON.stringify(safe))
 }

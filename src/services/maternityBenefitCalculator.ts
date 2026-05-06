@@ -1,6 +1,9 @@
 // NII (Bituach Leumi) maternity benefit calculator.
-// SOURCE: ח"ב לביטוח לאומי (גרסת 2026), פסיקת בית הדין לעבודה
+// SOURCE: ח"ב לביטוח לאומי, פסיקת בית הדין לעבודה
 // Eligibility: at least 10 of 14 OR 15 of 22 months prior to event paid into NII.
+// Stage E17 — daily cap moved into LawSet, accepts year argument.
+
+import { getLawSet } from './lawVersion'
 
 export type MaternityEventType =
   | 'birth_mother'   // 15 weeks fully paid (was 14, increased per amendment 2017)
@@ -28,14 +31,17 @@ export interface MaternityResult {
   note: string
 }
 
-// 2026 NII daily cap (max insurable salary / 30)
-const NII_DAILY_CAP_2026 = 1546 // ₪
-
 const WEEKS_BY_TYPE: Record<MaternityEventType, number> = {
   birth_mother: 15, partner: 0 /* 8 days = 1.14 weeks */, adoption: 12, foster: 6,
 }
 
-export function calculateMaternityBenefit(input: MaternityInput): MaternityResult {
+export function calculateMaternityBenefit(
+  input: MaternityInput,
+  /** Tax year for the NII daily cap. Defaults to the year embedded in eventDate. */
+  year?: number,
+): MaternityResult {
+  const yr = year ?? (Number(input.eventDate.slice(0, 4)) || 2026)
+  const niiDailyCap = getLawSet(yr).maternity.niiDailyCapNis
   const eligible =
     input.monthsInsuredLast14 >= 10 || input.monthsInsuredLast22 >= 15
 
@@ -55,8 +61,8 @@ export function calculateMaternityBenefit(input: MaternityInput): MaternityResul
 
   const days = Math.round(weeks * 7)
   const dailyAvg = input.avgGrossLast3Months / 30
-  const capApplied = dailyAvg > NII_DAILY_CAP_2026
-  const dailyBenefit = Math.min(dailyAvg, NII_DAILY_CAP_2026)
+  const capApplied = dailyAvg > niiDailyCap
+  const dailyBenefit = Math.min(dailyAvg, niiDailyCap)
   const total = Math.round(dailyBenefit * days)
 
   return {

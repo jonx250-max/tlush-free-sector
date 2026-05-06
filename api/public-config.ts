@@ -9,6 +9,7 @@
  */
 
 import { isGeoAllowed } from './_lib/geoCheck.js'
+import { getServerConfig } from './_lib/serverConfig.js'
 
 interface VercelRequest {
   method: string
@@ -32,8 +33,7 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(403).json({ error: 'Service available in Israel only', code: 'GEO_BLOCKED', country: geo.country })
   }
 
-  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
-  const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY
+  const { url: supabaseUrl, anonKey: supabaseAnonKey } = getServerConfig().supabase
 
   if (!supabaseUrl || !supabaseAnonKey) {
     return res.status(500).json({ error: 'Public config not set' })

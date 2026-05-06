@@ -40,8 +40,10 @@ export function validateAmendment24(
   // Check: is there a separate overtime line in the payslip?
   if (payslipGlobalOvertimeLine === null || payslipGlobalOvertimeLine === 0) {
     // No separation — entire amount treated as base
+    // Stage E9 — salary-proportional tolerance (was hardcoded 100 ₪).
+    const tolE9 = Math.max(20, Math.round(payslipGrossSalary * 0.005 * 100) / 100)
     const entireAmountIsBase = payslipBasePay !== null &&
-      Math.abs(payslipBasePay - payslipGrossSalary) < 100 // tolerance for small deductions
+      Math.abs(payslipBasePay - payslipGrossSalary) < tolE9
 
     return {
       compliant: false,
