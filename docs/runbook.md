@@ -91,9 +91,48 @@ order by tablename;
 
 Every row must show `rowsecurity = true`.
 
+## Alerting (Stage I6)
+
+Today: no automated alerting. Manual daily checklist above is the only
+signal. To wire alerting:
+
+1. Sentry → Slack: install Sentry, configure project DSN as
+   `VITE_SENTRY_DSN` (build time) + server `SENTRY_DSN`. Sentry
+   project → Alerts → New Alert → "If error count > 10 in 5min →
+   notify Slack channel #tlush-oncall".
+2. Vercel → Slack: project Settings → Integrations → Slack → add
+   workspace → channel #tlush-oncall. Enable deployment failures +
+   runtime errors.
+3. Custom SLO burn alerts: see `docs/slo.md` thresholds; implement via
+   nightly cron that queries `web_vitals_samples` + Vercel logs for
+   the rolling 28d window and posts to Slack if any SLO is in the red.
+
+## Stage J5 — DB migration rollback
+
+Every migration in `supabase/migrations/` MUST ship with a tested
+rollback. The pattern: after writing `0000X_<thing>.sql`, run it on a
+shadow Supabase branch (`supabase branches create rollback-test`) →
+write the inverse SQL → apply rollback → verify schema matches the
+previous version. Save the rollback as `0000X_<thing>.rollback.sql`
+alongside.
+
+Rollback scenarios:
+
+- **Function redefined incorrectly** (e.g. `purge_aged_user_data`):
+  rollback re-runs `CREATE OR REPLACE FUNCTION` with the prior body.
+- **Column added (NOT NULL DEFAULT)**: rollback `DROP COLUMN`.
+- **Index added**: rollback `DROP INDEX`.
+- **CHECK constraint added**: rollback `DROP CONSTRAINT`.
+- **RLS policy added**: rollback `DROP POLICY`.
+- **Table created**: rollback `DROP TABLE` — only safe if no data
+  written; otherwise export first.
+
+Never auto-rollback migrations that touch user-data tables once the
+migration has been live in production for >24h. Investigate forward.
+
 ## Contacts (placeholder)
 
-- On-call rotation: TBD — wire to Slack in Stage I item I6.
+- On-call rotation: TBD — wire to Slack via Sentry+Vercel integrations above.
 - Supabase support: dashboard support button.
 - Vercel support: vercel.com/support.
 - Anthropic support: console.anthropic.com → Support.

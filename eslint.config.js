@@ -21,6 +21,11 @@ export default tseslint.config(
       ...reactHooks.configs.recommended.rules,
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      // Stage F4 — module size enforcement. CLAUDE.md sets 500 / 20.
+      // Warn-only initially so we can see the offender list without
+      // breaking CI; tighten to error after Stage F1 hexagonal split.
+      'max-lines': ['warn', { max: 500, skipBlankLines: true, skipComments: true }],
+      'max-lines-per-function': ['warn', { max: 80, skipBlankLines: true, skipComments: true, IIFEs: true }],
     },
   },
   // Stage A enforcement: forbid direct `process.env.X` reads in Vercel
