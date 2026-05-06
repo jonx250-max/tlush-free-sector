@@ -6,13 +6,16 @@ import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import {
   AlertTriangle, CheckCircle, FileText, Download, ArrowLeft,
-  MessageCircle, Copy, ChevronDown,
+  MessageCircle, Copy, ChevronDown, LayoutGrid, Columns,
 } from 'lucide-react'
 import type { DiffResult, AnalysisFinding, Severity, FindingCategory } from '../types'
 import { he } from '../i18n/he'
 import { useAnalysisStore } from '../hooks/useAnalysis'
 import { generateDemandLetter } from '../services/demandLetterGenerator'
 import { SanitizedLetter } from '../components/SanitizedHtml'
+import { DiscrepancyViewer } from '../components/results/DiscrepancyViewer'
+import { EmptyState } from '../components/results/EmptyState'
+import { toast } from '../lib/toast'
 
 // Sanitize the demand letter HTML before render. Belt-and-braces:
 // `demandLetterGenerator` already escapes user fields via `escapeHtml`,
@@ -42,6 +45,10 @@ export function ResultsPage() {
   const [letterHtml, setLetterHtml] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
 
+  // Stage H1 — viewing-mode toggle. 'grouped' = legacy by-category;
+  // 'sideBySide' = two-pane DiscrepancyViewer.
+  const [viewMode, setViewMode] = useState<'grouped' | 'sideBySide'>('grouped')
+
   const result = store.result
 
   const summaryText = useMemo(() => result ? buildSummaryText(result) : '', [result])
@@ -52,11 +59,8 @@ export function ResultsPage() {
 
   if (!result) {
     return (
-      <div className="mx-auto max-w-4xl px-4 py-8 text-center">
-        <p className="text-cs-muted">אין תוצאות להצגה.</p>
-        <Button className="mt-4" onClick={() => navigate('/upload')}>
-          <ArrowLeft size={16} /> העלה חוזה ותלוש
-        </Button>
+      <div className="mx-auto max-w-4xl px-4 py-8">
+        <EmptyState kind="no-result" />
       </div>
     )
   }
@@ -70,9 +74,10 @@ export function ResultsPage() {
     try {
       await navigator.clipboard.writeText(summaryText)
       setCopied(true)
+      toast.success('הועתק ללוח')
       setTimeout(() => setCopied(false), 2000)
     } catch {
-      // clipboard unavailable
+      toast.error('לא הצלחנו להעתיק. נסה שוב.')
     }
   }
 
@@ -121,7 +126,34 @@ export function ResultsPage() {
 
       <ResultsSummary result={result} />
       <Amendment24Alert findings={result.findings} />
-      <CategoryGroupedFindings findings={result.findings} />
+      <EmptyState kind="needs-review" findings={result.findings} />
+
+      {/* Stage H1 — view toggle */}
+      <div className="flex items-center gap-2 print:hidden" role="tablist" aria-label="מצב תצוגה">
+        <Button
+          variant={viewMode === 'grouped' ? 'primary' : 'outline'}
+          size="sm"
+          role="tab"
+          aria-selected={viewMode === 'grouped'}
+          onClick={() => setViewMode('grouped')}
+        >
+          <LayoutGrid size={14} aria-hidden="true" /> מקובץ לפי נושא
+        </Button>
+        <Button
+          variant={viewMode === 'sideBySide' ? 'primary' : 'outline'}
+          size="sm"
+          role="tab"
+          aria-selected={viewMode === 'sideBySide'}
+          onClick={() => setViewMode('sideBySide')}
+        >
+          <Columns size={14} aria-hidden="true" /> צד-ליד
+        </Button>
+      </div>
+
+      {viewMode === 'grouped'
+        ? <CategoryGroupedFindings findings={result.findings} />
+        : <DiscrepancyViewer findings={result.findings} />}
+
       <TaxSummary result={result} />
       <OvertimeSummary result={result} />
 

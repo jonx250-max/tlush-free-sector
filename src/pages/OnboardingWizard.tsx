@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import type { Dispatch, SetStateAction } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Stepper } from '../components/ui/Stepper'
@@ -6,6 +6,8 @@ import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { useAuth } from '../lib/auth'
 import { he } from '../i18n/he'
+import { saveDraft, loadDraft, clearDraft } from '../lib/onboardingDraft'
+import { toast } from '../lib/toast'
 import type { PersonalData, EmploymentData, PayModelData, Setter } from '../components/onboarding/types'
 import { buildProfilePatch } from '../components/onboarding/buildProfilePatch'
 import { PersonalInfoStep } from '../components/onboarding/PersonalInfoStep'
@@ -40,20 +42,44 @@ function useFieldSetter<T>(setState: Dispatch<SetStateAction<T>>): Setter<T> {
   }, [setState])
 }
 
+interface DraftSnapshot {
+  step: number
+  personal: PersonalData
+  employment: EmploymentData
+  pay: PayModelData
+}
+
 export function OnboardingWizard() {
   const navigate = useNavigate()
   const { user, updateProfile } = useAuth()
-  const [step, setStep] = useState(0)
-  const [personal, setPersonal] = useState<PersonalData>({ ...INITIAL_PERSONAL, fullName: user?.fullName ?? '' })
-  const [employment, setEmployment] = useState<EmploymentData>(INITIAL_EMPLOYMENT)
-  const [pay, setPay] = useState<PayModelData>(INITIAL_PAY)
+
+  // Stage H7 — restore draft on mount.
+  const draft = loadDraft<DraftSnapshot>(user?.id)
+  const [step, setStep] = useState(draft?.step ?? 0)
+  const [personal, setPersonal] = useState<PersonalData>(
+    draft?.personal ?? { ...INITIAL_PERSONAL, fullName: user?.fullName ?? '' },
+  )
+  const [employment, setEmployment] = useState<EmploymentData>(draft?.employment ?? INITIAL_EMPLOYMENT)
+  const [pay, setPay] = useState<PayModelData>(draft?.pay ?? INITIAL_PAY)
 
   const updatePersonal = useFieldSetter(setPersonal)
   const updateEmployment = useFieldSetter(setEmployment)
   const updatePay = useFieldSetter(setPay)
 
+  // Persist on every state change.
+  useEffect(() => {
+    saveDraft<DraftSnapshot>(user?.id, { step, personal, employment, pay })
+  }, [user?.id, step, personal, employment, pay])
+
+  // One-time toast on mount if draft was restored.
+  useEffect(() => {
+    if (draft) toast.info('שחזרנו את השאלון שהתחלת קודם')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const handleComplete = useCallback(() => {
     updateProfile(buildProfilePatch(personal, employment, pay, user?.fullName ?? null))
+    clearDraft(user?.id)
     navigate('/dashboard')
   }, [navigate, personal, employment, pay, updateProfile, user])
 

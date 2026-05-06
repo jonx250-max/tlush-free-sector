@@ -20,8 +20,13 @@ for (const route of ROUTES) {
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
       .analyze()
 
-    // Stage B baseline: report only, do not fail. Stage H item H2 will
-    // hard-fail on critical/serious violations once the UI work lands.
+    // Stage H2 — hard-fail on critical/serious violations.
+    // Minor + moderate are still warned-only so easy wins flag without
+    // gating CI. Tighten further in a follow-up once the inventory is clean.
+    const blocking = result.violations.filter(
+      v => v.impact === 'critical' || v.impact === 'serious',
+    )
+
     if (result.violations.length > 0) {
       console.warn(`[a11y] ${route} — ${result.violations.length} violations`)
       for (const v of result.violations) {
@@ -29,7 +34,7 @@ for (const route of ROUTES) {
       }
     }
 
-    // We expect at least no system-level errors from axe itself.
-    expect(result).toBeDefined()
+    expect(blocking, `Critical/serious a11y violations on ${route}: ` +
+      blocking.map(v => `${v.id}(${v.impact})`).join(', ')).toEqual([])
   })
 }
