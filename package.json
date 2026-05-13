@@ -16,7 +16,7 @@
     "preview": "vite preview --configLoader native"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "0.91.1",
+    "@anthropic-ai/sdk": "0.92.0",
     "@fontsource/heebo": "5.2.8",
     "@hookform/resolvers": "5.2.2",
     "@supabase/supabase-js": "2.101.0",
